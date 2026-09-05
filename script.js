@@ -1,0 +1,1 @@
+alert("PHYNEX JS IS CONNECTED!");

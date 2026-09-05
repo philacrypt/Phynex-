@@ -1,0 +1,2328 @@
+/* =====================================
+   PHYNEX PROFESSIONAL E-COMMERCE
+===================================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f5f6f8;
+    color: #172033;
+}
+
+img {
+    max-width: 100%;
+    display: block;
+}
+
+button,
+input {
+    font-family: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+
+/* =====================================
+   TOP BAR
+===================================== */
+
+.top-bar {
+    height: 34px;
+
+    padding: 0 3.5%;
+
+    background: #071a43;
+
+    color: white;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    font-size: 12px;
+}
+
+.top-links {
+    display: flex;
+    gap: 28px;
+}
+
+.top-links a {
+    color: white;
+}
+
+.top-links a:hover {
+    text-decoration: underline;
+}
+
+
+/* =====================================
+   HEADER
+===================================== */
+
+.header {
+    min-height: 82px;
+
+    padding: 15px 3.5%;
+
+    background: white;
+
+    display: flex;
+    align-items: center;
+
+    gap: 38px;
+
+    border-bottom: 1px solid #e2e6eb;
+}
+
+
+/* LOGO */
+
+.logo {
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    min-width: 155px;
+}
+
+.logo-mark {
+    color: #1689dc;
+
+    font-size: 38px;
+
+    transform: rotate(180deg);
+}
+
+.logo-name {
+    color: #071a43;
+
+    font-size: 25px;
+
+    line-height: 23px;
+
+    font-weight: 900;
+
+    letter-spacing: 1px;
+}
+
+.logo-sub {
+    color: #526075;
+
+    font-size: 7px;
+
+    letter-spacing: 2px;
+
+    font-weight: bold;
+}
+
+
+/* SEARCH */
+
+.search {
+    flex: 1;
+
+    height: 44px;
+
+    display: flex;
+
+    max-width: 720px;
+}
+
+.search input {
+    width: 100%;
+
+    border: 1px solid #d9dee5;
+
+    border-right: none;
+
+    padding: 0 15px;
+
+    outline: none;
+
+    font-size: 13px;
+}
+
+.search input:focus {
+    border-color: #1689dc;
+}
+
+.search button {
+    width: 105px;
+
+    border: none;
+
+    background: #1267d4;
+
+    color: white;
+
+    font-weight: bold;
+
+    font-size: 12px;
+}
+
+.search button:hover {
+    background: #0758bf;
+}
+
+
+/* HEADER ACTIONS */
+
+.header-actions {
+    display: flex;
+
+    align-items: center;
+
+    gap: 25px;
+}
+
+.header-action {
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+}
+
+.action-icon {
+    font-size: 23px;
+
+    color: #071a43;
+}
+
+.header-action small {
+    display: block;
+
+    color: #697386;
+
+    font-size: 10px;
+}
+
+.header-action strong {
+    display: block;
+
+    font-size: 12px;
+
+    color: #172033;
+}
+
+.cart-action {
+    position: relative;
+}
+
+
+/* =====================================
+   NAVIGATION
+===================================== */
+
+.navigation {
+    min-height: 46px;
+
+    background: white;
+
+    padding: 0 3.5%;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 32px;
+
+    border-bottom: 1px solid #e1e5ea;
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+    overflow-x: auto;
+}
+
+.navigation a {
+    white-space: nowrap;
+}
+
+.navigation a:hover {
+    color: #1267d4;
+}
+
+.all-categories {
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    padding-right: 25px;
+
+    border-right: 1px solid #dce1e7;
+
+    white-space: nowrap;
+}
+
+.deals-link {
+    color: #e53935;
+}
+
+
+/* =====================================
+   HERO
+===================================== */
+
+.hero {
+    width: 96%;
+
+    max-width: 1450px;
+
+    height: 390px;
+
+    margin: 18px auto;
+
+    position: relative;
+
+    overflow: hidden;
+
+    background: #071a43;
+
+    display: flex;
+
+    align-items: center;
+}
+
+
+/* HERO TEXT */
+
+.hero-text {
+    width: 47%;
+
+    padding-left: 8%;
+
+    position: relative;
+
+    z-index: 3;
+}
+
+.hero-label {
+    color: #45b7f2;
+
+    font-size: 12px;
+
+    font-weight: bold;
+
+    letter-spacing: 2px;
+
+    margin-bottom: 14px;
+}
+
+.hero-text h1 {
+    color: white;
+
+    font-size: 48px;
+
+    line-height: 1.05;
+
+    font-weight: 800;
+
+    letter-spacing: -1px;
+
+    margin-bottom: 18px;
+}
+
+.hero-text h1 span {
+    display: block;
+
+    color: #1689dc;
+}
+
+.hero-description {
+    color: #dce5f2;
+
+    max-width: 460px;
+
+    line-height: 1.6;
+
+    font-size: 15px;
+
+    margin-bottom: 25px;
+}
+
+.primary-button {
+    background: #1267d4;
+
+    color: white;
+
+    border: none;
+
+    padding: 13px 27px;
+
+    font-size: 12px;
+
+    font-weight: bold;
+}
+
+.primary-button:hover {
+    background: #0758bf;
+}
+
+
+/* HERO IMAGE */
+
+.hero-image {
+    width: 53%;
+
+    height: 100%;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    position: relative;
+
+    z-index: 2;
+}
+
+.hero-image img {
+    max-width: 90%;
+
+    max-height: 340px;
+
+    object-fit: contain;
+
+    transition: opacity .3s ease;
+}
+
+
+/* HERO ARROWS */
+
+.hero-arrow {
+    position: absolute;
+
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    width: 40px;
+
+    height: 40px;
+
+    border: none;
+
+    background: rgba(0, 0, 0, .3);
+
+    color: white;
+
+    font-size: 30px;
+
+    z-index: 5;
+}
+
+.hero-arrow:hover {
+    background: rgba(0, 0, 0, .55);
+}
+
+.hero-arrow.left {
+    left: 15px;
+}
+
+.hero-arrow.right {
+    right: 15px;
+}
+
+
+/* HERO DOTS */
+
+.hero-dots {
+    position: absolute;
+
+    bottom: 16px;
+
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 7px;
+
+    z-index: 5;
+}
+
+.hero-dot {
+    width: 8px;
+
+    height: 8px;
+
+    background: white;
+
+    opacity: .7;
+
+    border-radius: 50%;
+
+    cursor: pointer;
+}
+
+.hero-dot.active {
+    width: 23px;
+
+    border-radius: 5px;
+
+    background: #1689dc;
+
+    opacity: 1;
+}
+
+
+/* =====================================
+   GENERAL SECTION
+===================================== */
+
+.section {
+    width: 96%;
+
+    max-width: 1450px;
+
+    margin: 32px auto;
+}
+
+.section-title {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    margin-bottom: 16px;
+}
+
+.section-title h2 {
+    font-size: 20px;
+
+    color: #071a43;
+}
+
+.section-title a {
+    color: #1267d4;
+
+    font-size: 12px;
+
+    font-weight: bold;
+}
+
+
+/* =====================================
+   CATEGORIES
+===================================== */
+
+.category-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(7, 1fr);
+
+    gap: 10px;
+}
+
+.category-card {
+    background: white;
+
+    border: 1px solid #e0e5eb;
+
+    min-height: 125px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 12px;
+
+    transition: .2s;
+
+    cursor: pointer;
+}
+
+.category-card:hover {
+    border-color: #1689dc;
+
+    transform: translateY(-2px);
+}
+
+.category-image {
+    font-size: 37px;
+
+    height: 45px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+}
+
+.category-card strong {
+    font-size: 12px;
+}
+
+
+/* =====================================
+   FLASH DEALS
+===================================== */
+
+.deal-timer {
+    display: inline-block;
+
+    margin-left: 10px;
+
+    background: #e53935;
+
+    color: white;
+
+    padding: 6px 9px;
+
+    font-size: 10px;
+}
+
+.deal-timer strong {
+    margin-left: 4px;
+}
+
+
+/* PRODUCT GRID */
+
+.products {
+    display: grid;
+
+    grid-template-columns:
+        repeat(5, 1fr);
+
+    gap: 10px;
+}
+
+
+/* PRODUCT CARD */
+
+.product-card {
+    background: white;
+
+    border: 1px solid #e1e5ea;
+
+    min-width: 0;
+
+    transition: .2s;
+}
+
+.product-card:hover {
+    border-color: #c8d0da;
+
+    box-shadow:
+        0 4px 14px rgba(0,0,0,.08);
+}
+
+
+/* PRODUCT IMAGE */
+
+.product-photo {
+    height: 210px;
+
+    background: white;
+
+    position: relative;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 12px;
+}
+
+.product-photo img {
+    max-width: 100%;
+
+    max-height: 185px;
+
+    width: auto;
+
+    height: auto;
+
+    object-fit: contain;
+}
+
+
+/* DISCOUNT */
+
+.discount {
+    position: absolute;
+
+    left: 9px;
+
+    top: 9px;
+
+    background: #1267d4;
+
+    color: white;
+
+    padding: 4px 7px;
+
+    font-size: 10px;
+
+    font-weight: bold;
+
+    z-index: 2;
+}
+
+
+/* PRODUCT INFORMATION */
+
+.product-content {
+    padding: 11px 12px 14px;
+}
+
+.express {
+    color: #071a43;
+
+    font-size: 9px;
+
+    font-weight: 900;
+
+    margin-bottom: 8px;
+}
+
+.express span {
+    color: #1689dc;
+
+    margin-left: 3px;
+}
+
+.product-content h3 {
+    font-size: 12px;
+
+    line-height: 1.4;
+
+    height: 35px;
+
+    overflow: hidden;
+
+    color: #263247;
+
+    margin-bottom: 7px;
+}
+
+
+/* STARS */
+
+.stars {
+    color: #f5a623;
+
+    font-size: 11px;
+
+    margin-bottom: 8px;
+}
+
+.stars span {
+    color: #788395;
+
+    margin-left: 3px;
+}
+
+
+/* PRICE */
+
+.product-price {
+    color: #111a2b;
+
+    font-size: 16px;
+
+    font-weight: 800;
+
+    margin-bottom: 3px;
+}
+
+.old-price {
+    color: #8a929e;
+
+    font-size: 10px;
+
+    text-decoration: line-through;
+
+    margin-bottom: 12px;
+}
+
+
+/* CART BUTTON */
+
+.cart-button {
+    width: 100%;
+
+    height: 36px;
+
+    border: none;
+
+    background: #1267d4;
+
+    color: white;
+
+    font-size: 11px;
+
+    font-weight: bold;
+}
+
+.cart-button:hover {
+    background: #0758bf;
+}
+
+
+/* =====================================
+   PROMOTIONAL BANNERS
+===================================== */
+
+.promo-section {
+    width: 96%;
+
+    max-width: 1450px;
+
+    margin: 35px auto;
+
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 12px;
+}
+
+.promo {
+    min-height: 205px;
+
+    padding: 30px 42px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    overflow: hidden;
+}
+
+.promo-dark {
+    background: #071a43;
+
+    color: white;
+}
+
+.promo-light {
+    background: #e5f2fb;
+
+    color: #071a43;
+}
+
+.promo small {
+    font-size: 10px;
+
+    letter-spacing: 1.5px;
+
+    font-weight: bold;
+}
+
+.promo-dark small {
+    color: #45b7f2;
+}
+
+.promo h2 {
+    font-size: 25px;
+
+    line-height: 1.15;
+
+    margin: 10px 0;
+}
+
+.promo h2 span {
+    display: block;
+
+    color: #1689dc;
+}
+
+.promo p {
+    font-size: 12px;
+
+    line-height: 1.5;
+
+    max-width: 270px;
+
+    margin-bottom: 15px;
+}
+
+.promo button {
+    border: none;
+
+    background: #1267d4;
+
+    color: white;
+
+    padding: 11px 18px;
+
+    font-size: 10px;
+
+    font-weight: bold;
+}
+
+.promo-icon {
+    font-size: 100px;
+
+    opacity: .9;
+}
+
+
+/* =====================================
+   BENEFITS
+===================================== */
+
+.benefits {
+    width: 96%;
+
+    max-width: 1450px;
+
+    margin: 35px auto;
+
+    background: white;
+
+    border: 1px solid #e0e5eb;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+}
+
+.benefit {
+    min-height: 105px;
+
+    padding: 20px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 15px;
+
+    border-right: 1px solid #e1e5ea;
+}
+
+.benefit:last-child {
+    border-right: none;
+}
+
+.benefit-icon {
+    font-size: 30px;
+
+    color: #1267d4;
+
+    min-width: 38px;
+
+    text-align: center;
+}
+
+.benefit strong {
+    font-size: 12px;
+
+    display: block;
+
+    margin-bottom: 6px;
+}
+
+.benefit p {
+    color: #7b8492;
+
+    font-size: 10px;
+}
+
+
+/* =====================================
+   FOOTER
+===================================== */
+
+footer {
+    background: #071a43;
+
+    color: white;
+
+    margin-top: 45px;
+}
+
+.footer-content {
+    width: 93%;
+
+    max-width: 1400px;
+
+    margin: auto;
+
+    padding: 45px 0;
+
+    display: grid;
+
+    grid-template-columns:
+        1.4fr 1fr 1fr 1.5fr;
+
+    gap: 45px;
+}
+
+.footer-brand h2 {
+    font-size: 27px;
+
+    letter-spacing: 1px;
+
+    margin-bottom: 12px;
+}
+
+.footer-brand p {
+    color: #b9c4d4;
+
+    font-size: 12px;
+
+    line-height: 1.6;
+
+    max-width: 270px;
+}
+
+
+/* SOCIAL */
+
+.socials {
+    display: flex;
+
+    gap: 8px;
+
+    margin-top: 20px;
+}
+
+.socials span {
+    width: 29px;
+
+    height: 29px;
+
+    border: 1px solid #50617d;
+
+    border-radius: 50%;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 11px;
+}
+
+
+/* FOOTER COLUMNS */
+
+.footer-column h3,
+.footer-newsletter h3 {
+    font-size: 13px;
+
+    margin-bottom: 16px;
+}
+
+.footer-column a {
+    display: block;
+
+    color: #bac5d5;
+
+    font-size: 11px;
+
+    margin-bottom: 11px;
+}
+
+.footer-column a:hover {
+    color: #45b7f2;
+}
+
+.footer-newsletter p {
+    color: #bac5d5;
+
+    font-size: 11px;
+
+    line-height: 1.5;
+
+    margin-bottom: 15px;
+}
+
+
+/* NEWSLETTER */
+
+.newsletter {
+    display: flex;
+
+    height: 38px;
+}
+
+.newsletter input {
+    flex: 1;
+
+    min-width: 0;
+
+    border: none;
+
+    padding: 0 12px;
+
+    outline: none;
+
+    font-size: 11px;
+}
+
+.newsletter button {
+    width: 85px;
+
+    border: none;
+
+    background: #1267d4;
+
+    color: white;
+
+    font-size: 10px;
+
+    font-weight: bold;
+}
+
+
+/* FOOTER BOTTOM */
+
+.footer-bottom {
+    width: 93%;
+
+    max-width: 1400px;
+
+    margin: auto;
+
+    padding: 18px 0;
+
+    border-top: 1px solid rgba(255,255,255,.12);
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    color: #9eabc0;
+
+    font-size: 10px;
+}
+
+.payments {
+    display: flex;
+
+    gap: 20px;
+
+    color: white;
+
+    font-size: 11px;
+}
+
+
+/* =====================================
+   TABLET
+===================================== */
+
+@media (max-width: 1050px) {
+
+    .header {
+        gap: 18px;
+    }
+
+    .header-actions {
+        gap: 12px;
+    }
+
+    .navigation {
+        gap: 20px;
+    }
+
+    .category-grid {
+        grid-template-columns:
+            repeat(4, 1fr);
+    }
+
+    .products {
+        grid-template-columns:
+            repeat(3, 1fr);
+    }
+
+    .benefits {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+    .benefit:nth-child(2) {
+        border-right: none;
+    }
+
+    .footer-content {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+}
+
+
+/* =====================================
+   PHONE
+===================================== */
+
+@media (max-width: 700px) {
+
+    .top-bar {
+        padding: 0 15px;
+    }
+
+    .top-links {
+        display: none;
+    }
+
+
+    /* HEADER */
+
+    .header {
+        padding: 13px 15px;
+
+        display: grid;
+
+        grid-template-columns: auto 1fr;
+
+        gap: 12px;
+    }
+
+    .logo {
+        min-width: auto;
+    }
+
+    .logo-name {
+        font-size: 22px;
+    }
+
+    .logo-mark {
+        font-size: 30px;
+    }
+
+    .header-actions {
+        justify-content: flex-end;
+    }
+
+    .header-action:not(.cart-action) {
+        display: none;
+    }
+
+    .search {
+        grid-column: 1 / -1;
+
+        max-width: none;
+
+        width: 100%;
+    }
+
+
+    /* NAV */
+
+    .navigation {
+        padding: 0 15px;
+
+        gap: 22px;
+
+        min-height: 43px;
+    }
+
+
+    /* HERO */
+
+    .hero {
+        width: 94%;
+
+        height: 450px;
+
+        align-items: flex-start;
+    }
+
+    .hero-text {
+        width: 100%;
+
+        padding: 45px 25px 0;
+    }
+
+    .hero-text h1 {
+        font-size: 36px;
+    }
+
+    .hero-description {
+        font-size: 13px;
+
+        max-width: 320px;
+    }
+
+    .hero-image {
+        position: absolute;
+
+        right: 0;
+
+        bottom: 0;
+
+        width: 65%;
+
+        height: 210px;
+
+        opacity: .8;
+    }
+
+
+    /* SECTIONS */
+
+    .section {
+        width: 94%;
+    }
+
+    .section-title h2 {
+        font-size: 18px;
+    }
+
+
+    /* CATEGORIES */
+
+    .category-grid {
+        grid-template-columns:
+            repeat(3, 1fr);
+
+        gap: 7px;
+    }
+
+    .category-card {
+        min-height: 105px;
+    }
+
+    .category-image {
+        font-size: 28px;
+    }
+
+    .category-card strong {
+        font-size: 10px;
+    }
+
+
+    /* PRODUCTS */
+
+    .products {
+        grid-template-columns:
+            repeat(2, 1fr);
+
+        gap: 7px;
+    }
+
+    .product-photo {
+        height: 170px;
+    }
+
+    .product-photo img {
+        max-height: 145px;
+    }
+
+    .product-content {
+        padding: 9px;
+    }
+
+    .product-content h3 {
+        font-size: 11px;
+    }
+
+    .product-price {
+        font-size: 15px;
+    }
+
+
+    /* PROMOS */
+
+    .promo-section {
+        width: 94%;
+
+        grid-template-columns: 1fr;
+    }
+
+    .promo {
+        min-height: 190px;
+
+        padding: 25px;
+    }
+
+
+    /* BENEFITS */
+
+    .benefits {
+        width: 94%;
+
+        grid-template-columns:
+            1fr 1fr;
+    }
+
+    .benefit {
+        border-bottom: 1px solid #e1e5ea;
+
+        border-right: 1px solid #e1e5ea;
+    }
+
+    .benefit:nth-child(even) {
+        border-right: none;
+    }
+
+
+    /* FOOTER */
+
+    .footer-content {
+        width: 94%;
+
+        grid-template-columns:
+            1fr 1fr;
+
+        gap: 35px;
+    }
+
+    .footer-bottom {
+        width: 94%;
+
+        flex-direction: column;
+
+        gap: 15px;
+
+        text-align: center;
+    }
+
+}
+
+
+/* =====================================
+   SMALL PHONE
+===================================== */
+
+@media (max-width: 450px) {
+
+    .hero {
+        height: 430px;
+    }
+
+    .hero-text {
+        padding-left: 22px;
+    }
+
+    .hero-text h1 {
+        font-size: 32px;
+    }
+
+    .category-grid {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+    .product-photo {
+        height: 150px;
+    }
+
+    .product-photo img {
+        max-height: 125px;
+    }
+
+    .discount {
+        font-size: 9px;
+    }
+
+    .express {
+        font-size: 8px;
+    }
+
+    .product-content h3 {
+        height: 32px;
+
+        font-size: 10px;
+    }
+
+    .cart-button {
+        height: 34px;
+    }
+
+    .benefits {
+        grid-template-columns: 1fr;
+    }
+
+    .benefit {
+        border-right: none !important;
+    }
+
+    .footer-content {
+        grid-template-columns: 1fr;
+    }
+
+    .payments {
+        flex-wrap: wrap;
+
+        justify-content: center;
+    }
+}
+.rotating-pic {
+    animation: rotateProduct 4s linear infinite;
+    transform-origin: center;
+}
+
+@keyframes rotateProduct {
+    from {
+        transform: rotateY(0deg);
+    }
+
+    to {
+        transform: rotateY(360deg);
+    }
+}
+/* ROTATING GAMING IMAGE */
+img.rotating-pic {
+    animation: spinGaming 3s linear infinite !important;
+    display: block !important;
+}
+
+@keyframes spinGaming {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+/* MOVING HERO PRODUCTS */
+
+.hero-products .hero-product {
+    animation: floatProduct 3s ease-in-out infinite;
+}
+
+.hero-products .hero-product:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.hero-products .hero-product:nth-child(2) {
+    animation-delay: 0.7s;
+}
+
+.hero-products .hero-product:nth-child(3) {
+    animation-delay: 1.4s;
+}
+
+@keyframes floatProduct {
+    0% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-20px);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
+}
+/* ===== PHYNEX HERO IMAGE MOVEMENT ===== */
+
+.hero-products {
+    position: relative !important;
+}
+
+.hero-products img {
+    position: relative !important;
+    animation: phynexMove 2s ease-in-out infinite alternate !important;
+    will-change: transform;
+}
+
+.hero-products img:nth-child(1) {
+    animation-delay: 0s !important;
+}
+
+.hero-products img:nth-child(2) {
+    animation-delay: 0.4s !important;
+}
+
+.hero-products img:nth-child(3) {
+    animation-delay: 0.8s !important;
+}
+
+@keyframes phynexMove {
+    0% {
+        transform: translateY(0px) !important;
+    }
+
+    100% {
+        transform: translateY(-35px) !important;
+    }
+}
+.hero-products img {
+    animation: productMove 2s ease-in-out infinite;
+}
+
+@keyframes productMove {
+    0%, 70% {
+        transform: translateY(0);
+    }
+
+    85% {
+        transform: translateY(-20px);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
+}
+/* =================================
+   PHYNEX HERO PRODUCTS
+   These 3 images will move
+   ================================= */
+
+/* PHONE - pic 8 */
+.hero-products img[src="images/pic 8.jpeg"] {
+    animation: movePhone 2s ease-in-out infinite;
+}
+
+/* HEADPHONES - pic 9 */
+.hero-products img[src="images/pic 9.jpeg"] {
+    animation: moveHeadphones 2s ease-in-out infinite;
+}
+
+/* LAPTOP - pic 10 */
+.hero-products img[src="images/pic 10.jpeg"] {
+    animation: moveLaptop 2s ease-in-out infinite;
+}
+
+
+/* PHONE MOVEMENT */
+@keyframes movePhone {
+    0%, 70% {
+        transform: translateY(0);
+    }
+
+    85% {
+        transform: translateY(-20px);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
+}
+
+
+/* HEADPHONES MOVEMENT */
+@keyframes moveHeadphones {
+    0%, 70% {
+        transform: translateY(0);
+    }
+
+    85% {
+        transform: translateY(-20px);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
+}
+
+
+/* LAPTOP MOVEMENT */
+@keyframes moveLaptop {
+    0%, 70% {
+        transform: translateY(0);
+    }
+
+    85% {
+        transform: translateY(-20px);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
+}
+/* ================================
+   PHYNEX - HERO 3 PRODUCTS
+   pic 8, pic 9 and pic 10 MOVE
+   ================================ */
+
+.hero-products img[src*="pic 8.jpeg"],
+.hero-products img[src*="pic 9.jpeg"],
+.hero-products img[src*="pic 10.jpeg"] {
+    animation: phynexProductsMove 2s ease-in-out infinite;
+}
+
+/* THE ACTUAL MOVEMENT */
+@keyframes phynexProductsMove {
+
+    0% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(25px);
+    }
+
+    50% {
+        transform: translateX(0);
+    }
+
+    75% {
+        transform: translateX(-25px);
+    }
+
+    100% {
+        transform: translateX(0);
+    }
+
+}
+/* ===== MOVE ONLY THE 3 HERO PRODUCTS ===== */
+
+.hero-products img:nth-child(1),
+.hero-products img:nth-child(2),
+.hero-products img:nth-child(3) {
+    position: relative !important;
+    animation: heroProductsMove 2s infinite !important;
+}
+
+@keyframes heroProductsMove {
+    0% {
+        top: 0px !important;
+    }
+
+    50% {
+        top: -50px !important;
+    }
+
+    100% {
+        top: 0px !important;
+    }
+}
+/* PS5 - pic 25 */
+.promo img[src*="pic 25.jpeg"] {
+    animation: ps5Slide 1s ease-in-out infinite;
+}
+
+/* LAPTOPS - pic 23 */
+.promo.light img[src*="pic 23.jpeg"] {
+    animation: laptopSlide 1s ease-in-out infinite;
+}
+
+@keyframes ps5Slide {
+    0%, 25% {
+        transform: translateX(0);
+    }
+
+    50% {
+        transform: translateX(120px);
+    }
+
+    75%, 100% {
+        transform: translateX(0);
+    }
+}
+
+@keyframes laptopSlide {
+    0%, 25% {
+        transform: translateX(0);
+    }
+
+    50% {
+        transform: translateX(120px);
+    }
+
+    75%, 100% {
+        transform: translateX(0);
+    }
+}
+/* =====================================
+   PHYNEX PROMO PRODUCTS - POP & SHAKE
+   ===================================== */
+
+/* PS5 */
+.promo img[src*="pic 25.jpeg"] {
+    animation: ps5Attention 1s ease-in-out infinite;
+}
+
+/* LAPTOPS */
+.promo.light img[src*="pic 23.jpeg"] {
+    animation: laptopAttention 1s ease-in-out infinite;
+}
+
+
+/* PS5 POP + SHAKE */
+@keyframes ps5Attention {
+
+    0%, 55% {
+        transform: translateX(0) scale(1);
+    }
+
+    65% {
+        transform: translateX(-8px) scale(1.08);
+    }
+
+    72% {
+        transform: translateX(8px) scale(1.08);
+    }
+
+    79% {
+        transform: translateX(-6px) scale(1.05);
+    }
+
+    86% {
+        transform: translateX(6px) scale(1.03);
+    }
+
+    100% {
+        transform: translateX(0) scale(1);
+    }
+}
+
+
+/* LAPTOP POP + SHAKE */
+@keyframes laptopAttention {
+
+    0%, 55% {
+        transform: translateX(0) scale(1);
+    }
+
+    65% {
+        transform: translateX(-8px) scale(1.08);
+    }
+
+    72% {
+        transform: translateX(8px) scale(1.08);
+    }
+
+    79% {
+        transform: translateX(-6px) scale(1.05);
+    }
+
+    86% {
+        transform: translateX(6px) scale(1.03);
+    }
+
+    100% {
+        transform: translateX(0) scale(1);
+    }
+}
+/* =====================================
+   PHYNEX PROMO PRODUCTS - POP & SHAKE
+   ===================================== */
+
+/* PS5 */
+.promo img[src*="pic 25.jpeg"] {
+    animation: ps5Attention 1s ease-in-out infinite;
+}
+
+/* LAPTOPS */
+.promo.light img[src*="pic 23.jpeg"] {
+    animation: laptopAttention 1s ease-in-out infinite;
+}
+
+
+/* PS5 POP + SHAKE */
+@keyframes ps5Attention {
+
+    0%, 55% {
+        transform: translateX(0) scale(1);
+    }
+
+    65% {
+        transform: translateX(-8px) scale(1.08);
+    }
+
+    72% {
+        transform: translateX(8px) scale(1.08);
+    }
+
+    79% {
+        transform: translateX(-6px) scale(1.05);
+    }
+
+    86% {
+        transform: translateX(6px) scale(1.03);
+    }
+
+    100% {
+        transform: translateX(0) scale(1);
+    }
+}
+
+
+/* LAPTOP POP + SHAKE */
+@keyframes laptopAttention {
+
+    0%, 55% {
+        transform: translateX(0) scale(1);
+    }
+
+    65% {
+        transform: translateX(-8px) scale(1.08);
+    }
+
+    72% {
+        transform: translateX(8px) scale(1.08);
+    }
+
+    79% {
+        transform: translateX(-6px) scale(1.05);
+    }
+
+    86% {
+        transform: translateX(6px) scale(1.03);
+    }
+
+    100% {
+        transform: translateX(0) scale(1);
+    }
+}
+/* ===== PHYNEX PROMO IMAGE ATTENTION EFFECT ===== */
+
+.promo-moving {
+    animation: phynexPop 1s infinite ease-in-out;
+    transform-origin: center center;
+}
+
+/* Pop outward, shake slightly, then come back */
+@keyframes phynexPop {
+
+    0% {
+        transform: scale(1) translateX(0);
+    }
+
+    25% {
+        transform: scale(1.08) translateX(-6px);
+    }
+
+    50% {
+        transform: scale(1.12) translateX(6px);
+    }
+
+    75% {
+        transform: scale(1.06) translateX(-3px);
+    }
+
+    100% {
+        transform: scale(1) translateX(0);
+    }
+
+}
+/* =====================================================
+   PHYNEX - PHONE / MOBILE RESPONSIVE DESIGN
+   ===================================================== */
+
+@media (max-width: 768px) {
+
+    /* GENERAL */
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        overflow-x: hidden;
+        font-size: 14px;
+    }
+
+    /* HEADER */
+    header {
+        width: 100%;
+        padding: 10px 12px;
+    }
+
+    .header,
+    .navbar,
+    .top-bar,
+    .nav-container {
+        width: 100%;
+        max-width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .logo {
+        width: 100px !important;
+        height: 45px !important;
+        flex-shrink: 0;
+    }
+
+    .logo img {
+        width: 95px !important;
+        height: auto !important;
+        max-height: 42px;
+    }
+
+    /* SEARCH BAR */
+    .search-bar,
+    .search-container {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .search-bar input,
+    .search-container input {
+        width: 100%;
+        height: 40px;
+        font-size: 13px;
+        padding: 0 10px;
+    }
+
+    .search-bar button,
+    .search-container button {
+        height: 40px;
+    }
+
+    /* HIDE EXTRA DESKTOP ITEMS */
+    .desktop-only {
+        display: none !important;
+    }
+
+    /* NAVIGATION */
+    nav {
+        width: 100%;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    nav ul {
+        display: flex;
+        gap: 18px;
+        padding: 8px 12px;
+        margin: 0;
+        overflow-x: auto;
+    }
+
+    nav li {
+        flex-shrink: 0;
+    }
+
+    /* HERO */
+    .hero-slider {
+        width: calc(100% - 20px);
+        height: 220px;
+        margin: 10px auto;
+        border-radius: 10px;
+    }
+
+    .hero-slide img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .hero-text {
+        left: 20px;
+        right: 20px;
+        top: 50%;
+        max-width: 70%;
+    }
+
+    .hero-text h1 {
+        font-size: 24px;
+        line-height: 1.1;
+        margin-bottom: 8px;
+    }
+
+    .hero-text p {
+        font-size: 12px;
+        line-height: 1.4;
+        margin-bottom: 12px;
+    }
+
+    .hero-text button {
+        padding: 9px 18px;
+        font-size: 12px;
+    }
+
+    .hero-arrow {
+        width: 32px;
+        height: 32px;
+        font-size: 18px;
+    }
+
+    .hero-arrow.prev {
+        left: 8px;
+    }
+
+    .hero-arrow.next {
+        right: 8px;
+    }
+
+    /* CATEGORIES */
+    .categories,
+    .category-container {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        padding: 10px;
+    }
+
+    .category {
+        width: 100%;
+        min-width: 0;
+        padding: 8px 3px;
+        text-align: center;
+    }
+
+    .category img {
+        width: 55px;
+        height: 55px;
+        object-fit: contain;
+    }
+
+    .category h3,
+    .category p {
+        font-size: 10px;
+        margin: 4px 0;
+    }
+
+    /* PRODUCT SECTION */
+    .products,
+    .product-grid,
+    .products-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 10px !important;
+        padding: 10px !important;
+        width: 100%;
+    }
+
+    /* PRODUCT CARD */
+    .product-card {
+        width: 100% !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+        padding: 8px !important;
+        border-radius: 7px;
+        overflow: hidden;
+    }
+
+    /* PRODUCT IMAGE */
+    .product-card .product-image {
+        width: 100%;
+        height: 135px !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 !important;
+        background: transparent !important;
+    }
+
+    .product-card .product-image img,
+    .product-card img {
+        max-width: 100%;
+        max-height: 125px;
+        width: auto !important;
+        height: auto !important;
+        object-fit: contain;
+    }
+
+    /* PRODUCT DETAILS */
+    .product-info {
+        width: 100%;
+        padding: 5px 2px !important;
+    }
+
+    .product-name {
+        font-size: 12px !important;
+        line-height: 1.3;
+        height: 32px;
+        overflow: hidden;
+    }
+
+    .rating {
+        font-size: 10px !important;
+        margin: 5px 0;
+    }
+
+    .price {
+        font-size: 15px !important;
+        font-weight: 700;
+    }
+
+    .old-price {
+        font-size: 10px !important;
+        display: block;
+    }
+
+    .delivery {
+        font-size: 10px !important;
+        margin-top: 5px;
+    }
+
+    .cart-btn {
+        width: 100%;
+        padding: 8px 4px;
+        font-size: 11px;
+        margin-top: 7px;
+    }
+
+    /* PHYNEX EXPRESS */
+    .phynex-express {
+        gap: 3px;
+        flex-wrap: nowrap;
+    }
+
+    .phynex-logo {
+        font-size: 13px;
+    }
+
+    .phynex-arrow {
+        font-size: 13px;
+    }
+
+    .phynex-express-text {
+        font-size: 12px;
+    }
+
+    /* PROMO IMAGES */
+    .promo-images {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        overflow: hidden;
+    }
+
+    .promo-images img {
+        max-width: 45%;
+        height: auto;
+        object-fit: contain;
+    }
+
+    /* SECTIONS */
+    section {
+        max-width: 100%;
+    }
+
+    .section-title {
+        font-size: 20px !important;
+        padding: 0 10px;
+        margin: 15px 0 8px;
+    }
+
+    /* FOOTER */
+    footer {
+        width: 100%;
+        padding: 25px 15px;
+    }
+
+    .footer-container,
+    .footer-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    footer h3 {
+        font-size: 14px;
+    }
+
+    footer p,
+    footer a {
+        font-size: 11px;
+    }
+
+    /* BUTTONS */
+    button {
+        max-width: 100%;
+    }
+
+    /* CART */
+    .cart {
+        max-width: 100%;
+    }
+}
+
+
+/* SMALL PHONES */
+@media (max-width: 480px) {
+
+    .logo {
+        width: 85px !important;
+    }
+
+    .logo img {
+        width: 82px !important;
+    }
+
+    .hero-slider {
+        height: 190px;
+    }
+
+    .hero-text h1 {
+        font-size: 20px;
+    }
+
+    .hero-text p {
+        font-size: 11px;
+    }
+
+    .categories,
+    .category-container {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 5px;
+        padding: 7px;
+    }
+
+    .category img {
+        width: 45px;
+        height: 45px;
+    }
+
+    .products,
+    .product-grid,
+    .products-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+        padding: 8px !important;
+    }
+
+    .product-card {
+        padding: 6px !important;
+    }
+
+    .product-card .product-image {
+        height: 115px !important;
+    }
+
+    .product-card .product-image img {
+        max-height: 105px;
+    }
+
+    .product-name {
+        font-size: 11px !important;
+    }
+
+    .price {
+        font-size: 14px !important;
+    }
+}

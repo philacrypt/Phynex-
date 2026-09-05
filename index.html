@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHYNEX - Technology Store</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f7f8fa;
+            color: #172033;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        /* ================= TOP BAR ================= */
+
+        .top-bar {
+            height: 30px;
+            background: #071a49;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 4%;
+            font-size: 12px;
+        }
+
+        .top-right {
+            display: flex;
+            gap: 28px;
+        }
+
+        /* ================= HEADER ================= */
+
+        .main-header {
+            background: white;
+            height: 76px;
+            display: flex;
+            align-items: center;
+            gap: 35px;
+            padding: 0 4%;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        /* YOUR LOGO AREA */
+
+        .logo {
+            width: 155px;
+            height: 58px;
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .logo img {
+            width: 145px;
+            height: 55px;
+            object-fit: contain;
+            object-position: left center;
+            display: block;
+        }
+
+        /* ================= SEARCH ================= */
+
+        .search-box {
+            flex: 1;
+            height: 42px;
+            display: flex;
+            border: 1px solid #d9dde5;
+            border-radius: 5px;
+            overflow: hidden;
+            background: white;
+        }
+
+        .search-box input {
+            flex: 1;
+            border: none;
+            outline: none;
+            padding: 0 16px;
+            font-size: 14px;
+        }
+
+        .search-box button {
+            width: 90px;
+            border: none;
+            background: #0875e1;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .search-box button:hover {
+            background: #075fc0;
+        }
+
+        /* ================= HEADER ACTIONS ================= */
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .action {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .action-icon {
+            font-size: 23px;
+        }
+
+        .action small {
+            display: block;
+            color: #777;
+            margin-top: 2px;
+        }
+
+        /* ================= NAVIGATION ================= */
+
+        .nav {
+            height: 48px;
+            background: white;
+            display: flex;
+            align-items: center;
+            gap: 35px;
+            padding: 0 4%;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 13px;
+            font-weight: 600;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .nav-item:first-child {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .deals {
+            color: #e53935;
+        }
+
+        /* ================= MAIN ================= */
+
+        main {
+            width: 97%;
+            max-width: 1450px;
+            margin: auto;
+        }
+
+        /* ================= HERO ================= */
+
+        .hero {
+            height: 350px;
+            margin-top: 12px;
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+            background: #071a49;
+        }
+
+        .hero-content {
+            height: 100%;
+            width: 52%;
+            padding: 65px 0 0 7%;
+            position: relative;
+            z-index: 2;
+            color: white;
+        }
+
+        .hero-label {
+            color: #45b7ff;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+        }
+
+        .hero h1 {
+            font-size: 43px;
+            line-height: 1.05;
+            margin-bottom: 15px;
+        }
+
+        .hero h1 span {
+            color: #0875e1;
+        }
+
+        .hero p {
+            max-width: 430px;
+            line-height: 1.6;
+            color: #e8edf7;
+            margin-bottom: 25px;
+        }
+
+        .shop-btn {
+            border: none;
+            background: #0875e1;
+            color: white;
+            padding: 13px 25px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .shop-btn:hover {
+            background: #0b8bf0;
+        }
+
+        .hero-products {
+            position: absolute;
+            right: 5%;
+            bottom: 0;
+            width: 50%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .hero-products img {
+            max-width: 30%;
+            max-height: 75%;
+            object-fit: contain;
+            filter: drop-shadow(0 15px 20px rgba(0,0,0,.35));
+        }
+
+        .hero-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 38px;
+            height: 38px;
+            border: none;
+            background: rgba(0,0,0,.25);
+            color: white;
+            font-size: 25px;
+            cursor: pointer;
+            z-index: 4;
+        }
+
+        .hero-arrow.left {
+            left: 12px;
+        }
+
+        .hero-arrow.right {
+            right: 12px;
+        }
+
+        .hero-dots {
+            position: absolute;
+            bottom: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 7px;
+            z-index: 5;
+        }
+
+        .hero-dots span {
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+        }
+
+        .hero-dots span.active {
+            width: 25px;
+            border-radius: 10px;
+            background: #0875e1;
+        }
+
+        /* ================= SECTION HEADINGS ================= */
+
+        .section-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 22px 0 12px;
+        }
+
+        .section-heading h2 {
+            font-size: 19px;
+        }
+
+        .view-all {
+            color: #0875e1;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        /* ================= CATEGORIES ================= */
+
+        .categories {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+        }
+
+        .category {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 5px;
+            height: 125px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 9px;
+            cursor: pointer;
+            transition: .2s;
+        }
+
+        .category:hover {
+            transform: translateY(-3px);
+            border-color: #0875e1;
+        }
+
+        .category img {
+            width: 65px;
+            height: 65px;
+            object-fit: contain;
+        }
+
+        .category span {
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* ================= FLASH DEALS ================= */
+
+        .flash-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .timer {
+            background: #e53935;
+            color: white;
+            padding: 7px 12px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .products {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+        }
+
+        .product {
+            background: white;
+            border: 1px solid #e1e4e8;
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+            transition: .2s;
+        }
+
+        .product:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 18px rgba(0,0,0,.08);
+        }
+
+        .discount {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: #0875e1;
+            color: white;
+            padding: 4px 7px;
+            border-radius: 2px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .product-image {
+            height: 180px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .product-info {
+            padding: 12px;
+        }
+
+        .product-name {
+            font-size: 13px;
+            line-height: 1.4;
+            min-height: 37px;
+            margin-bottom: 8px;
+        }
+
+        .rating {
+            color: #f4a300;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .price {
+            font-size: 17px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .old-price {
+            color: #999;
+            text-decoration: line-through;
+            font-size: 11px;
+            font-weight: normal;
+            margin-left: 5px;
+        }
+
+        .express {
+            color: #0875e1;
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .cart-btn {
+            width: 100%;
+            height: 36px;
+            border: none;
+            background: #0875e1;
+            color: white;
+            border-radius: 3px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .cart-btn:hover {
+            background: #075fc0;
+        }
+
+        /* ================= PROMO BANNERS ================= */
+
+        .promo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 28px;
+        }
+
+        .promo {
+            height: 185px;
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+            background: #071a49;
+            color: white;
+            padding: 30px;
+        }
+
+        .promo.light {
+            background: #dceeff;
+            color: #071a49;
+        }
+
+        .promo h2 {
+            font-size: 21px;
+            margin-bottom: 8px;
+        }
+
+        .promo h2 span {
+            color: #0875e1;
+        }
+
+        .promo p {
+            width: 45%;
+            font-size: 12px;
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .promo img {
+            position: absolute;
+            right: 4%;
+            bottom: 0;
+            width: 45%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* ================= BENEFITS ================= */
+
+        .benefits {
+            background: white;
+            border: 1px solid #e1e4e8;
+            margin: 25px 0;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            border-radius: 5px;
+        }
+
+        .benefit {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 22px;
+            border-right: 1px solid #eee;
+        }
+
+        .benefit:last-child {
+            border-right: none;
+        }
+
+        .benefit-icon {
+            font-size: 30px;
+        }
+
+        .benefit strong {
+            font-size: 12px;
+        }
+
+        .benefit p {
+            font-size: 10px;
+            color: #777;
+            margin-top: 4px;
+        }
+
+        /* ================= FOOTER ================= */
+
+        footer {
+            background: #071a49;
+            color: white;
+            margin-top: 35px;
+        }
+
+        .footer-main {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1fr 1.3fr;
+            gap: 40px;
+            padding: 45px 5%;
+        }
+
+        .footer-brand h2 {
+            font-size: 25px;
+            margin-bottom: 15px;
+        }
+
+        .footer-brand p {
+            color: #c5cede;
+            font-size: 12px;
+            line-height: 1.7;
+            max-width: 250px;
+        }
+
+        footer h3 {
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        footer ul {
+            list-style: none;
+        }
+
+        footer li {
+            color: #c5cede;
+            font-size: 12px;
+            margin-bottom: 11px;
+        }
+
+        .newsletter {
+            display: flex;
+            margin-top: 12px;
+        }
+
+        .newsletter input {
+            width: 70%;
+            padding: 12px;
+            border: none;
+            outline: none;
+        }
+
+        .newsletter button {
+            width: 30%;
+            border: none;
+            background: #0875e1;
+            color: white;
+            font-weight: bold;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255,255,255,.12);
+            padding: 18px 5%;
+            display: flex;
+            justify-content: space-between;
+            color: #b8c2d4;
+            font-size: 11px;
+        }
+
+        /* ================= MOBILE ================= */
+
+        @media (max-width: 900px) {
+
+            .main-header {
+                height: auto;
+                padding: 12px 3%;
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+
+            .logo {
+                width: 135px;
+            }
+
+            .logo img {
+                width: 125px;
+            }
+
+            .search-box {
+                order: 3;
+                flex-basis: 100%;
+            }
+
+            .header-actions {
+                margin-left: auto;
+                gap: 10px;
+            }
+
+            .action-text {
+                display: none;
+            }
+
+            .categories {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .products {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .hero-products {
+                opacity: .35;
+                width: 60%;
+            }
+
+            .hero-content {
+                width: 75%;
+                padding-left: 8%;
+            }
+
+            .hero h1 {
+                font-size: 34px;
+            }
+
+            .benefits {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .benefit:nth-child(2) {
+                border-right: none;
+            }
+
+            .footer-main {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 550px) {
+
+            .top-right {
+                display: none;
+            }
+
+            .nav {
+                gap: 20px;
+                padding-left: 15px;
+            }
+
+            .hero {
+                height: 310px;
+            }
+
+            .hero-content {
+                width: 100%;
+                padding: 45px 30px;
+            }
+
+            .hero-products {
+                display: none;
+            }
+
+            .hero h1 {
+                font-size: 31px;
+            }
+
+            .categories {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .products {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+
+            .product-image {
+                height: 145px;
+            }
+
+            .product-info {
+                padding: 9px;
+            }
+
+            .price {
+                font-size: 15px;
+            }
+
+            .promo-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .benefits {
+                grid-template-columns: 1fr;
+            }
+
+            .benefit {
+                border-right: none;
+                border-bottom: 1px solid #eee;
+            }
+
+            .footer-main {
+                grid-template-columns: 1fr;
+                padding: 35px 7%;
+            }
+
+            .footer-bottom {
+                flex-direction: column;
+                gap: 8px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- ================= TOP BAR ================= -->
+
+<div class="top-bar">
+    <span>Welcome to PHYNEX</span>
+
+    <div class="top-right">
+        <span>Sell on PHYNEX</span>
+        <span>Help Centre</span>
+        <span>Track Order</span>
+    </div>
+</div>
+
+
+<!-- ================= HEADER ================= -->
+
+<header class="main-header">
+
+    <!-- YOUR OWN LOGO GOES HERE -->
+    <div class="logo">
+        <img src="images/pic 1.jpeg" alt="PHYNEX">
+    </div>
+
+    <div class="search-box">
+        <input
+            type="text"
+            placeholder="Search products, brands and categories"
+        >
+
+        <button>Search</button>
+    </div>
+
+    <div class="header-actions">
+
+        <div class="action">
+            <span class="action-icon">♙</span>
+            <div class="action-text">
+                Account
+                <small>Sign In</small>
+            </div>
+        </div>
+
+        <div class="action">
+            <span class="action-icon">□</span>
+            <div class="action-text">
+                Orders
+                <small>Track</small>
+            </div>
+        </div>
+
+        <div class="action">
+            <span class="action-icon">🛒</span>
+            <div class="action-text">
+                Cart
+                <small id="cart-count">0 items</small>
+            </div>
+        </div>
+
+    </div>
+
+</header>
+
+
+<!-- ================= NAVIGATION ================= -->
+
+<nav class="nav">
+
+    <div class="nav-item">☰ All Categories</div>
+    <div class="nav-item">Phones & Tablets</div>
+    <div class="nav-item">Computers</div>
+    <div class="nav-item">Electronics</div>
+    <div class="nav-item">Gaming</div>
+    <div class="nav-item">Accessories</div>
+    <div class="nav-item">Home & Office</div>
+    <div class="nav-item deals">Deals</div>
+
+</nav>
+
+
+<main>
+
+<!-- ================= HERO ================= -->
+
+<section class="hero">
+
+    <button class="hero-arrow left">‹</button>
+
+    <div class="hero-content">
+
+        <div class="hero-label">
+            PHYNEX TECHNOLOGY
+        </div>
+
+        <h1>
+            Everything you<br>
+            <span>need.</span>
+        </h1>
+
+        <p>
+            Shop phones, computers, electronics,
+            gaming and more at PHYNEX.
+        </p>
+
+        <button class="shop-btn">
+            SHOP NOW
+        </button>
+
+    </div>
+
+    <div class="hero-products">
+    <img src="images/pic 8.jpeg" alt="Phones">
+    <img src="images/pic 9.jpeg" alt="Headphones">
+    <img src="images/pic 10.jpeg" alt="Laptops">
+</div>
+   
+
+
+
+    
+
+    <button class="hero-arrow right">›</button>
+
+    <div class="hero-dots">
+        <span class="active"></span>
+        <span></span>
+        <span></span>
+    </div>
+
+</section>
+
+
+<!-- ================= CATEGORIES ================= -->
+
+<div class="section-heading">
+
+    <h2>Shop by Category</h2>
+
+    <a href="#" class="view-all">
+        View All Categories
+    </a>
+
+</div>
+
+
+<div class="categories">
+
+    <div class="category">
+        <img src="images/pic 12.jpeg">
+        <span>Phones & Tablets</span>
+    </div>
+
+    <div class="category">
+        <img src="images/pic 14.jpeg">
+        <span>Computers</span>
+    </div>
+
+    <div class="category">
+        <img src="images/pic 15.jpeg">
+        <span>Laptops</span>
+    </div>
+
+    <div class="category">
+        <img src="images/pic 16.jpeg">
+        <span>Gaming</span>
+    </div>
+
+    <div class="category">
+        <img src="images/pic 17.jpeg">
+        <span>Accessories</span>
+    </div>
+
+    <div class="category">
+        <img src="images/pic 18.jpeg">
+        <span>Smart Watch</span>
+    </div>
+
+    <div class="category">
+        <img src="images/pic 19.jpeg">
+        <span>Audio</span>
+    </div>
+
+</div>
+
+
+<!-- ================= FLASH DEALS ================= -->
+
+<div class="section-heading">
+
+    <div class="flash-title">
+
+        <h2>Flash Deals</h2>
+
+        <span class="timer">
+            Ends in: 02 : 45 : 18
+        </span>
+
+    </div>
+
+    <a href="#" class="view-all">
+        View All Deals
+    </a>
+
+</div>
+
+
+<div class="products">
+
+    <!-- PRODUCT 1 -->
+
+    <div class="product">
+
+        <span class="discount">-13%</span>
+
+        <div class="product-image">
+            <img src="images/pic 20.jpeg" alt="Laptop">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                Dell Vostro 15 3500 i7 11th Gen 8GB 400GB SSD
+            </div>
+
+            <div class="rating">
+                ★★★★★ (24)
+            </div>
+
+            <div class="price">
+                KSh 35,000
+                <span class="old-price">KSh 40,000</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <button class="cart-btn" onclick="addToCart()">
+                Add to Cart
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 2 -->
+
+    <div class="product">
+
+        <span class="discount">-10%</span>
+
+        <div class="product-image">
+            <img src="images/pic 21.jpeg" alt="Laptop">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                HP EliteDesk 830 G5 i5 8th Gen 8GB 256GB SSD
+            </div>
+
+            <div class="rating">
+                ★★★★★ (18)
+            </div>
+
+            <div class="price">
+                KSh 32,500
+                <span class="old-price">KSh 36,000</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <button class="cart-btn" onclick="addToCart()">
+                Add to Cart
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 3 -->
+
+    <div class="product">
+
+        <span class="discount">-15%</span>
+
+        <div class="product-image">
+            <img src="images/pic 22.jpeg" alt="BT speaker">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                BT Speaker HF226
+            </div>
+
+            <div class="rating">
+                ★★★★★ (31)
+            </div>
+
+            <div class="price">
+                KSh 2,000
+                <span class="old-price">KSh 2,500</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <button class="cart-btn" onclick="addToCart()">
+                Add to Cart
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 4 -->
+
+    <div class="product">
+
+        <span class="discount">-8%</span>
+
+        <div class="product-image">
+            <img src="images/pic 23.jpeg" alt="MacBook">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                MacBook Air i5 2017 256GB SSD 8GB RAM
+            </div>
+
+            <div class="rating">
+                ★★★★★ (15)
+            </div>
+
+            <div class="price">
+                KSh 20,500
+                <span class="old-price">KSh 35,000</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <button class="cart-btn" onclick="addToCart()">
+                Add to Cart
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 5 -->
+
+    <div class="product">
+
+        <span class="discount">-20%</span>
+
+        <div class="product-image">
+            <img src="images/pic 24.jpeg" alt="Laptop">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+             Lenovo Thinkpad T460 256GB SSD 8GB RAM   
+            </div>
+
+            <div class="rating">
+                ★★★★★ (41)
+            </div>
+
+            <div class="price">
+                KSh 23,000
+                <span class="old-price">KSh 25,000</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <button class="cart-btn" onclick="addToCart()">
+                Add to Cart
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ================= PROMOTIONAL BANNERS ================= -->
+
+<div class="promo-grid">
+
+    <div class="promo">
+
+        <h2>
+            Level Up Your<br>
+            <span>Gaming Experience</span>
+        </h2>
+
+        <p>
+            Top gaming gear, chairs,
+            consoles and accessories.
+        </p>
+
+        <button class="shop-btn">
+            EXPLORE GAMING
+        </button>
+
+        <img class="promo-moving" src="images/pic 25.jpeg" alt="Gaming">
+        
+
+    </div>
+
+
+    <div class="promo light">
+
+        <h2>
+            New Arrivals<br>
+            <span>Just Landed</span>
+        </h2>
+
+        <p>
+            Check out the latest
+            technology products in store.
+        </p>
+
+        <button class="shop-btn">
+            SHOP NOW
+        </button>
+
+        <img class="promo-moving" src="images/pic 23.jpeg" alt="New Arrivals">
+        
+        
+
+    </div>
+
+</div>
+
+
+<!-- ================= BENEFITS ================= -->
+
+<div class="benefits">
+
+    <div class="benefit">
+        <div class="benefit-icon">🚚</div>
+        <div>
+            <strong>Fast Delivery</strong>
+            <p>Delivery across Kenya</p>
+        </div>
+    </div>
+
+    <div class="benefit">
+        <div class="benefit-icon">🛡</div>
+        <div>
+            <strong>Secure Payments</strong>
+            <p>Safe and secure checkout</p>
+        </div>
+    </div>
+
+    <div class="benefit">
+        <div class="benefit-icon">✓</div>
+        <div>
+            <strong>Genuine Products</strong>
+            <p>Original products only</p>
+        </div>
+    </div>
+
+    <div class="benefit">
+        <div class="benefit-icon">♧</div>
+        <div>
+            <strong>Customer Support</strong>
+            <p>We are here to help</p>
+        </div>
+    </div>
+
+</div>
+
+</main>
+
+
+<!-- ================= FOOTER ================= -->
+
+<footer>
+
+    <div class="footer-main">
+
+        <div class="footer-brand">
+
+            <h2>PHYNEX</h2>
+
+            <p>
+                Your trusted online store for
+                electronics, computers, gaming
+                gear and more.
+            </p>
+
+        </div>
+
+
+        <div>
+
+            <h3>Customer Service</h3>
+
+            <ul>
+                <li>Help Centre</li>
+                <li>Delivery Information</li>
+                <li>Returns & Refunds</li>
+                <li>Warranty</li>
+                <li>Contact Us</li>
+            </ul>
+
+        </div>
+
+
+        <div>
+
+            <h3>About PHYNEX</h3>
+
+            <ul>
+                <li>About Us</li>
+                <li>Sell on PHYNEX</li>
+                <li>Careers</li>
+                <li>News & Blog</li>
+                <li>Terms & Conditions</li>
+            </ul>
+
+        </div>
+
+
+        <div>
+
+            <h3>Newsletter</h3>
+
+            <p style="font-size:12px;color:#c5cede;">
+                Subscribe for the latest updates
+                and offers.
+            </p>
+
+            <div class="newsletter">
+
+                <input
+                    type="email"
+                    placeholder="Your email address"
+                >
+
+                <button>
+                    Subscribe
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="footer-bottom">
+
+        <span>
+            © 2026 PHYNEX. All Rights Reserved.
+        </span>
+
+        <span>
+            VISA &nbsp; • &nbsp; M-PESA &nbsp; • &nbsp; PayPal
+        </span>
+
+    </div>
+
+</footer>
+
+
+
+
+
+
+
+<script>
+
+let cartItems = 0;
+
+function addToCart() {
+
+    cartItems++;
+
+    document.getElementById("cart-count").innerText =
+        cartItems + (cartItems === 1 ? " item" : " items");
+
+}
+
+</script>
+<script src="script.js"></script>
+
+</body>
+</html>
+
+</body>
+</html>
