@@ -363,22 +363,25 @@
 
         .products {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 12px;
         }
 
         .product {
+            display: flex;
+            flex-direction: column;
             background: white;
             border: 1px solid #e1e4e8;
-            border-radius: 5px;
+            border-radius: 8px;
             overflow: hidden;
             position: relative;
-            transition: .2s;
+            box-shadow: 0 3px 12px rgba(7, 26, 73, .06);
+            transition: transform .2s, box-shadow .2s;
         }
 
         .product:hover {
             transform: translateY(-3px);
-            box-shadow: 0 5px 18px rgba(0,0,0,.08);
+            box-shadow: 0 8px 22px rgba(7, 26, 73, .12);
         }
 
         .discount {
@@ -394,8 +397,10 @@
         }
 
         .product-image {
-            height: 180px;
+            height: 190px;
             padding: 15px;
+            flex: 0 0 190px;
+            background: #fff;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -409,13 +414,16 @@
         }
 
         .product-info {
+            display: flex;
+            flex: 1;
+            flex-direction: column;
             padding: 12px;
         }
 
         .product-name {
             font-size: 13px;
             line-height: 1.4;
-            min-height: 37px;
+            min-height: 38px;
             margin-bottom: 8px;
         }
 
@@ -446,6 +454,20 @@
             margin-bottom: 10px;
         }
 
+        .stock-status {
+            color: #218739;
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .product-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: auto;
+        }
+
         .cart-btn {
             width: 100%;
             height: 36px;
@@ -455,6 +477,23 @@
             border-radius: 3px;
             font-weight: bold;
             cursor: pointer;
+        }
+
+        .buy-btn {
+            width: 100%;
+            min-height: 36px;
+            border: 1px solid #071a49;
+            background: #fff;
+            color: #071a49;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .buy-btn:hover {
+            background: #071a49;
+            color: #fff;
         }
 
         .cart-btn:hover {
@@ -807,13 +846,23 @@
 
         @media (max-width: 550px) {
 
+            body {
+                overflow-x: hidden;
+            }
+
             .top-right {
                 display: none;
             }
 
             .nav {
+                height: 42px;
                 gap: 20px;
                 padding-left: 15px;
+                scrollbar-width: none;
+            }
+
+            .nav::-webkit-scrollbar {
+                display: none;
             }
 
             .hero {
@@ -821,8 +870,8 @@
             }
 
             .hero-content {
-                width: 100%;
-                padding: 45px 30px;
+                width: calc(100% - 58px);
+                padding: 42px 58px 42px 30px;
             }
 
             .hero-products {
@@ -830,7 +879,28 @@
             }
 
             .hero h1 {
-                font-size: 31px;
+                font-size: 29px;
+                line-height: 1.08;
+            }
+
+            .hero p {
+                max-width: 245px;
+                font-size: 13px;
+                line-height: 1.5;
+            }
+
+            .hero-arrow {
+                width: 32px;
+                height: 38px;
+                font-size: 22px;
+            }
+
+            .hero-arrow.left {
+                left: 9px;
+            }
+
+            .hero-arrow.right {
+                right: 9px;
             }
 
             .categories {
@@ -844,10 +914,32 @@
 
             .product-image {
                 height: 145px;
+                flex-basis: 145px;
             }
 
             .product-info {
                 padding: 9px;
+            }
+
+            .product-name {
+                font-size: 12px;
+            }
+
+            .rating {
+                font-size: 11px;
+            }
+
+            .cart-btn {
+                min-height: 38px;
+                height: auto;
+                padding: 9px 5px;
+                font-size: 12px;
+            }
+
+            .buy-btn {
+                min-height: 38px;
+                padding: 8px 5px;
+                font-size: 11px;
             }
 
             .price {
@@ -1028,7 +1120,7 @@
 
     <h2>Shop by Category</h2>
 
-    <a href="#productsSection" class="view-all">
+    <a href="categories.html" class="view-all">
         View All Categories
     </a>
 
@@ -1083,8 +1175,8 @@
 
         <h2>Flash Deals</h2>
 
-        <span class="timer">
-            Ends in: 02 : 45 : 18
+        <span class="timer" id="flashDealsTimer">
+            Ends in: 03 : 00 : 00
         </span>
 
     </div>
@@ -1100,7 +1192,7 @@
 
     <!-- PRODUCT 1 -->
 
-    <div class="product" data-category="computers home-office deals" data-description="A dependable Dell laptop for work, study and everyday productivity." data-specifications="Intel Core i7 11th Gen | 8GB RAM | 400GB SSD">
+    <div class="product" data-category="computers laptops home-office deals" data-description="A dependable Dell laptop for work, study and everyday productivity." data-specifications="Intel Core i7 11th Gen | 8GB RAM | 400GB SSD">
 
         <span class="discount">-13%</span>
 
@@ -1127,9 +1219,11 @@
                 PHYNEX EXPRESS
             </div>
 
-            <button class="cart-btn" onclick="addToCart(this)">
-                Add to Cart
-            </button>
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
 
         </div>
 
@@ -1138,7 +1232,7 @@
 
     <!-- PRODUCT 2 -->
 
-    <div class="product" data-category="computers home-office deals" data-description="A professionally refurbished HP desktop with responsive performance for office and home use." data-specifications="Intel Core i5 8th Gen | 8GB RAM | 256GB SSD">
+    <div class="product" data-category="computers desktops home-office deals" data-description="A professionally refurbished HP desktop with responsive performance for office and home use." data-specifications="Intel Core i5 8th Gen | 8GB RAM | 256GB SSD">
 
         <span class="discount">-10%</span>
 
@@ -1165,9 +1259,11 @@
                 PHYNEX EXPRESS
             </div>
 
-            <button class="cart-btn" onclick="addToCart(this)">
-                Add to Cart
-            </button>
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
 
         </div>
 
@@ -1176,7 +1272,7 @@
 
     <!-- PRODUCT 3 -->
 
-    <div class="product" data-category="electronics accessories deals" data-description="A portable Bluetooth speaker with clear sound for music, calls and everyday entertainment." data-specifications="Bluetooth wireless audio | Portable design | Rechargeable battery">
+    <div class="product" data-category="electronics audio accessories deals" data-description="A portable Bluetooth speaker with clear sound for music, calls and everyday entertainment." data-specifications="Bluetooth wireless audio | Portable design | Rechargeable battery">
 
         <span class="discount">-15%</span>
 
@@ -1203,9 +1299,11 @@
                 PHYNEX EXPRESS
             </div>
 
-            <button class="cart-btn" onclick="addToCart(this)">
-                Add to Cart
-            </button>
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
 
         </div>
 
@@ -1214,7 +1312,7 @@
 
     <!-- PRODUCT 4 -->
 
-    <div class="product" data-category="computers deals" data-description="A compact MacBook with a sharp display and reliable performance for everyday computing." data-specifications="Intel Core i5 | 8GB RAM | 256GB SSD">
+    <div class="product" data-category="computers laptops deals" data-description="A compact MacBook with a sharp display and reliable performance for everyday computing." data-specifications="Intel Core i5 | 8GB RAM | 256GB SSD">
 
         <span class="discount">-8%</span>
 
@@ -1241,9 +1339,11 @@
                 PHYNEX EXPRESS
             </div>
 
-            <button class="cart-btn" onclick="addToCart(this)">
-                Add to Cart
-            </button>
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
 
         </div>
 
@@ -1252,7 +1352,7 @@
 
     <!-- PRODUCT 5 -->
 
-    <div class="product" data-category="computers deals" data-description="A durable Lenovo ThinkPad with a comfortable keyboard and fast SSD storage for work on the go." data-specifications="Intel Core i5 | 8GB RAM | 256GB SSD">
+    <div class="product" data-category="computers laptops deals" data-description="A durable Lenovo ThinkPad with a comfortable keyboard and fast SSD storage for work on the go." data-specifications="Intel Core i5 | 8GB RAM | 256GB SSD">
 
         <span class="discount">-20%</span>
 
@@ -1279,9 +1379,11 @@
                 PHYNEX EXPRESS
             </div>
 
-            <button class="cart-btn" onclick="addToCart(this)">
-                Add to Cart
-            </button>
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
 
         </div>
 

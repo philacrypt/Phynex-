@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Categories | PHYNEX</title>
+    <style>
+        * { box-sizing: border-box; }
+        :root { --navy: #071a49; --blue: #0875e1; --text: #172033; --muted: #687083; --border: #e1e4e8; --page: #f5f6f8; }
+        body { margin: 0; background: var(--page); color: var(--text); font-family: Arial, Helvetica, sans-serif; }
+        .page { width: min(1120px, 92%); margin: 0 auto; padding: 28px 0 50px; }
+        .header { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 30px; }
+        .brand { color: var(--navy); font-size: 25px; font-weight: 800; text-decoration: none; }
+        .back { color: var(--blue); font-size: 14px; font-weight: 700; text-decoration: none; }
+        .intro { margin-bottom: 22px; }
+        .intro h1 { margin: 0 0 8px; color: var(--navy); font-size: 28px; }
+        .intro p { margin: 0; color: var(--muted); font-size: 14px; }
+        .category-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+        .category-card { display: flex; min-height: 132px; flex-direction: column; justify-content: space-between; padding: 20px; border: 1px solid var(--border); border-radius: 6px; background: #fff; color: var(--text); text-decoration: none; transition: border-color .15s, box-shadow .15s, transform .15s; }
+        .category-card:hover { border-color: var(--blue); box-shadow: 0 5px 16px rgba(7, 26, 73, .08); transform: translateY(-2px); }
+        .category-card strong { color: var(--navy); font-size: 16px; }
+        .category-card span { color: var(--blue); font-size: 13px; font-weight: 700; }
+        .category-note { margin-top: 24px; padding: 14px 16px; border-left: 3px solid var(--blue); background: #fff; color: var(--muted); font-size: 13px; line-height: 1.5; }
+        @media (max-width: 700px) {
+            .page { width: min(94%, 560px); padding-top: 18px; }
+            .header { margin-bottom: 24px; }
+            .intro h1 { font-size: 23px; }
+            .category-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .category-card { min-height: 112px; padding: 16px; }
+        }
+        @media (max-width: 360px) { .category-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <header class="header">
+            <a class="brand" href="index.html">PHYNEX</a>
+            <a class="back" href="index.html">Back to Home</a>
+        </header>
+        <section class="intro">
+            <h1>Shop All Categories</h1>
+            <p>Choose a category to see the matching products in the PHYNEX store.</p>
+        </section>
+        <section class="category-grid" aria-label="Product categories">
+            <a class="category-card" href="index.html?category=laptops#productsSection"><strong>Laptops</strong><span>View products</span></a>
+            <a class="category-card" href="index.html?category=desktops#productsSection"><strong>Desktops</strong><span>View products</span></a>
+            <a class="category-card" href="index.html?category=phones#productsSection"><strong>Phones</strong><span>View products</span></a>
+            <a class="category-card" href="index.html?category=audio#productsSection"><strong>Audio</strong><span>View products</span></a>
+            <a class="category-card" href="index.html?category=gaming#productsSection"><strong>Gaming</strong><span>View products</span></a>
+            <a class="category-card" href="index.html?category=accessories#productsSection"><strong>Computer Accessories</strong><span>View products</span></a>
+            <a class="category-card" href="index.html?category=home-office#productsSection"><strong>Home &amp; Office</strong><span>View products</span></a>
+            <a class="category-card" href="index.html?category=networking#productsSection"><strong>Networking</strong><span>View products</span></a>
+        </section>
+        <p class="category-note">Categories with no matching products currently show the existing PHYNEX empty state. No products or placeholder items have been added.</p>
+    </main>
+</body>
+</html>

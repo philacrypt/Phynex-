@@ -54,6 +54,44 @@ function getCartTotals() {
     return { subtotal: subtotal, deliveryFee: deliveryFee, total: subtotal + deliveryFee };
 }
 
+function startFlashDealsCountdown() {
+    const timer = document.getElementById("flashDealsTimer");
+    if (!timer) return;
+
+    const storageKey = "phynexFlashDealsEndTime";
+    let endTime = Number(localStorage.getItem(storageKey));
+
+    if (!Number.isFinite(endTime) || endTime <= 0) {
+        endTime = Date.now() + (3 * 60 * 60 * 1000);
+        localStorage.setItem(storageKey, String(endTime));
+    }
+
+    function updateTimer() {
+        const remaining = Math.max(0, endTime - Date.now());
+
+        if (remaining === 0) {
+            timer.textContent = "Deal Ended";
+            window.clearInterval(startFlashDealsCountdown.intervalId);
+            startFlashDealsCountdown.intervalId = null;
+            return;
+        }
+
+        const totalSeconds = Math.floor(remaining / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        const format = function (value) { return String(value).padStart(2, "0"); };
+
+        timer.textContent = "Ends in: " + format(hours) + " : " + format(minutes) + " : " + format(seconds);
+    }
+
+    if (startFlashDealsCountdown.intervalId) {
+        window.clearInterval(startFlashDealsCountdown.intervalId);
+    }
+    updateTimer();
+    startFlashDealsCountdown.intervalId = window.setInterval(updateTimer, 1000);
+}
+
 function openProduct(product) {
     const popup = document.getElementById("productPopup");
     if (!popup) return;
@@ -144,10 +182,28 @@ function addToCart(button) {
     if (!button) closeProduct();
 }
 
-function buyNow() {
+async function goToCheckout() {
+    const response = await fetch("/api/auth/me");
+    const data = await response.json();
+    if (!data.authenticated || !data.user.email_verified) {
+        window.location.href = "account.html?next=checkout.html";
+        return false;
+    }
+    window.location.href = "checkout.html";
+    return true;
+}
+
+async function buyNow() {
     if (!selectedProduct) return;
     addProductToCart(selectedProduct, productQuantity);
-    window.location.href = "checkout.html";
+    await goToCheckout();
+}
+
+async function buyNowFromCard(button) {
+    const product = getProductData(button.closest(".product"));
+    if (!product) return;
+    addProductToCart(product, 1);
+    await goToCheckout();
 }
 
 function filterProducts(category) {
@@ -265,6 +321,11 @@ function renderCheckout() {
 }
 
 function setupCheckout() {
+    fetch("/api/auth/me").then(function (response) { return response.json(); }).then(function (data) {
+        if (!data.authenticated || !data.user.email_verified) {
+            window.location.href = "account.html?next=checkout.html";
+        }
+    });
     renderCheckout();
     const form = document.getElementById("checkoutForm");
     if (!form) return;
@@ -376,6 +437,7 @@ function setupCheckout() {
 
 document.addEventListener("DOMContentLoaded", function () {
     updateCartCount();
+    startFlashDealsCountdown();
     setupNewsletter();
     setupCheckout();
 
@@ -435,6 +497,12 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("productsSection").scrollIntoView({ behavior: "smooth" });
     });
     if (document.querySelector(".hero-products")) setupHero();
+
+    const requestedCategory = new URLSearchParams(window.location.search).get("category");
+    if (requestedCategory && document.querySelector(".products")) {
+        filterProducts(requestedCategory);
+        document.getElementById("productsSection").scrollIntoView({ behavior: "smooth" });
+    }
 });
 
 document.addEventListener("keydown", function (event) {

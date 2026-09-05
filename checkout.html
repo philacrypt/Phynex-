@@ -64,11 +64,32 @@
             .checkout-panel { padding: 18px; }
         }
         @media (max-width: 480px) {
+            .checkout-header {
+                gap: 8px;
+            }
+
+            .checkout-brand {
+                font-size: 22px;
+            }
+
+            .back-link {
+                font-size: 13px;
+            }
+
             .field-grid { grid-template-columns: 1fr; }
             .field.full { grid-column: auto; }
             .checkout-item { grid-template-columns: 60px minmax(0, 1fr); gap: 10px; }
             .checkout-item img { width: 60px; height: 60px; }
             .checkout-item > [data-remove] { grid-column: 2; justify-self: start; }
+
+            .checkout-panel h2 {
+                font-size: 18px;
+            }
+
+            .place-order,
+            .mpesa-button {
+                min-height: 46px;
+            }
         }
     </style>
 </head>
