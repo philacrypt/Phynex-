@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Help Centre | PHYNEX</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f7fb;
+            color: #222;
+        }
+
+        /* HEADER */
+        .header {
+            background: #0638a8;
+            color: white;
+            padding: 18px 6%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+
+        .back-home {
+            color: white;
+            text-decoration: none;
+            background: #20a9ed;
+            padding: 10px 18px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .back-home:hover {
+            background: #168fd0;
+        }
+
+        /* CONTENT */
+        .help-container {
+            max-width: 1100px;
+            margin: 50px auto;
+            padding: 0 25px;
+        }
+
+        .help-title {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .help-title h1 {
+            font-size: 38px;
+            color: #0638a8;
+            margin-bottom: 12px;
+        }
+
+        .help-title p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        /* SEARCH */
+        .help-search {
+            display: flex;
+            max-width: 650px;
+            margin: 0 auto 45px;
+        }
+
+        .help-search input {
+            flex: 1;
+            padding: 16px;
+            border: 1px solid #ddd;
+            outline: none;
+            font-size: 15px;
+        }
+
+        .help-search button {
+            border: none;
+            background: #20a9ed;
+            color: white;
+            padding: 0 25px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* CARDS */
+        .help-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .help-card {
+            background: white;
+            padding: 28px;
+            border-radius: 8px;
+            border: 1px solid #e5e5e5;
+            transition: 0.2s;
+        }
+
+        .help-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        }
+
+        .help-card h3 {
+            color: #0638a8;
+            margin-bottom: 12px;
+        }
+
+        .help-card p {
+            color: #666;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        /* FOOTER */
+        .simple-footer {
+            background: #0638a8;
+            color: white;
+            text-align: center;
+            padding: 25px;
+            margin-top: 70px;
+        }
+
+        .simple-footer p {
+            font-size: 13px;
+        }
+
+        /* PHONE */
+        @media (max-width: 700px) {
+
+            .header {
+                padding: 15px 20px;
+            }
+
+            .logo {
+                font-size: 23px;
+            }
+
+            .help-title h1 {
+                font-size: 30px;
+            }
+
+            .help-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .help-search button {
+                padding: 0 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- HEADER -->
+    <header class="header">
+        <div class="logo">PHYNEX</div>
+
+        <a href="index.html" class="back-home">
+            ← Back to Home
+        </a>
+    </header>
+
+
+    <!-- HELP CENTRE -->
+    <main class="help-container">
+
+        <div class="help-title">
+            <h1>How can we help?</h1>
+
+            <p>
+                Find answers to common questions about shopping on PHYNEX.
+            </p>
+        </div>
+
+
+        <!-- SEARCH -->
+        <div class="help-search">
+
+            <input
+                type="text"
+                id="helpSearch"
+                placeholder="Search for help..."
+            >
+
+            <button onclick="searchHelp()">
+                Search
+            </button>
+
+        </div>
+
+
+        <!-- HELP CARDS -->
+        <div class="help-grid">
+
+            <div class="help-card">
+                <h3>🛒 Shopping</h3>
+
+                <p>
+                    Learn how to search for products,
+                    view product details and add products
+                    to your shopping cart.
+                </p>
+            </div>
+
+
+            <div class="help-card">
+                <h3>💳 Payments</h3>
+
+                <p>
+                    Learn about available payment methods
+                    and how to complete your PHYNEX checkout.
+                </p>
+            </div>
+
+
+            <div class="help-card">
+                <h3>🚚 Delivery</h3>
+
+                <p>
+                    Find information about delivery,
+                    delivery locations and estimated
+                    delivery times.
+                </p>
+            </div>
+
+
+            <div class="help-card">
+                <h3>↩️ Returns</h3>
+
+                <p>
+                    Learn how to request a return,
+                    refund or replacement for an eligible
+                    product.
+                </p>
+            </div>
+
+
+            <div class="help-card">
+                <h3>🔒 Account</h3>
+
+                <p>
+                    Get help with your PHYNEX account,
+                    orders and account information.
+                </p>
+            </div>
+
+
+            <div class="help-card">
+                <h3>📞 Contact Us</h3>
+
+                <p>
+                    Need more help? Contact the PHYNEX
+                    customer support team for assistance.
+                </p>
+            </div>
+
+        </div>
+
+    </main>
+
+
+    <!-- FOOTER -->
+    <footer class="simple-footer">
+
+        <p>
+            © 2026 PHYNEX. All Rights Reserved.
+        </p>
+
+    </footer>
+
+
+    <script>
+
+        function searchHelp() {
+
+            const search =
+                document.getElementById("helpSearch").value.trim();
+
+            if (search === "") {
+
+                alert("Please type something to search.");
+
+                return;
+            }
+
+            alert(
+                "PHYNEX Help Centre searched for: " + search
+            );
+        }
+
+    </script>
+
+</body>
+</html>

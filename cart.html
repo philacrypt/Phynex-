@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cart | PHYNEX</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f6f8;color:#172033;font-family:Arial,Helvetica,sans-serif}.page{width:min(900px,92%);margin:32px auto}.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}.header a{color:#0875e1;text-decoration:none;font-weight:bold}.header h1{margin:0;color:#071a49}.panel{background:#fff;border:1px solid #e1e4e8;border-radius:6px;padding:24px}.checkout-item{display:grid;grid-template-columns:72px 1fr auto;gap:14px;align-items:center;border-bottom:1px solid #edf0f3;padding:14px 0}.checkout-item:last-child{border-bottom:0}.checkout-item img{width:72px;height:72px;object-fit:contain}.checkout-item p{margin:7px 0;color:#687083}.line-quantity{display:flex;align-items:center;gap:10px}.line-quantity button{width:28px;height:28px;border:1px solid #d9dde5;background:#f7f8fa}.checkout-item>[data-remove]{border:0;background:transparent;color:#e53935}.summary-row{display:flex;justify-content:space-between;margin:14px 0}.total{font-size:20px;font-weight:bold;border-top:1px solid #e1e4e8;padding-top:16px}.primary{display:block;text-align:center;background:#0875e1;color:#fff;padding:13px;border-radius:3px;font-weight:bold;text-decoration:none}.empty{color:#687083}@media(max-width:600px){.page{margin:18px auto}.panel{padding:17px}.checkout-item{grid-template-columns:58px 1fr}.checkout-item img{width:58px;height:58px}.checkout-item>[data-remove]{grid-column:2;text-align:left}}
+</style>
+</head>
+<body>
+<main class="page">
+<header class="header"><h1>Your Cart</h1><a href="index.html">Back to store</a></header>
+<section class="panel"><div id="checkoutItems"></div><p id="checkoutEmpty" class="empty" hidden>Your cart is empty. <a href="index.html">Continue shopping</a>.</p><div class="summary-row"><span>Subtotal</span><strong id="checkoutSubtotal">KSh 0</strong></div><div class="summary-row total"><span>Total</span><strong id="checkoutTotal">KSh 0</strong></div><a class="primary" href="checkout.html">Proceed to checkout</a></section>
+</main>
+<script src="script.js"></script>
+</body>
+</html>

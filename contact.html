@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us - PHYNEX</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f7fb;
+            color: #222;
+        }
+
+        header {
+            background: #073bce;
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .contact-box {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            color: #073bce;
+            margin-bottom: 20px;
+        }
+
+        .contact-info {
+            margin-bottom: 25px;
+            line-height: 1.8;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        textarea {
+            height: 130px;
+            resize: vertical;
+        }
+
+        button {
+            margin-top: 20px;
+            background: #073bce;
+            color: white;
+            border: none;
+            padding: 13px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background: #052da0;
+        }
+
+        .back {
+            display: inline-block;
+            margin-top: 25px;
+            color: #073bce;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>PHYNEX</h1>
+    <p>Contact Us</p>
+</header>
+
+<div class="container">
+
+    <div class="contact-box">
+
+        <h2>Get In Touch</h2>
+
+        <div class="contact-info">
+            <p><strong>PHYNEX Customer Support</strong></p>
+            <p>We are here to help you with your orders and questions.</p>
+            <p>📞 Phone: Your phone number</p>
+            <p>📧 Email: your@email.com</p>
+            <p>📍 Kenya</p>
+        </div>
+
+        <form onsubmit="sendMessage(event)">
+
+            <label>Your Name</label>
+            <input type="text" id="name" placeholder="Enter your name" required>
+
+            <label>Email</label>
+            <input type="email" id="email" placeholder="Enter your email" required>
+
+            <label>Message</label>
+            <textarea id="message" placeholder="How can we help you?" required></textarea>
+
+            <button type="submit">Send Message</button>
+
+        </form>
+
+        <a href="index.html" class="back">← Back to PHYNEX</a>
+
+    </div>
+
+</div>
+
+<script>
+function sendMessage(event) {
+    event.preventDefault();
+
+    alert("Thank you! Your message has been received by PHYNEX.");
+
+    document.getElementById("name").value = "";
+    document.getElementById("email").value = "";
+    document.getElementById("message").value = "";
+}
+</script>
+
+</body>
+</html>

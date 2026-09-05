@@ -2326,3 +2326,1489 @@ img.rotating-pic {
         font-size: 14px !important;
     }
 }
+/* =========================================
+   PHYNEX PRODUCT DETAILS POPUP
+   ========================================= */
+
+.product-modal {
+    display: none;
+    position: fixed;
+    z-index: 99999;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 15px;
+}
+
+.product-modal.show {
+    display: flex;
+}
+
+.product-modal-box {
+    position: relative;
+    width: 900px;
+    max-width: 100%;
+    max-height: 90vh;
+
+    background: white;
+    border-radius: 12px;
+
+    overflow-y: auto;
+
+    animation: productPopup 0.25s ease;
+}
+
+@keyframes productPopup {
+    from {
+        opacity: 0;
+        transform: scale(0.85);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.close-product {
+    position: absolute;
+    right: 15px;
+    top: 10px;
+
+    width: 40px;
+    height: 40px;
+
+    border: none;
+    border-radius: 50%;
+
+    background: #f1f1f1;
+    color: #222;
+
+    font-size: 28px;
+    cursor: pointer;
+
+    z-index: 10;
+}
+
+.product-modal-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+
+    padding: 35px;
+}
+
+.product-modal-image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 350px;
+}
+
+.product-modal-image img {
+    max-width: 100%;
+    max-height: 350px;
+
+    object-fit: contain;
+}
+
+.product-modal-details h2 {
+    font-size: 28px;
+    margin-bottom: 10px;
+    color: #242A4A;
+}
+
+.modal-rating {
+    color: #f5a623;
+    margin-bottom: 15px;
+}
+
+.modal-price {
+    margin-bottom: 15px;
+}
+
+#modalPrice {
+    font-size: 28px;
+    font-weight: 800;
+    color: #242A4A;
+}
+
+#modalOldPrice {
+    margin-left: 10px;
+    color: #aaa;
+    text-decoration: line-through;
+}
+
+#modalDescription {
+    line-height: 1.6;
+    color: #555;
+    margin: 20px 0;
+}
+
+.product-option {
+    margin-top: 20px;
+}
+
+.option-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.option-buttons button {
+    padding: 9px 16px;
+    border: 1px solid #ccc;
+    background: white;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.option-buttons button.selected {
+    border: 2px solid #38AEEF;
+    color: #38AEEF;
+}
+
+.quantity-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.quantity-box button {
+    width: 35px;
+    height: 35px;
+
+    border: 1px solid #ddd;
+    background: #f5f5f5;
+
+    font-size: 20px;
+    cursor: pointer;
+}
+
+#productQuantity {
+    font-weight: bold;
+    min-width: 25px;
+    text-align: center;
+}
+
+.product-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 25px;
+}
+
+.buy-now-btn,
+.modal-cart-btn {
+    flex: 1;
+    padding: 14px;
+    border: none;
+    border-radius: 5px;
+
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.buy-now-btn {
+    background: #242A4A;
+    color: white;
+}
+
+.modal-cart-btn {
+    background: #38AEEF;
+    color: white;
+}
+/* ==============================
+   PHYNEX PRODUCT POPUP
+   ============================== */
+
+.product-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+
+    background: rgba(0, 0, 0, 0.7);
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 15px;
+}
+
+.product-modal.show {
+    display: flex;
+}
+
+.product-modal-box {
+    position: relative;
+
+    width: 900px;
+    max-width: 95%;
+    max-height: 90vh;
+
+    background: #ffffff;
+
+    border-radius: 12px;
+
+    overflow-y: auto;
+
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+
+.close-product {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+
+    width: 40px;
+    height: 40px;
+
+    border: none;
+    border-radius: 50%;
+
+    background: #eeeeee;
+
+    font-size: 28px;
+    cursor: pointer;
+
+    z-index: 10;
+}
+
+.product-modal-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+
+    gap: 30px;
+
+    padding: 35px;
+}
+
+.product-modal-image {
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    min-height: 350px;
+}
+
+.product-modal-image img {
+    max-width: 100%;
+    max-height: 350px;
+
+    object-fit: contain;
+}
+
+.product-modal-details h2 {
+    font-size: 28px;
+    color: #242A4A;
+
+    margin-bottom: 10px;
+}
+
+.modal-rating {
+    color: #f5a623;
+
+    margin-bottom: 15px;
+}
+
+.modal-price {
+    margin-bottom: 15px;
+}
+
+#modalPrice {
+    font-size: 28px;
+    font-weight: bold;
+
+    color: #242A4A;
+}
+
+#modalOldPrice {
+    margin-left: 10px;
+
+    color: #aaa;
+
+    text-decoration: line-through;
+}
+
+#modalDescription {
+    color: #555;
+
+    line-height: 1.6;
+
+    margin: 20px 0;
+}
+
+.product-option {
+    margin-top: 20px;
+}
+
+.option-buttons {
+    display: flex;
+
+    gap: 8px;
+
+    margin-top: 10px;
+}
+
+.option-buttons button {
+    padding: 9px 16px;
+
+    background: white;
+
+    border: 1px solid #ccc;
+
+    border-radius: 5px;
+
+    cursor: pointer;
+}
+
+.option-buttons button.selected {
+    border: 2px solid #38AEEF;
+
+    color: #38AEEF;
+}
+
+.quantity-box {
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    margin-top: 20px;
+}
+
+.quantity-box button {
+    width: 35px;
+    height: 35px;
+
+    border: 1px solid #ddd;
+
+    background: #f5f5f5;
+
+    font-size: 20px;
+
+    cursor: pointer;
+}
+
+#productQuantity {
+    font-weight: bold;
+}
+
+.product-actions {
+    display: flex;
+
+    gap: 10px;
+
+    margin-top: 25px;
+}
+
+.buy-now-btn,
+.modal-cart-btn {
+    flex: 1;
+
+    padding: 14px;
+
+    border: none;
+
+    border-radius: 5px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+.buy-now-btn {
+    background: #242A4A;
+
+    color: white;
+}
+
+.modal-cart-btn {
+    background: #38AEEF;
+
+    color: white;
+}
+
+
+/* PHONE */
+
+@media (max-width: 768px) {
+
+    .product-modal {
+        padding: 10px;
+    }
+
+    .product-modal-box {
+        width: 100%;
+        max-width: 100%;
+
+        max-height: 92vh;
+
+        border-radius: 10px;
+    }
+
+    .product-modal-content {
+        grid-template-columns: 1fr;
+
+        gap: 10px;
+
+        padding: 25px 15px;
+    }
+
+    .product-modal-image {
+        min-height: 220px;
+    }
+
+    .product-modal-image img {
+        max-height: 220px;
+        max-width: 90%;
+    }
+
+    .product-modal-details h2 {
+        font-size: 21px;
+    }
+
+    #modalPrice {
+        font-size: 22px;
+    }
+
+    .product-actions {
+        position: sticky;
+        bottom: 0;
+
+        background: white;
+
+        padding-top: 10px;
+    }
+}
+.product-popup {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(0,0,0,0.7);
+    align-items: center;
+    justify-content: center;
+    padding: 15px;
+}
+
+.product-popup.show {
+    display: flex;
+}
+
+.popup-box {
+    position: relative;
+    background: white;
+    width: 850px;
+    max-width: 95%;
+    max-height: 90vh;
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+    overflow-y: auto;
+}
+
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: #eee;
+    font-size: 28px;
+    cursor: pointer;
+}
+
+.popup-image {
+    width: 100%;
+    max-height: 350px;
+    object-fit: contain;
+}
+
+.popup-stars {
+    color: #f5a623;
+    font-size: 20px;
+}
+
+.popup-price {
+    color: #242A4A;
+}
+
+.option-btn {
+    padding: 10px 18px;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.buy-btn,
+.popup-cart-btn {
+    padding: 13px 25px;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.buy-btn {
+    background: #242A4A;
+}
+
+.popup-cart-btn {
+    background: #38AEEF;
+}
+
+@media (max-width: 600px) {
+    .popup-box {
+        width: 100%;
+        padding: 20px 15px;
+    }
+
+    .popup-image {
+        max-height: 230px;
+    }
+}
+.footer {
+  background: #082b91;
+  color: white;
+  margin-top: 40px;
+}
+
+.footer-container {
+  max-width: 1400px;
+  margin: auto;
+  padding: 50px 5%;
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr 1.3fr;
+  gap: 50px;
+}
+
+.footer-column h2 {
+  font-size: 28px;
+  margin-bottom: 20px;
+}
+
+.footer-column h3 {
+  font-size: 17px;
+  margin-bottom: 18px;
+}
+
+.footer-column p {
+  color: #e5eaff;
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+.footer-column a {
+  display: block;
+  color: white;
+  text-decoration: none;
+  margin: 12px 0;
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+.footer-column a:hover {
+  color: #38a9ff;
+  padding-left: 5px;
+}
+
+.newsletter-box {
+  display: flex;
+  margin-top: 15px;
+}
+
+.newsletter-box input {
+  width: 70%;
+  padding: 13px;
+  border: none;
+  outline: none;
+}
+
+.newsletter-box button {
+  border: none;
+  padding: 13px 18px;
+  background: #22a7f0;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.newsletter-box button:hover {
+  background: #168bd0;
+}
+
+.footer-bottom {
+  border-top: 1px solid rgba(255,255,255,0.2);
+  padding: 20px 5%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-bottom p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.payment-methods {
+  display: flex;
+  gap: 10px;
+  font-size: 13px;
+}
+
+/* PHONE */
+@media (max-width: 768px) {
+
+  .footer-container {
+    grid-template-columns: 1fr 1fr;
+    gap: 35px;
+  }
+
+  .newsletter {
+    grid-column: 1 / -1;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+}
+
+@media (max-width: 500px) {
+
+  .footer-container {
+    grid-template-columns: 1fr;
+  }
+
+  .newsletter {
+    grid-column: auto;
+  }
+
+  .newsletter-box {
+    width: 100%;
+  }
+
+  .newsletter-box input {
+    width: 65%;
+  }
+}
+/* =========================================
+   PHYNEX PROFESSIONAL FOOTER
+========================================= */
+
+.phynex-footer {
+  background: #0638a8;
+  color: white;
+  margin-top: 50px;
+  width: 100%;
+}
+
+/* MAIN FOOTER */
+
+.footer-main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 55px 6% 45px;
+
+  display: grid;
+  grid-template-columns:
+    1.4fr
+    1fr
+    1fr
+    1.4fr;
+
+  gap: 60px;
+}
+
+/* FOOTER SECTIONS */
+
+.footer-section {
+  min-width: 0;
+}
+
+.footer-section h2 {
+  font-size: 30px;
+  margin: 0 0 18px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.footer-section h3 {
+  font-size: 17px;
+  margin: 0 0 22px;
+  font-weight: 700;
+}
+
+.footer-section p {
+  color: #e5ecff;
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 0 0 20px;
+}
+
+/* LINKS */
+
+.footer-section a {
+  display: block;
+
+  color: #ffffff;
+  text-decoration: none;
+
+  font-size: 14px;
+
+  margin-bottom: 14px;
+
+  transition:
+    color 0.2s ease,
+    padding-left 0.2s ease;
+}
+
+.footer-section a:hover {
+  color: #4fc3ff;
+  padding-left: 6px;
+}
+
+/* SOCIAL LINKS */
+
+.social-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 25px;
+}
+
+.social-links a {
+  margin: 0;
+  font-size: 13px;
+}
+
+/* NEWSLETTER */
+
+.newsletter-section p {
+  margin-bottom: 15px;
+}
+
+.newsletter-form {
+  display: flex;
+  width: 100%;
+  max-width: 430px;
+  margin-top: 15px;
+}
+
+.newsletter-form input {
+  flex: 1;
+
+  min-width: 0;
+
+  height: 46px;
+
+  border: none;
+  outline: none;
+
+  padding: 0 15px;
+
+  font-size: 14px;
+
+  background: white;
+  color: #222;
+}
+
+.newsletter-form button {
+  height: 46px;
+
+  border: none;
+
+  padding: 0 20px;
+
+  background: #20a9ed;
+  color: white;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition: background 0.2s ease;
+}
+
+.newsletter-form button:hover {
+  background: #0d8fd1;
+}
+
+.newsletter-note {
+  font-size: 12px !important;
+  color: #cbd8ff !important;
+  margin-top: 15px !important;
+}
+
+/* BOTTOM BAR */
+
+.footer-bottom {
+  border-top: 1px solid rgba(255,255,255,0.2);
+
+  max-width: 1400px;
+  margin: 0 auto;
+
+  padding: 20px 6%;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  gap: 20px;
+}
+
+.footer-bottom p {
+  margin: 0;
+  color: #e5ecff;
+  font-size: 13px;
+}
+
+.payment-methods {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  color: white;
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* =========================================
+   TABLET
+========================================= */
+
+@media (max-width: 900px) {
+
+  .footer-main {
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    padding: 45px 6%;
+  }
+
+  .newsletter-section {
+    grid-column: span 2;
+  }
+
+}
+
+/* =========================================
+   PHONE
+========================================= */
+
+@media (max-width: 600px) {
+
+  .footer-main {
+    grid-template-columns: 1fr;
+    gap: 35px;
+
+    padding: 40px 25px;
+  }
+
+  .newsletter-section {
+    grid-column: auto;
+  }
+
+  .footer-section h2 {
+    font-size: 27px;
+  }
+
+  .footer-section h3 {
+    font-size: 16px;
+  }
+
+  .newsletter-form {
+    max-width: 100%;
+  }
+
+  .newsletter-form input {
+    width: 100%;
+  }
+
+  .newsletter-form button {
+    padding: 0 15px;
+  }
+
+  .footer-bottom {
+    padding: 20px 25px;
+
+    flex-direction: column;
+
+    text-align: center;
+  }
+
+  .payment-methods {
+    justify-content: center;
+  }
+
+}
+/* ===== PHYNEX FOOTER ===== */
+
+.phynex-footer {
+    background: #062b75;
+    color: white;
+    margin-top: 50px;
+}
+
+.footer-main {
+    max-width: 1200px;
+    margin: auto;
+    padding: 45px 30px;
+
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr 1.3fr;
+    gap: 40px;
+}
+
+.footer-section h2 {
+    margin: 0 0 15px;
+    font-size: 28px;
+}
+
+.footer-section h3 {
+    margin: 0 0 18px;
+    font-size: 17px;
+}
+
+.footer-section p {
+    color: #dbe7ff;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.footer-section a {
+    display: block;
+    color: #dbe7ff;
+    text-decoration: none;
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
+.footer-section a:hover {
+    color: white;
+}
+
+/* SOCIAL MEDIA */
+
+.social-links {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.social-links a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 38px;
+    height: 38px;
+
+    background: rgba(255,255,255,0.12);
+    border-radius: 50%;
+
+    margin: 0;
+}
+
+/* NEWSLETTER */
+
+.newsletter-form {
+    display: flex;
+    gap: 8px;
+    margin-top: 15px;
+}
+
+.newsletter-form input {
+    min-width: 0;
+    flex: 1;
+
+    padding: 12px;
+    border: none;
+    border-radius: 5px;
+
+    outline: none;
+}
+
+.newsletter-form button {
+    padding: 12px 18px;
+
+    border: none;
+    border-radius: 5px;
+
+    background: #1683ff;
+    color: white;
+
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* FOOTER BOTTOM */
+
+.footer-bottom {
+    border-top: 1px solid rgba(255,255,255,0.15);
+
+    max-width: 1200px;
+    margin: auto;
+
+    padding: 20px 30px;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.footer-bottom p {
+    margin: 0;
+    font-size: 13px;
+    color: #cbd9f5;
+}
+
+/* ===== PHONE ===== */
+
+@media (max-width: 768px) {
+
+    .footer-main {
+        grid-template-columns: 1fr 1fr;
+        padding: 35px 20px;
+        gap: 30px;
+    }
+
+    .footer-bottom {
+        padding: 18px 20px;
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+}
+
+@media (max-width: 500px) {
+
+    .footer-main {
+        grid-template-columns: 1fr;
+        padding: 35px 20px;
+    }
+
+    .newsletter-form {
+        flex-direction: column;
+    }
+
+    .newsletter-form button {
+        width: 100%;
+    }
+}
+/* =========================
+   MOBILE FOOTER
+========================= */
+
+@media (max-width: 768px) {
+
+  .footer-main {
+    grid-template-columns: 1fr 1fr;
+    gap: 30px 20px;
+    padding: 30px 20px;
+  }
+
+  .footer-section {
+    width: 100%;
+  }
+
+  .footer-section h2,
+  .footer-section h3 {
+    font-size: 18px;
+  }
+
+  .footer-section p,
+  .footer-section a {
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .social-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .newsletter-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .newsletter-form input,
+  .newsletter-form button {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+    text-align: center;
+    gap: 15px;
+    padding: 20px;
+  }
+
+  .payment-methods {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+
+  .footer-main {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-section h2 {
+    font-size: 20px;
+  }
+
+  .footer-section h3 {
+    font-size: 17px;
+  }
+}
+/* NEWSLETTER */
+.newsletter-form {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    max-width: 420px;
+}
+
+.newsletter-form input {
+    flex: 1;
+    padding: 11px 12px;
+    border: 1px solid #d5d9e0;
+    border-radius: 4px;
+    font-size: 14px;
+    outline: none;
+}
+
+.newsletter-form input:focus {
+    border-color: #073bce;
+}
+
+.newsletter-form button {
+    padding: 11px 18px;
+    border: none;
+    border-radius: 4px;
+    background: #073bce;
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.newsletter-form button:hover {
+    opacity: 0.9;
+}
+
+#newsletterMessage {
+    margin-top: 8px;
+    font-size: 13px;
+}
+/* =========================
+   CLEAN PHYNEX SEARCH BAR
+   ========================= */
+
+.search-bar {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 650px;
+    height: 46px;
+    background: #ffffff;
+    border: 1px solid #d8dee8;
+    border-radius: 5px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.search-bar input {
+    flex: 1;
+    height: 100%;
+    padding: 0 16px;
+    border: none;
+    outline: none;
+    background: #ffffff;
+    color: #222222;
+    font-size: 15px;
+}
+
+.search-bar input::placeholder {
+    color: #8a94a6;
+    opacity: 1;
+}
+
+.search-bar input:focus {
+    background: #ffffff;
+}
+
+.search-bar button {
+    height: 100%;
+    min-width: 90px;
+    padding: 0 20px;
+    border: none;
+    background: #073bce;
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.search-bar button:hover {
+    background: #052fa5;
+}
+
+/* MOBILE */
+@media (max-width: 600px) {
+    .search-bar {
+        height: 42px;
+        max-width: 100%;
+    }
+
+    .search-bar input {
+        font-size: 14px;
+        padding: 0 12px;
+    }
+
+    .search-bar button {
+        min-width: 72px;
+        padding: 0 12px;
+        font-size: 14px;
+    }
+}
+/* =========================================
+   PHYNEX PRODUCT DETAILS POPUP
+   ========================================= */
+
+.product-modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.product-modal.active {
+    display: flex;
+}
+
+.product-modal-box {
+    position: relative;
+    width: 100%;
+    max-width: 900px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.product-modal-close {
+    position: absolute;
+    top: 12px;
+    right: 15px;
+    width: 38px;
+    height: 38px;
+    border: none;
+    border-radius: 50%;
+    background: #f1f3f6;
+    color: #222;
+    font-size: 25px;
+    line-height: 38px;
+    cursor: pointer;
+    z-index: 5;
+}
+
+.product-modal-close:hover {
+    background: #e3e6eb;
+}
+
+.product-modal-content {
+    display: grid;
+    grid-template-columns: 45% 55%;
+    gap: 25px;
+    padding: 35px;
+}
+
+.product-modal-image {
+    min-height: 380px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    border: 1px solid #eeeeee;
+    border-radius: 6px;
+}
+
+.product-modal-image img {
+    width: 100%;
+    max-height: 380px;
+    object-fit: contain;
+}
+
+.product-modal-details {
+    padding: 10px 5px;
+}
+
+.product-modal-details h2 {
+    margin: 0 40px 12px 0;
+    color: #222;
+    font-size: 25px;
+    line-height: 1.35;
+}
+
+.modal-rating {
+    margin-bottom: 15px;
+    color: #f5a623;
+    font-size: 15px;
+}
+
+.modal-price {
+    margin-bottom: 18px;
+    color: #073bce;
+    font-size: 26px;
+    font-weight: 700;
+}
+
+.product-modal-details p {
+    color: #555;
+    font-size: 15px;
+    line-height: 1.7;
+    margin-bottom: 20px;
+}
+
+.modal-delivery {
+    padding: 15px;
+    margin-bottom: 22px;
+    border: 1px solid #e1e5eb;
+    border-radius: 6px;
+    background: #f8f9fb;
+    color: #333;
+    font-size: 14px;
+    line-height: 2;
+}
+
+.modal-quantity {
+    margin-bottom: 22px;
+}
+
+.modal-quantity label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+}
+
+.quantity-controls {
+    display: flex;
+    align-items: center;
+    width: fit-content;
+    border: 1px solid #d5d9df;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.quantity-controls button {
+    width: 40px;
+    height: 38px;
+    border: none;
+    background: #f5f6f8;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.quantity-controls span {
+    width: 45px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 12px;
+}
+
+.modal-buttons button {
+    flex: 1;
+    min-height: 46px;
+    border-radius: 5px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.modal-cart-btn {
+    border: 1px solid #073bce;
+    background: #ffffff;
+    color: #073bce;
+}
+
+.modal-buy-btn {
+    border: none;
+    background: #073bce;
+    color: #ffffff;
+}
+
+.modal-cart-btn:hover,
+.modal-buy-btn:hover {
+    opacity: 0.9;
+}
+
+/* MOBILE */
+@media (max-width: 700px) {
+
+    .product-modal {
+        padding: 10px;
+    }
+
+    .product-modal-box {
+        max-height: 95vh;
+    }
+
+    .product-modal-content {
+        display: block;
+        padding: 25px 18px;
+    }
+
+    .product-modal-image {
+        min-height: 260px;
+        margin-bottom: 20px;
+    }
+
+    .product-modal-image img {
+        max-height: 260px;
+    }
+
+    .product-modal-details h2 {
+        font-size: 20px;
+    }
+
+    .modal-price {
+        font-size: 23px;
+    }
+
+    .modal-buttons {
+        flex-direction: column;
+    }
+}

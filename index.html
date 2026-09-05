@@ -405,6 +405,7 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
+            cursor: pointer;
         }
 
         .product-info {
@@ -544,6 +545,125 @@
             font-size: 10px;
             color: #777;
             margin-top: 4px;
+        }
+
+        /* ================= PRODUCT POPUP ================= */
+
+        .product-popup {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 100000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, .72);
+        }
+
+        .product-popup.show {
+            display: flex;
+        }
+
+        .product-popup-content {
+            position: relative;
+            width: min(760px, 100%);
+            max-height: 90vh;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: minmax(220px, 42%) 1fr;
+            gap: 28px;
+            padding: 28px;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .product-popup-image {
+            width: 100%;
+            height: 300px;
+            object-fit: contain;
+        }
+
+        .product-popup-close {
+            position: absolute;
+            top: 10px;
+            right: 14px;
+            border: none;
+            background: transparent;
+            color: #172033;
+            font-size: 28px;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .product-popup-title {
+            margin: 18px 0 10px;
+            font-size: 21px;
+            line-height: 1.3;
+        }
+
+        .product-popup-rating {
+            margin-bottom: 14px;
+            color: #f4a300;
+        }
+
+        .product-popup-price {
+            margin-bottom: 14px;
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .product-popup-description {
+            margin-bottom: 18px;
+            color: #687083;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .product-popup-specifications {
+            margin: 0 0 18px;
+            color: #687083;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        .quantity-controls button {
+            width: 34px;
+            height: 34px;
+            border: 1px solid #d9dde5;
+            background: #f7f8fa;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .quantity-controls span {
+            min-width: 20px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .popup-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .popup-actions button {
+            flex: 1;
+        }
+
+        .buy-now-btn {
+            border: none;
+            background: #071a49;
+            color: white;
+            border-radius: 3px;
+            font-weight: bold;
+            cursor: pointer;
         }
 
         /* ================= FOOTER ================= */
@@ -756,6 +876,16 @@
                 flex-direction: column;
                 gap: 8px;
             }
+
+            .product-popup-content {
+                grid-template-columns: 1fr;
+                gap: 12px;
+                padding: 22px;
+            }
+
+            .product-popup-image {
+                height: 210px;
+            }
         }
     </style>
 </head>
@@ -768,9 +898,9 @@
     <span>Welcome to PHYNEX</span>
 
     <div class="top-right">
-        <span>Sell on PHYNEX</span>
-        <span>Help Centre</span>
-        <span>Track Order</span>
+        <a href="sell.html">Sell on PHYNEX</a>
+        <a href="help.html">Help Centre</a>
+        <a href="delivery.html#tracking">Track Order</a>
     </div>
 </div>
 
@@ -785,39 +915,39 @@
     </div>
 
     <div class="search-box">
-        <input
+        <input id="searchInput"
             type="text"
             placeholder="Search products, brands and categories"
         >
 
-        <button>Search</button>
+        <button id="searchButton" type="button">Search</button>
     </div>
 
     <div class="header-actions">
 
-        <div class="action">
+        <a class="action" href="account.html">
             <span class="action-icon">♙</span>
             <div class="action-text">
                 Account
                 <small>Sign In</small>
             </div>
-        </div>
+        </a>
 
-        <div class="action">
+        <a class="action" href="delivery.html#tracking">
             <span class="action-icon">□</span>
             <div class="action-text">
                 Orders
                 <small>Track</small>
             </div>
-        </div>
+        </a>
 
-        <div class="action">
+        <a class="action" href="cart.html">
             <span class="action-icon">🛒</span>
             <div class="action-text">
                 Cart
                 <small id="cart-count">0 items</small>
             </div>
-        </div>
+        </a>
 
     </div>
 
@@ -829,13 +959,13 @@
 <nav class="nav">
 
     <div class="nav-item">☰ All Categories</div>
-    <div class="nav-item">Phones & Tablets</div>
-    <div class="nav-item">Computers</div>
-    <div class="nav-item">Electronics</div>
-    <div class="nav-item">Gaming</div>
-    <div class="nav-item">Accessories</div>
-    <div class="nav-item">Home & Office</div>
-    <div class="nav-item deals">Deals</div>
+    <div class="nav-item" data-category="phones">Phones & Tablets</div>
+    <div class="nav-item" data-category="computers">Computers</div>
+    <div class="nav-item" data-category="electronics">Electronics</div>
+    <div class="nav-item" data-category="gaming">Gaming</div>
+    <div class="nav-item" data-category="accessories">Accessories</div>
+    <div class="nav-item" data-category="home-office">Home & Office</div>
+    <div class="nav-item deals" data-category="deals">Deals</div>
 
 </nav>
 
@@ -864,7 +994,7 @@
             gaming and more at PHYNEX.
         </p>
 
-        <button class="shop-btn">
+        <button class="shop-btn" id="heroShopButton" type="button">
             SHOP NOW
         </button>
 
@@ -898,7 +1028,7 @@
 
     <h2>Shop by Category</h2>
 
-    <a href="#" class="view-all">
+    <a href="#productsSection" class="view-all">
         View All Categories
     </a>
 
@@ -907,37 +1037,37 @@
 
 <div class="categories">
 
-    <div class="category">
+    <div class="category" data-category="phones">
         <img src="images/pic 12.jpeg">
         <span>Phones & Tablets</span>
     </div>
 
-    <div class="category">
+    <div class="category" data-category="computers">
         <img src="images/pic 14.jpeg">
         <span>Computers</span>
     </div>
 
-    <div class="category">
+    <div class="category" data-category="computers">
         <img src="images/pic 15.jpeg">
         <span>Laptops</span>
     </div>
 
-    <div class="category">
+    <div class="category" data-category="gaming">
         <img src="images/pic 16.jpeg">
         <span>Gaming</span>
     </div>
 
-    <div class="category">
+    <div class="category" data-category="accessories">
         <img src="images/pic 17.jpeg">
         <span>Accessories</span>
     </div>
 
-    <div class="category">
+    <div class="category" data-category="electronics">
         <img src="images/pic 18.jpeg">
         <span>Smart Watch</span>
     </div>
 
-    <div class="category">
+    <div class="category" data-category="electronics">
         <img src="images/pic 19.jpeg">
         <span>Audio</span>
     </div>
@@ -947,7 +1077,7 @@
 
 <!-- ================= FLASH DEALS ================= -->
 
-<div class="section-heading">
+<div class="section-heading" id="productsSection">
 
     <div class="flash-title">
 
@@ -959,7 +1089,7 @@
 
     </div>
 
-    <a href="#" class="view-all">
+    <a href="#productsSection" class="view-all">
         View All Deals
     </a>
 
@@ -970,7 +1100,7 @@
 
     <!-- PRODUCT 1 -->
 
-    <div class="product">
+    <div class="product" data-category="computers home-office deals" data-description="A dependable Dell laptop for work, study and everyday productivity." data-specifications="Intel Core i7 11th Gen | 8GB RAM | 400GB SSD">
 
         <span class="discount">-13%</span>
 
@@ -997,7 +1127,7 @@
                 PHYNEX EXPRESS
             </div>
 
-            <button class="cart-btn" onclick="addToCart()">
+            <button class="cart-btn" onclick="addToCart(this)">
                 Add to Cart
             </button>
 
@@ -1008,7 +1138,7 @@
 
     <!-- PRODUCT 2 -->
 
-    <div class="product">
+    <div class="product" data-category="computers home-office deals" data-description="A professionally refurbished HP desktop with responsive performance for office and home use." data-specifications="Intel Core i5 8th Gen | 8GB RAM | 256GB SSD">
 
         <span class="discount">-10%</span>
 
@@ -1035,7 +1165,7 @@
                 PHYNEX EXPRESS
             </div>
 
-            <button class="cart-btn" onclick="addToCart()">
+            <button class="cart-btn" onclick="addToCart(this)">
                 Add to Cart
             </button>
 
@@ -1046,7 +1176,7 @@
 
     <!-- PRODUCT 3 -->
 
-    <div class="product">
+    <div class="product" data-category="electronics accessories deals" data-description="A portable Bluetooth speaker with clear sound for music, calls and everyday entertainment." data-specifications="Bluetooth wireless audio | Portable design | Rechargeable battery">
 
         <span class="discount">-15%</span>
 
@@ -1073,7 +1203,7 @@
                 PHYNEX EXPRESS
             </div>
 
-            <button class="cart-btn" onclick="addToCart()">
+            <button class="cart-btn" onclick="addToCart(this)">
                 Add to Cart
             </button>
 
@@ -1084,7 +1214,7 @@
 
     <!-- PRODUCT 4 -->
 
-    <div class="product">
+    <div class="product" data-category="computers deals" data-description="A compact MacBook with a sharp display and reliable performance for everyday computing." data-specifications="Intel Core i5 | 8GB RAM | 256GB SSD">
 
         <span class="discount">-8%</span>
 
@@ -1111,7 +1241,7 @@
                 PHYNEX EXPRESS
             </div>
 
-            <button class="cart-btn" onclick="addToCart()">
+            <button class="cart-btn" onclick="addToCart(this)">
                 Add to Cart
             </button>
 
@@ -1122,7 +1252,7 @@
 
     <!-- PRODUCT 5 -->
 
-    <div class="product">
+    <div class="product" data-category="computers deals" data-description="A durable Lenovo ThinkPad with a comfortable keyboard and fast SSD storage for work on the go." data-specifications="Intel Core i5 | 8GB RAM | 256GB SSD">
 
         <span class="discount">-20%</span>
 
@@ -1149,7 +1279,7 @@
                 PHYNEX EXPRESS
             </div>
 
-            <button class="cart-btn" onclick="addToCart()">
+            <button class="cart-btn" onclick="addToCart(this)">
                 Add to Cart
             </button>
 
@@ -1158,6 +1288,7 @@
     </div>
 
 </div>
+<p id="searchMessage" hidden style="padding:24px;text-align:center;color:#687083;background:white;border:1px solid #e1e4e8;">No products found.</p>
 
 
 <!-- ================= PROMOTIONAL BANNERS ================= -->
@@ -1176,7 +1307,7 @@
             consoles and accessories.
         </p>
 
-        <button class="shop-btn">
+        <button class="shop-btn" id="gamingButton" type="button">
             EXPLORE GAMING
         </button>
 
@@ -1198,7 +1329,7 @@
             technology products in store.
         </p>
 
-        <button class="shop-btn">
+        <button class="shop-btn" id="newArrivalsButton" type="button">
             SHOP NOW
         </button>
 
@@ -1249,123 +1380,97 @@
 
 </div>
 
-</main>
 
 
-<!-- ================= FOOTER ================= -->
 
-<footer>
 
-    <div class="footer-main">
+<!-- ================= PRODUCT POPUP ================= -->
 
-        <div class="footer-brand">
-
-            <h2>PHYNEX</h2>
-
-            <p>
-                Your trusted online store for
-                electronics, computers, gaming
-                gear and more.
-            </p>
-
-        </div>
-
+<div class="product-popup" id="productPopup" role="dialog" aria-modal="true" aria-labelledby="modalProductName">
+    <div class="product-popup-content">
+        <button class="product-popup-close" type="button" aria-label="Close product details">&times;</button>
 
         <div>
-
-            <h3>Customer Service</h3>
-
-            <ul>
-                <li>Help Centre</li>
-                <li>Delivery Information</li>
-                <li>Returns & Refunds</li>
-                <li>Warranty</li>
-                <li>Contact Us</li>
-            </ul>
-
+            <img class="product-popup-image" id="modalProductImage" src="" alt="Product">
         </div>
 
-
         <div>
+            <h2 class="product-popup-title" id="modalProductName"></h2>
+            <div class="product-popup-rating" id="modalProductRating"></div>
+            <div class="discount" id="modalProductDiscount"></div>
+            <div class="product-popup-price">
+                <span id="modalProductPrice"></span>
+                <span class="old-price" id="modalOldPrice"></span>
+            </div>
+            <div class="express" id="modalProductExpress">PHYNEX EXPRESS</div>
+            <p class="product-popup-description" id="modalProductDescription"></p>
+            <p class="product-popup-specifications" id="modalProductSpecifications"></p>
 
-            <h3>About PHYNEX</h3>
-
-            <ul>
-                <li>About Us</li>
-                <li>Sell on PHYNEX</li>
-                <li>Careers</li>
-                <li>News & Blog</li>
-                <li>Terms & Conditions</li>
-            </ul>
-
-        </div>
-
-
-        <div>
-
-            <h3>Newsletter</h3>
-
-            <p style="font-size:12px;color:#c5cede;">
-                Subscribe for the latest updates
-                and offers.
-            </p>
-
-            <div class="newsletter">
-
-                <input
-                    type="email"
-                    placeholder="Your email address"
-                >
-
-                <button>
-                    Subscribe
-                </button>
-
+            <div class="quantity-controls" aria-label="Quantity">
+                <button type="button" id="decreaseQty" aria-label="Decrease quantity">-</button>
+                <span id="productQty">1</span>
+                <button type="button" id="increaseQty" aria-label="Increase quantity">+</button>
             </div>
 
+            <div class="popup-actions">
+                <button class="cart-btn" type="button" id="modalAddToCart">Add to Cart</button>
+                <button class="buy-now-btn" type="button" id="modalBuyNow">Buy Now</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= FOOTER ================= -->
+<footer class="phynex-footer">
+    <div class="footer-main">
+        <div class="footer-section brand-section">
+            <h2>PHYNEX</h2>
+            <p>Your trusted online store for electronics, computers, gaming gear and more.</p>
+            <div class="social-links">
+                <a href="https://www.facebook.com/" target="_blank" rel="noopener">Facebook</a>
+                <a href="https://www.instagram.com/" target="_blank" rel="noopener">Instagram</a>
+                <a href="https://wa.me/254700000000" target="_blank" rel="noopener">WhatsApp</a>
+            </div>
         </div>
 
-    </div>
+        <div class="footer-section">
+            <h3>Customer Service</h3>
+            <a href="help.html">Help Centre</a>
+            <a href="delivery.html">Delivery Information</a>
+            <a href="returns.html">Returns & Refunds</a>
+            <a href="waranty.html">Warranty</a>
+            <a href="contact.html">Contact Us</a>
+        </div>
 
+        <div class="footer-section">
+            <h3>About PHYNEX</h3>
+            <a href="about.html">About Us</a>
+            <a href="sell.html">Sell on PHYNEX</a>
+            <a href="careers.html">Careers</a>
+            <a href="blog.html">News & Blog</a>
+            <a href="terms.html">Terms & Conditions</a>
+        </div>
+
+        <div class="footer-section newsletter-section">
+            <h3>Newsletter</h3>
+            <p class="newsletter-note">Get exclusive deals and new product updates.</p>
+            <form class="newsletter-form" id="newsletterForm">
+                <input type="email" id="newsletterEmail" placeholder="Enter your email address" required>
+                <button type="submit">Subscribe</button>
+            </form>
+            <p id="newsletterMessage"></p>
+        </div>
+    </div>
 
     <div class="footer-bottom">
-
-        <span>
-            © 2026 PHYNEX. All Rights Reserved.
-        </span>
-
-        <span>
-            VISA &nbsp; • &nbsp; M-PESA &nbsp; • &nbsp; PayPal
-        </span>
-
+        <p>&copy; 2026 PHYNEX. All Rights Reserved.</p>
+        <div class="payment-methods">
+            <span>VISA</span><span>•</span><span>M-PESA</span><span>•</span><span>PayPal</span>
+        </div>
     </div>
-
 </footer>
 
-
-
-
-
-
-
-<script>
-
-let cartItems = 0;
-
-function addToCart() {
-
-    cartItems++;
-
-    document.getElementById("cart-count").innerText =
-        cartItems + (cartItems === 1 ? " item" : " items");
-
-}
-
-</script>
 <script src="script.js"></script>
-
-</body>
-</html>
 
 </body>
 </html>
