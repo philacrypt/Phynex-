@@ -3,6 +3,10 @@
 let selectedProduct = null;
 let productQuantity = 1;
 
+/* =========================
+   CART
+========================= */
+
 function readCart() {
     try {
         return JSON.parse(localStorage.getItem("phynexCart")) || [];
@@ -24,135 +28,332 @@ function getProductData(card) {
     const rating = card.querySelector(".rating");
     const discount = card.querySelector(".discount");
     const express = card.querySelector(".express");
-    const priceText = price ? price.childNodes[0].textContent.trim() : "KSh 0";
+
+    const priceText = price
+        ? price.childNodes[0].textContent.trim()
+        : "KSh 0";
 
     return {
         image: image ? image.src : "",
         name: name ? name.textContent.trim() : "Product",
         price: priceText,
-        numericPrice: Number(priceText.replace(/[^\d.]/g, "")) || 0,
+        numericPrice:
+            Number(priceText.replace(/[^\d.]/g, "")) || 0,
         oldPrice: oldPrice ? oldPrice.textContent.trim() : "",
         rating: rating ? rating.textContent.trim() : "★★★★★",
         discount: discount ? discount.textContent.trim() : "",
-        express: express ? express.textContent.trim() : "PHYNEX EXPRESS",
-        description: card.dataset.description || "Quality product available from PHYNEX.",
-        specifications: card.dataset.specifications || "Product details available from PHYNEX.",
+        express: express
+            ? express.textContent.trim()
+            : "PHYNEX EXPRESS",
+        description:
+            card.dataset.description ||
+            "Quality product available from PHYNEX.",
+        specifications:
+            card.dataset.specifications ||
+            "Product details available from PHYNEX.",
         category: card.dataset.category || ""
     };
 }
 
 function setText(id, value) {
     const element = document.getElementById(id);
-    if (element) element.textContent = value;
+
+    if (element) {
+        element.textContent = value;
+    }
 }
 
 function getCartTotals() {
     const subtotal = readCart().reduce(function (sum, item) {
-        return sum + Number(item.price) * Number(item.quantity);
+        return (
+            sum +
+            Number(item.price) *
+            Number(item.quantity)
+        );
     }, 0);
+
     const deliveryFee = 0;
-    return { subtotal: subtotal, deliveryFee: deliveryFee, total: subtotal + deliveryFee };
+
+    return {
+        subtotal: subtotal,
+        deliveryFee: deliveryFee,
+        total: subtotal + deliveryFee
+    };
 }
 
+/* =========================
+   FLASH DEALS
+========================= */
+
 function startFlashDealsCountdown() {
-    const timer = document.getElementById("flashDealsTimer");
+    const timer =
+        document.getElementById("flashDealsTimer");
+
     if (!timer) return;
 
-    const storageKey = "phynexFlashDealsEndTime";
-    let endTime = Number(localStorage.getItem(storageKey));
+    const storageKey =
+        "phynexFlashDealsEndTime";
 
-    if (!Number.isFinite(endTime) || endTime <= 0) {
-        endTime = Date.now() + (3 * 60 * 60 * 1000);
-        localStorage.setItem(storageKey, String(endTime));
+    let endTime =
+        Number(localStorage.getItem(storageKey));
+
+    if (
+        !Number.isFinite(endTime) ||
+        endTime <= 0
+    ) {
+        endTime =
+            Date.now() +
+            3 * 60 * 60 * 1000;
+
+        localStorage.setItem(
+            storageKey,
+            String(endTime)
+        );
     }
 
     function updateTimer() {
-        const remaining = Math.max(0, endTime - Date.now());
+        const remaining =
+            Math.max(
+                0,
+                endTime - Date.now()
+            );
 
         if (remaining === 0) {
-            timer.textContent = "Deal Ended";
-            window.clearInterval(startFlashDealsCountdown.intervalId);
-            startFlashDealsCountdown.intervalId = null;
+            timer.textContent =
+                "Deal Ended";
+
+            window.clearInterval(
+                startFlashDealsCountdown.intervalId
+            );
+
+            startFlashDealsCountdown.intervalId =
+                null;
+
             return;
         }
 
-        const totalSeconds = Math.floor(remaining / 1000);
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-        const format = function (value) { return String(value).padStart(2, "0"); };
+        const totalSeconds =
+            Math.floor(
+                remaining / 1000
+            );
 
-        timer.textContent = "Ends in: " + format(hours) + " : " + format(minutes) + " : " + format(seconds);
+        const hours =
+            Math.floor(
+                totalSeconds / 3600
+            );
+
+        const minutes =
+            Math.floor(
+                (totalSeconds % 3600) / 60
+            );
+
+        const seconds =
+            totalSeconds % 60;
+
+        const format =
+            function (value) {
+                return String(value)
+                    .padStart(2, "0");
+            };
+
+        timer.textContent =
+            "Ends in: " +
+            format(hours) +
+            " : " +
+            format(minutes) +
+            " : " +
+            format(seconds);
     }
 
-    if (startFlashDealsCountdown.intervalId) {
-        window.clearInterval(startFlashDealsCountdown.intervalId);
+    if (
+        startFlashDealsCountdown.intervalId
+    ) {
+        window.clearInterval(
+            startFlashDealsCountdown.intervalId
+        );
     }
+
     updateTimer();
-    startFlashDealsCountdown.intervalId = window.setInterval(updateTimer, 1000);
+
+    startFlashDealsCountdown.intervalId =
+        window.setInterval(
+            updateTimer,
+            1000
+        );
 }
 
+/* =========================
+   PRODUCT POPUP
+========================= */
+
 function openProduct(product) {
-    const popup = document.getElementById("productPopup");
+    const popup =
+        document.getElementById("productPopup");
+
     if (!popup) return;
 
     selectedProduct = product;
     productQuantity = 1;
-    const image = document.getElementById("modalProductImage");
+
+    const image =
+        document.getElementById(
+            "modalProductImage"
+        );
+
     if (image) {
         image.src = product.image;
         image.alt = product.name;
     }
-    setText("modalProductName", product.name);
-    setText("modalProductPrice", product.price);
-    setText("modalOldPrice", product.oldPrice);
-    setText("modalProductRating", product.rating);
-    setText("modalProductDescription", product.description);
-    setText("modalProductExpress", product.express);
-    setText("modalProductSpecifications", "Specifications: " + product.specifications);
-    const discount = document.getElementById("modalProductDiscount");
+
+    setText(
+        "modalProductName",
+        product.name
+    );
+
+    setText(
+        "modalProductPrice",
+        product.price
+    );
+
+    setText(
+        "modalOldPrice",
+        product.oldPrice
+    );
+
+    setText(
+        "modalProductRating",
+        product.rating
+    );
+
+    setText(
+        "modalProductDescription",
+        product.description
+    );
+
+    setText(
+        "modalProductExpress",
+        product.express
+    );
+
+    setText(
+        "modalProductSpecifications",
+        "Specifications: " +
+        product.specifications
+    );
+
+    const discount =
+        document.getElementById(
+            "modalProductDiscount"
+        );
+
     if (discount) {
-        discount.textContent = product.discount;
-        discount.style.display = product.discount ? "inline-block" : "none";
+        discount.textContent =
+            product.discount;
+
+        discount.style.display =
+            product.discount
+                ? "inline-block"
+                : "none";
     }
-    setText("productQty", productQuantity);
+
+    setText(
+        "productQty",
+        productQuantity
+    );
+
     popup.classList.add("show");
-    document.body.style.overflow = "hidden";
+
+    document.body.style.overflow =
+        "hidden";
 }
 
 function closeProduct() {
-    const popup = document.getElementById("productPopup");
-    if (popup) popup.classList.remove("show");
+    const popup =
+        document.getElementById(
+            "productPopup"
+        );
+
+    if (popup) {
+        popup.classList.remove("show");
+    }
+
     document.body.style.overflow = "";
+
     selectedProduct = null;
     productQuantity = 1;
 }
 
 function increaseQty() {
     productQuantity++;
-    setText("productQty", productQuantity);
+
+    setText(
+        "productQty",
+        productQuantity
+    );
 }
 
 function decreaseQty() {
-    productQuantity = Math.max(1, productQuantity - 1);
-    setText("productQty", productQuantity);
+    productQuantity =
+        Math.max(
+            1,
+            productQuantity - 1
+        );
+
+    setText(
+        "productQty",
+        productQuantity
+    );
 }
+
+/* =========================
+   CART COUNT
+========================= */
 
 function updateCartCount() {
-    const total = readCart().reduce(function (sum, item) {
-        return sum + (Number(item.quantity) || 0);
-    }, 0);
-    const count = document.getElementById("cart-count");
-    if (count) count.textContent = total + (total === 1 ? " item" : " items");
+    const total =
+        readCart().reduce(
+            function (sum, item) {
+                return (
+                    sum +
+                    (Number(item.quantity) || 0)
+                );
+            },
+            0
+        );
+
+    const count =
+        document.getElementById(
+            "cart-count"
+        );
+
+    if (count) {
+        count.textContent =
+            total +
+            (total === 1
+                ? " item"
+                : " items");
+    }
 }
 
-function addProductToCart(product, quantity) {
+/* =========================
+   ADD TO CART
+========================= */
+
+function addProductToCart(
+    product,
+    quantity
+) {
     const cart = readCart();
-    const existing = cart.find(function (item) {
-        return item.name === product.name;
-    });
+
+    const existing =
+        cart.find(function (item) {
+            return item.name === product.name;
+        });
+
     if (existing) {
-        existing.quantity = (Number(existing.quantity) || 0) + quantity;
+        existing.quantity =
+            (Number(existing.quantity) || 0) +
+            quantity;
     } else {
         cart.push({
             name: product.name,
@@ -168,343 +369,1180 @@ function addProductToCart(product, quantity) {
             category: product.category
         });
     }
+
     writeCart(cart);
 }
 
 function addToCart(button) {
     const product = button
-        ? getProductData(button.closest(".product"))
+        ? getProductData(
+            button.closest(".product")
+        )
         : selectedProduct;
-    const quantity = button ? 1 : productQuantity;
+
+    const quantity =
+        button
+            ? 1
+            : productQuantity;
+
     if (!product) return;
-    addProductToCart(product, quantity);
-    alert("Product added to your cart!");
-    if (!button) closeProduct();
+
+    addProductToCart(
+        product,
+        quantity
+    );
+
+    alert(
+        "Product added to your cart!"
+    );
+
+    if (!button) {
+        closeProduct();
+    }
 }
 
-async function goToCheckout() {
-    const response = await fetch("/api/auth/me");
-    const data = await response.json();
-    if (!data.authenticated || !data.user.email_verified) {
-        window.location.href = "account.html?next=checkout.html";
-        return false;
-    }
-    window.location.href = "checkout.html";
+/* =========================
+   GO DIRECTLY TO CHECKOUT
+   NO CUSTOMER ACCOUNT
+========================= */
+
+function goToCheckout() {
+    window.location.href =
+        "checkout.html";
+
     return true;
 }
 
-async function buyNow() {
+function buyNow() {
     if (!selectedProduct) return;
-    addProductToCart(selectedProduct, productQuantity);
-    await goToCheckout();
+
+    addProductToCart(
+        selectedProduct,
+        productQuantity
+    );
+
+    goToCheckout();
 }
 
-async function buyNowFromCard(button) {
-    const product = getProductData(button.closest(".product"));
+function buyNowFromCard(button) {
+    const product =
+        getProductData(
+            button.closest(".product")
+        );
+
     if (!product) return;
-    addProductToCart(product, 1);
-    await goToCheckout();
+
+    addProductToCart(
+        product,
+        1
+    );
+
+    goToCheckout();
 }
+
+/* =========================
+   FILTER PRODUCTS
+========================= */
 
 function filterProducts(category) {
-    const cards = document.querySelectorAll(".product");
-    const normalized = category.toLowerCase();
+    const cards =
+        document.querySelectorAll(
+            ".product"
+        );
+
+    const normalized =
+        category.toLowerCase();
+
     let visible = 0;
+
     cards.forEach(function (card) {
-        const matches = normalized === "all" || card.dataset.category.includes(normalized);
+        const cardCategory =
+            (
+                card.dataset.category ||
+                ""
+            ).toLowerCase();
+
+        const matches =
+            normalized === "all" ||
+            cardCategory.includes(
+                normalized
+            );
+
         card.hidden = !matches;
-        if (matches) visible++;
+
+        if (matches) {
+            visible++;
+        }
     });
-    const message = document.getElementById("searchMessage");
+
+    const message =
+        document.getElementById(
+            "searchMessage"
+        );
+
     if (message) {
-        message.textContent = visible ? "" : "No products found.";
-        message.hidden = visible !== 0;
+        message.textContent =
+            visible
+                ? ""
+                : "No products found.";
+
+        message.hidden =
+            visible !== 0;
     }
+
     return visible;
 }
 
+/* =========================
+   SEARCH
+========================= */
+
 function searchProducts() {
-    const input = document.getElementById("searchInput");
-    const query = input ? input.value.trim().toLowerCase() : "";
-    const cards = document.querySelectorAll(".product");
+    const input =
+        document.getElementById(
+            "searchInput"
+        );
+
+    const query =
+        input
+            ? input.value
+                .trim()
+                .toLowerCase()
+            : "";
+
+    const cards =
+        document.querySelectorAll(
+            ".product"
+        );
+
     let visible = 0;
+
     cards.forEach(function (card) {
-        const product = getProductData(card);
-        const searchable = [product.name, product.description, product.category, product.rating].join(" ").toLowerCase();
-        const matches = !query || searchable.includes(query);
+        const product =
+            getProductData(card);
+
+        const searchable =
+            [
+                product.name,
+                product.description,
+                product.category,
+                product.rating
+            ]
+                .join(" ")
+                .toLowerCase();
+
+        const matches =
+            !query ||
+            searchable.includes(query);
+
         card.hidden = !matches;
-        if (matches) visible++;
+
+        if (matches) {
+            visible++;
+        }
     });
-    const message = document.getElementById("searchMessage");
+
+    const message =
+        document.getElementById(
+            "searchMessage"
+        );
+
     if (message) {
-        message.textContent = visible ? "" : "No products found.";
-        message.hidden = visible !== 0;
+        message.textContent =
+            visible
+                ? ""
+                : "No products found.";
+
+        message.hidden =
+            visible !== 0;
     }
 }
 
+/* =========================
+   HERO
+========================= */
+
 function setupHero() {
-    const images = Array.from(document.querySelectorAll(".hero-products img"));
-    const dots = Array.from(document.querySelectorAll(".hero-dots span"));
+    const images =
+        Array.from(
+            document.querySelectorAll(
+                ".hero-products img"
+            )
+        );
+
+    const dots =
+        Array.from(
+            document.querySelectorAll(
+                ".hero-dots span"
+            )
+        );
+
+    if (!images.length) return;
+
     let slide = 0;
+
     function renderSlide() {
-        images.forEach(function (image, index) {
-            image.style.opacity = index === slide ? "1" : ".35";
-        });
-        dots.forEach(function (dot, index) {
-            dot.classList.toggle("active", index === slide);
-        });
+        images.forEach(
+            function (image, index) {
+                image.style.opacity =
+                    index === slide
+                        ? "1"
+                        : ".35";
+            }
+        );
+
+        dots.forEach(
+            function (dot, index) {
+                dot.classList.toggle(
+                    "active",
+                    index === slide
+                );
+            }
+        );
     }
-    document.querySelector(".hero-arrow.left").addEventListener("click", function () {
-        slide = (slide + images.length - 1) % images.length;
-        renderSlide();
-    });
-    document.querySelector(".hero-arrow.right").addEventListener("click", function () {
-        slide = (slide + 1) % images.length;
-        renderSlide();
-    });
+
+    const leftArrow =
+        document.querySelector(
+            ".hero-arrow.left"
+        );
+
+    const rightArrow =
+        document.querySelector(
+            ".hero-arrow.right"
+        );
+
+    if (leftArrow) {
+        leftArrow.addEventListener(
+            "click",
+            function () {
+                slide =
+                    (
+                        slide +
+                        images.length -
+                        1
+                    ) %
+                    images.length;
+
+                renderSlide();
+            }
+        );
+    }
+
+    if (rightArrow) {
+        rightArrow.addEventListener(
+            "click",
+            function () {
+                slide =
+                    (
+                        slide + 1
+                    ) %
+                    images.length;
+
+                renderSlide();
+            }
+        );
+    }
+
     renderSlide();
 }
 
+/* =========================
+   NEWSLETTER
+========================= */
+
 function setupNewsletter() {
-    const form = document.getElementById("newsletterForm");
+    const form =
+        document.getElementById(
+            "newsletterForm"
+        );
+
     if (!form) return;
-    form.addEventListener("submit", function (event) {
-        event.preventDefault();
-        const email = document.getElementById("newsletterEmail");
-        const message = document.getElementById("newsletterMessage");
-        if (!email || !message) return;
-        if (!email.checkValidity()) {
-            message.textContent = "Please enter a valid email address.";
-            return;
+
+    form.addEventListener(
+        "submit",
+        function (event) {
+            event.preventDefault();
+
+            const email =
+                document.getElementById(
+                    "newsletterEmail"
+                );
+
+            const message =
+                document.getElementById(
+                    "newsletterMessage"
+                );
+
+            if (!email || !message) {
+                return;
+            }
+
+            if (!email.checkValidity()) {
+                message.textContent =
+                    "Please enter a valid email address.";
+
+                return;
+            }
+
+            message.textContent =
+                "Thanks. Your email is ready for PHYNEX newsletter setup.";
+
+            email.value = "";
         }
-        message.textContent = "Thanks. Your email is ready for PHYNEX newsletter setup.";
-        email.value = "";
-    });
+    );
 }
+
+/* =========================
+   CHECKOUT CART
+========================= */
 
 function renderCheckout() {
-    const list = document.getElementById("checkoutItems");
+    const list =
+        document.getElementById(
+            "checkoutItems"
+        );
+
     if (!list) return;
+
     const cart = readCart();
-    const empty = document.getElementById("checkoutEmpty");
+
+    const empty =
+        document.getElementById(
+            "checkoutEmpty"
+        );
+
     if (!cart.length) {
-        if (empty) empty.hidden = false;
+        if (empty) {
+            empty.hidden = false;
+        }
+
         list.innerHTML = "";
+
+        setText(
+            "checkoutSubtotal",
+            "KSh 0"
+        );
+
+        setText(
+            "checkoutDeliveryFee",
+            "KSh 0"
+        );
+
+        setText(
+            "checkoutTotal",
+            "KSh 0"
+        );
+
         return;
     }
-    if (empty) empty.hidden = true;
-    list.innerHTML = cart.map(function (item, index) {
-        return `<div class="checkout-item"><img src="${item.image}" alt="${item.name}"><div><strong>${item.name}</strong><p>KSh ${Number(item.price).toLocaleString()}</p><div class="line-quantity"><button type="button" data-decrease="${index}">-</button><span>${item.quantity}</span><button type="button" data-increase="${index}">+</button></div></div><button type="button" data-remove="${index}">Remove</button></div>`;
-    }).join("");
-    const totals = getCartTotals();
-    setText("checkoutSubtotal", "KSh " + totals.subtotal.toLocaleString());
-    setText("checkoutDeliveryFee", "KSh " + totals.deliveryFee.toLocaleString());
-    setText("checkoutTotal", "KSh " + totals.total.toLocaleString());
-    list.querySelectorAll("[data-remove]").forEach(function (button) {
-        button.addEventListener("click", function () {
-            const next = readCart();
-            next.splice(Number(button.dataset.remove), 1);
-            writeCart(next);
-            renderCheckout();
-        });
-    });
-    list.querySelectorAll("[data-increase], [data-decrease]").forEach(function (button) {
-        button.addEventListener("click", function () {
-            const next = readCart();
-            const index = Number(button.dataset.increase || button.dataset.decrease);
-            if (button.dataset.increase) next[index].quantity++;
-            if (button.dataset.decrease) next[index].quantity = Math.max(1, next[index].quantity - 1);
-            writeCart(next);
-            renderCheckout();
-        });
-    });
+
+    if (empty) {
+        empty.hidden = true;
+    }
+
+    list.innerHTML =
+        cart.map(
+            function (item, index) {
+                return `
+                    <div class="checkout-item">
+                        <img
+                            src="${item.image}"
+                            alt="${item.name}"
+                        >
+
+                        <div>
+                            <strong>
+                                ${item.name}
+                            </strong>
+
+                            <p>
+                                KSh ${Number(item.price).toLocaleString()}
+                            </p>
+
+                            <div class="line-quantity">
+                                <button
+                                    type="button"
+                                    data-decrease="${index}"
+                                >
+                                    -
+                                </button>
+
+                                <span>
+                                    ${item.quantity}
+                                </span>
+
+                                <button
+                                    type="button"
+                                    data-increase="${index}"
+                                >
+                                    +
+                                </button>
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            data-remove="${index}"
+                        >
+                            Remove
+                        </button>
+                    </div>
+                `;
+            }
+        ).join("");
+
+    const totals =
+        getCartTotals();
+
+    setText(
+        "checkoutSubtotal",
+        "KSh " +
+        totals.subtotal.toLocaleString()
+    );
+
+    setText(
+        "checkoutDeliveryFee",
+        "KSh " +
+        totals.deliveryFee.toLocaleString()
+    );
+
+    setText(
+        "checkoutTotal",
+        "KSh " +
+        totals.total.toLocaleString()
+    );
+
+    list
+        .querySelectorAll(
+            "[data-remove]"
+        )
+        .forEach(
+            function (button) {
+                button.addEventListener(
+                    "click",
+                    function () {
+                        const next =
+                            readCart();
+
+                        next.splice(
+                            Number(
+                                button.dataset.remove
+                            ),
+                            1
+                        );
+
+                        writeCart(next);
+
+                        renderCheckout();
+                    }
+                );
+            }
+        );
+
+    list
+        .querySelectorAll(
+            "[data-increase], [data-decrease]"
+        )
+        .forEach(
+            function (button) {
+                button.addEventListener(
+                    "click",
+                    function () {
+                        const next =
+                            readCart();
+
+                        const index =
+                            Number(
+                                button.dataset.increase ||
+                                button.dataset.decrease
+                            );
+
+                        if (
+                            button.dataset.increase
+                        ) {
+                            next[index].quantity++;
+                        }
+
+                        if (
+                            button.dataset.decrease
+                        ) {
+                            next[index].quantity =
+                                Math.max(
+                                    1,
+                                    next[index].quantity -
+                                    1
+                                );
+                        }
+
+                        writeCart(next);
+
+                        renderCheckout();
+                    }
+                );
+            }
+        );
 }
 
+/* =========================
+   CHECKOUT
+   NO ACCOUNT REQUIRED
+========================= */
+
 function setupCheckout() {
-    fetch("/api/auth/me").then(function (response) { return response.json(); }).then(function (data) {
-        if (!data.authenticated || !data.user.email_verified) {
-            window.location.href = "account.html?next=checkout.html";
-        }
-    });
+
     renderCheckout();
-    const form = document.getElementById("checkoutForm");
+
+    const form =
+        document.getElementById(
+            "checkoutForm"
+        );
+
     if (!form) return;
 
-    const message = document.getElementById("checkoutMessage");
-    const mpesaButton = document.getElementById("payWithMpesa");
+    const message =
+        document.getElementById(
+            "checkoutMessage"
+        );
+
+    const mpesaButton =
+        document.getElementById(
+            "payWithMpesa"
+        );
+
     let checkoutRequestId = null;
 
     function getCheckoutPayload() {
-        const data = new FormData(form);
-        const totals = getCartTotals();
+
+        const data =
+            new FormData(form);
+
+        const totals =
+            getCartTotals();
+
         return {
             customer: {
                 name: data.get("name"),
                 phone: data.get("phone"),
                 email: data.get("email")
             },
+
             delivery: {
                 county: data.get("county"),
                 town: data.get("location"),
                 address: data.get("address"),
-                instructions: data.get("instructions")
+                instructions:
+                    data.get("instructions")
             },
-            mpesaPhone: data.get("mpesaPhone"),
-            items: readCart(),
-            subtotal: totals.subtotal,
-            deliveryFee: totals.deliveryFee,
-            total: totals.total
+
+            mpesaPhone:
+                data.get("mpesaPhone"),
+
+            items:
+                readCart(),
+
+            subtotal:
+                totals.subtotal,
+
+            deliveryFee:
+                totals.deliveryFee,
+
+            total:
+                totals.total
         };
     }
 
     function showMessage(text) {
-        if (message) message.textContent = text;
+        if (message) {
+            message.textContent = text;
+        }
     }
 
-    function showConfirmation(orderNumber, payload) {
-        const confirmation = document.getElementById("orderConfirmation");
-        setText("confirmationOrderNumber", orderNumber);
-        setText("confirmationCustomer", payload.customer.name + " | " + payload.customer.phone);
-        setText("confirmationDelivery", payload.delivery.county + ", " + payload.delivery.town + ", " + payload.delivery.address);
-        setText("confirmationTotal", "KSh " + payload.total.toLocaleString());
-        const confirmationItems = document.getElementById("confirmationItems");
+    function showConfirmation(
+        orderNumber,
+        payload
+    ) {
+
+        const confirmation =
+            document.getElementById(
+                "orderConfirmation"
+            );
+
+        setText(
+            "confirmationOrderNumber",
+            orderNumber
+        );
+
+        setText(
+            "confirmationCustomer",
+            payload.customer.name +
+            " | " +
+            payload.customer.phone
+        );
+
+        setText(
+            "confirmationDelivery",
+            payload.delivery.county +
+            ", " +
+            payload.delivery.town +
+            ", " +
+            payload.delivery.address
+        );
+
+        setText(
+            "confirmationTotal",
+            "KSh " +
+            payload.total.toLocaleString()
+        );
+
+        const confirmationItems =
+            document.getElementById(
+                "confirmationItems"
+            );
+
         if (confirmationItems) {
-            confirmationItems.textContent = payload.items.map(function (item) {
-                return item.name + " x " + item.quantity + " - KSh " + (Number(item.price) * Number(item.quantity)).toLocaleString();
-            }).join(" | ");
+
+            confirmationItems.textContent =
+                payload.items
+                    .map(
+                        function (item) {
+                            return (
+                                item.name +
+                                " x " +
+                                item.quantity +
+                                " - KSh " +
+                                (
+                                    Number(item.price) *
+                                    Number(item.quantity)
+                                ).toLocaleString()
+                            );
+                        }
+                    )
+                    .join(" | ");
         }
-        if (confirmation) confirmation.hidden = false;
+
+        if (confirmation) {
+            confirmation.hidden = false;
+        }
+
         form.hidden = true;
-        localStorage.removeItem("phynexCart");
+
+        localStorage.removeItem(
+            "phynexCart"
+        );
+
+        updateCartCount();
     }
 
     async function pollPaymentStatus() {
-        if (!checkoutRequestId) return;
+
+        if (!checkoutRequestId) {
+            return;
+        }
+
         try {
-            const response = await fetch("/api/mpesa/status/" + encodeURIComponent(checkoutRequestId));
-            const result = await response.json();
+
+            const response =
+                await fetch(
+                    "/api/mpesa/status/" +
+                    encodeURIComponent(
+                        checkoutRequestId
+                    )
+                );
+
+            const result =
+                await response.json();
+
             if (result.status === "paid") {
-                showMessage("M-PESA payment confirmed.");
-                showConfirmation(result.orderNumber || "PHX-" + Date.now().toString().slice(-8), getCheckoutPayload());
+
+                showMessage(
+                    "M-PESA payment confirmed."
+                );
+
+                showConfirmation(
+                    result.orderNumber ||
+                    "PHX-" +
+                    Date.now()
+                        .toString()
+                        .slice(-8),
+
+                    getCheckoutPayload()
+                );
+
                 return;
             }
-            if (result.status === "failed" || result.status === "cancelled") {
-                showMessage(result.message || "M-PESA payment was not completed. Please try again.");
+
+            if (
+                result.status === "failed" ||
+                result.status === "cancelled"
+            ) {
+
+                showMessage(
+                    result.message ||
+                    "M-PESA payment was not completed. Please try again."
+                );
+
+                if (mpesaButton) {
+                    mpesaButton.disabled = false;
+                }
+
                 return;
             }
-            showMessage("M-PESA payment request sent. Check your phone and enter your PIN.");
-            window.setTimeout(pollPaymentStatus, 3000);
+
+            showMessage(
+                "M-PESA payment request sent. Check your phone and enter your PIN."
+            );
+
+            window.setTimeout(
+                pollPaymentStatus,
+                3000
+            );
+
         } catch (error) {
-            showMessage("Unable to check payment status. Please try again.");
+
+            showMessage(
+                "Unable to check payment status. Please try again."
+            );
+
+            if (mpesaButton) {
+                mpesaButton.disabled = false;
+            }
         }
     }
 
     async function payWithMpesa() {
+
         if (!form.checkValidity()) {
             form.reportValidity();
             return;
         }
+
         if (!readCart().length) {
-            showMessage("Your cart is empty.");
+            showMessage(
+                "Your cart is empty."
+            );
+
             return;
         }
+
         mpesaButton.disabled = true;
-        showMessage("Starting M-PESA payment request...");
+
+        showMessage(
+            "Starting M-PESA payment request..."
+        );
+
         try {
-            const response = await fetch("/api/mpesa/stkpush", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(getCheckoutPayload())
-            });
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.message || "M-PESA is not configured yet.");
-            checkoutRequestId = result.checkoutRequestId;
-            showMessage("M-PESA payment request sent. Check your phone and enter your PIN.");
+
+            const response =
+                await fetch(
+                    "/api/mpesa/stkpush",
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body:
+                            JSON.stringify(
+                                getCheckoutPayload()
+                            )
+                    }
+                );
+
+            const result =
+                await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    result.message ||
+                    "M-PESA payment could not be started."
+                );
+            }
+
+            checkoutRequestId =
+                result.checkoutRequestId;
+
+            showMessage(
+                "M-PESA payment request sent. Check your phone and enter your PIN."
+            );
+
             pollPaymentStatus();
+
         } catch (error) {
-            showMessage(error.message || "M-PESA is not configured yet.");
-        } finally {
+
+            showMessage(
+                error.message ||
+                "M-PESA payment could not be started."
+            );
+
             mpesaButton.disabled = false;
         }
     }
 
-    if (mpesaButton) mpesaButton.addEventListener("click", payWithMpesa);
-    form.addEventListener("submit", function (event) {
-        event.preventDefault();
-        showMessage("Choose Pay with M-PESA to start payment. Your order is not confirmed until payment succeeds.");
-    });
+    if (mpesaButton) {
+        mpesaButton.addEventListener(
+            "click",
+            payWithMpesa
+        );
+    }
+
+    form.addEventListener(
+        "submit",
+        function (event) {
+            event.preventDefault();
+
+            showMessage(
+                "Choose Pay with M-PESA to start payment. Your order is not confirmed until payment succeeds."
+            );
+        }
+    );
 }
 
-document.addEventListener("DOMContentLoaded", function () {
-    updateCartCount();
-    startFlashDealsCountdown();
-    setupNewsletter();
-    setupCheckout();
+/* =========================
+   START EVERYTHING
+========================= */
 
-    const popup = document.getElementById("productPopup");
-    if (popup) {
-        const productGrid = document.querySelector(".products");
-        if (productGrid) {
-            productGrid.addEventListener("click", function (event) {
-                const image = event.target.closest(".product-image img");
-                const card = event.target.closest(".product");
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
 
-                if (image && card && productGrid.contains(card)) {
-                    event.preventDefault();
-                    openProduct(getProductData(card));
-                    return;
-                }
+        updateCartCount();
 
-                if (card && !event.target.closest("button") && !event.target.closest("a")) {
-                    openProduct(getProductData(card));
-                }
-            });
-        }
-        document.querySelector(".product-popup-close").addEventListener("click", closeProduct);
-        document.getElementById("increaseQty").addEventListener("click", increaseQty);
-        document.getElementById("decreaseQty").addEventListener("click", decreaseQty);
-        document.getElementById("modalAddToCart").addEventListener("click", function () { addToCart(); });
-        document.getElementById("modalBuyNow").addEventListener("click", buyNow);
-        popup.addEventListener("click", function (event) {
-            if (event.target === popup) closeProduct();
-        });
-    }
+        startFlashDealsCountdown();
 
-    const searchButton = document.getElementById("searchButton");
-    const searchInput = document.getElementById("searchInput");
-    if (searchButton) searchButton.addEventListener("click", searchProducts);
-    if (searchInput) searchInput.addEventListener("input", searchProducts);
-    document.querySelectorAll("[data-category]").forEach(function (item) {
-        if (item.classList.contains("product")) return;
-        item.addEventListener("click", function () {
-            const category = item.dataset.category;
-            if (category) {
-                filterProducts(category);
-                document.getElementById("productsSection").scrollIntoView({ behavior: "smooth" });
+        setupNewsletter();
+
+        setupCheckout();
+
+        const popup =
+            document.getElementById(
+                "productPopup"
+            );
+
+        if (popup) {
+
+            const productGrid =
+                document.querySelector(
+                    ".products"
+                );
+
+            if (productGrid) {
+
+                productGrid.addEventListener(
+                    "click",
+                    function (event) {
+
+                        const image =
+                            event.target.closest(
+                                ".product-image img"
+                            );
+
+                        const card =
+                            event.target.closest(
+                                ".product"
+                            );
+
+                        if (
+                            image &&
+                            card &&
+                            productGrid.contains(card)
+                        ) {
+
+                            event.preventDefault();
+
+                            openProduct(
+                                getProductData(card)
+                            );
+
+                            return;
+                        }
+
+                        if (
+                            card &&
+                            !event.target.closest(
+                                "button"
+                            ) &&
+                            !event.target.closest(
+                                "a"
+                            )
+                        ) {
+
+                            openProduct(
+                                getProductData(card)
+                            );
+                        }
+                    }
+                );
             }
-        });
-    });
-    ["heroShopButton", "newArrivalsButton"].forEach(function (id) {
-        const button = document.getElementById(id);
-        if (button) button.addEventListener("click", function () {
-            filterProducts("all");
-            document.getElementById("productsSection").scrollIntoView({ behavior: "smooth" });
-        });
-    });
-    const gamingButton = document.getElementById("gamingButton");
-    if (gamingButton) gamingButton.addEventListener("click", function () {
-        filterProducts("gaming");
-        document.getElementById("productsSection").scrollIntoView({ behavior: "smooth" });
-    });
-    if (document.querySelector(".hero-products")) setupHero();
 
-    const requestedCategory = new URLSearchParams(window.location.search).get("category");
-    if (requestedCategory && document.querySelector(".products")) {
-        filterProducts(requestedCategory);
-        document.getElementById("productsSection").scrollIntoView({ behavior: "smooth" });
+            const closeButton =
+                document.querySelector(
+                    ".product-popup-close"
+                );
+
+            if (closeButton) {
+                closeButton.addEventListener(
+                    "click",
+                    closeProduct
+                );
+            }
+
+            const increaseButton =
+                document.getElementById(
+                    "increaseQty"
+                );
+
+            if (increaseButton) {
+                increaseButton.addEventListener(
+                    "click",
+                    increaseQty
+                );
+            }
+
+            const decreaseButton =
+                document.getElementById(
+                    "decreaseQty"
+                );
+
+            if (decreaseButton) {
+                decreaseButton.addEventListener(
+                    "click",
+                    decreaseQty
+                );
+            }
+
+            const modalAddToCart =
+                document.getElementById(
+                    "modalAddToCart"
+                );
+
+            if (modalAddToCart) {
+                modalAddToCart.addEventListener(
+                    "click",
+                    function () {
+                        addToCart();
+                    }
+                );
+            }
+
+            const modalBuyNow =
+                document.getElementById(
+                    "modalBuyNow"
+                );
+
+            if (modalBuyNow) {
+                modalBuyNow.addEventListener(
+                    "click",
+                    buyNow
+                );
+            }
+
+            popup.addEventListener(
+                "click",
+                function (event) {
+                    if (
+                        event.target === popup
+                    ) {
+                        closeProduct();
+                    }
+                }
+            );
+        }
+
+        const searchButton =
+            document.getElementById(
+                "searchButton"
+            );
+
+        const searchInput =
+            document.getElementById(
+                "searchInput"
+            );
+
+        if (searchButton) {
+            searchButton.addEventListener(
+                "click",
+                searchProducts
+            );
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener(
+                "input",
+                searchProducts
+            );
+        }
+
+        document
+            .querySelectorAll(
+                "[data-category]"
+            )
+            .forEach(
+                function (item) {
+
+                    if (
+                        item.classList.contains(
+                            "product"
+                        )
+                    ) {
+                        return;
+                    }
+
+                    item.addEventListener(
+                        "click",
+                        function () {
+
+                            const category =
+                                item.dataset.category;
+
+                            if (category) {
+
+                                filterProducts(
+                                    category
+                                );
+
+                                const section =
+                                    document.getElementById(
+                                        "productsSection"
+                                    );
+
+                                if (section) {
+                                    section.scrollIntoView(
+                                        {
+                                            behavior:
+                                                "smooth"
+                                        }
+                                    );
+                                }
+                            }
+                        }
+                    );
+                }
+            );
+
+        [
+            "heroShopButton",
+            "newArrivalsButton"
+        ].forEach(
+            function (id) {
+
+                const button =
+                    document.getElementById(id);
+
+                if (button) {
+
+                    button.addEventListener(
+                        "click",
+                        function () {
+
+                            filterProducts(
+                                "all"
+                            );
+
+                            const section =
+                                document.getElementById(
+                                    "productsSection"
+                                );
+
+                            if (section) {
+                                section.scrollIntoView(
+                                    {
+                                        behavior:
+                                            "smooth"
+                                    }
+                                );
+                            }
+                        }
+                    );
+                }
+            }
+        );
+
+        const gamingButton =
+            document.getElementById(
+                "gamingButton"
+            );
+
+        if (gamingButton) {
+
+            gamingButton.addEventListener(
+                "click",
+                function () {
+
+                    filterProducts(
+                        "gaming"
+                    );
+
+                    const section =
+                        document.getElementById(
+                            "productsSection"
+                        );
+
+                    if (section) {
+                        section.scrollIntoView(
+                            {
+                                behavior:
+                                    "smooth"
+                            }
+                        );
+                    }
+                }
+            );
+        }
+
+        if (
+            document.querySelector(
+                ".hero-products"
+            )
+        ) {
+            setupHero();
+        }
+
+        const requestedCategory =
+            new URLSearchParams(
+                window.location.search
+            ).get("category");
+
+        if (
+            requestedCategory &&
+            document.querySelector(
+                ".products"
+            )
+        ) {
+
+            filterProducts(
+                requestedCategory
+            );
+
+            const section =
+                document.getElementById(
+                    "productsSection"
+                );
+
+            if (section) {
+                section.scrollIntoView(
+                    {
+                        behavior:
+                            "smooth"
+                    }
+                );
+            }
+        }
     }
-});
+);
 
-document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape") closeProduct();
-});
+/* =========================
+   ESCAPE CLOSES POPUP
+========================= */
+
+document.addEventListener(
+    "keydown",
+    function (event) {
+
+        if (event.key === "Escape") {
+            closeProduct();
+        }
+
+    }
+);
