@@ -866,21 +866,46 @@
             }
 
             .hero {
-                height: 310px;
+                height: auto;
+                min-height: 0;
+                padding-bottom: 20px;
             }
 
             .hero-content {
-                width: calc(100% - 58px);
-                padding: 42px 58px 42px 30px;
+                width: 100%;
+                position: static;
+                padding: 30px 24px 20px;
             }
 
             .hero-products {
                 display: flex;
-                opacity: .5;
+                opacity: 1;
                 width: 100%;
-                position: absolute;
-                inset: 0;
-                z-index: 1;
+                position: static;
+                height: auto;
+                padding: 0 24px 24px;
+                gap: 10px;
+                justify-content: space-between;
+            }
+
+            .hero-products img {
+                max-width: 100%;
+                max-height: 110px;
+                background: white;
+                border-radius: 6px;
+                padding: 8px;
+                filter: none;
+            }
+
+            .hero-arrow {
+                display: none;
+            }
+
+            .hero-dots {
+                position: static;
+                transform: none;
+                justify-content: center;
+                padding-bottom: 16px;
             }
 
             .hero h1 {
@@ -1529,7 +1554,8 @@
             <div class="social-links">
                 <a href="https://www.facebook.com/" target="_blank" rel="noopener">Facebook</a>
                 <a href="https://www.instagram.com/" target="_blank" rel="noopener">Instagram</a>
-                <a href="https://wa.me/254700000000" target="_blank" rel="noopener">WhatsApp</a>
+                <a href="https://wa.me/254793977389
+        " target="_blank" rel="noopener">WhatsApp</a>
             </div>
         </div>
 
