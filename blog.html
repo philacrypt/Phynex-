@@ -1,513 +1,436 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>News & Blog | PHYNEX</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>News & Blog | PHYNEX</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+        --brand: #0b3fae;
+        --brand-dark: #082a7a;
+        --brand-light: #4f7fe8;
+        --accent: #e2971f;
+        --ink: #131a2c;
+        --ink-soft: #5b6478;
+        --line: #e3e6ee;
+        --paper: #f5f6fa;
+        --ok: #157a45;
+        --err: #b3261e;
+    }
+    body { font-family: 'Inter', Arial, sans-serif; background: var(--paper); color: var(--ink); line-height: 1.65; -webkit-font-smoothing: antialiased; }
+    h1, h2, h3 { font-family: 'Space Grotesk', 'Inter', sans-serif; }
+    a { color: inherit; }
 
-        :root {
-            --brand: #073bce;
-            --brand-dark: #052a96;
-            --ink: #16181d;
-            --muted: #5b6270;
-            --line: #e5e7ec;
-            --bg: #f4f5f8;
-        }
+    .header { height: 68px; background: var(--brand); display: flex; align-items: center; justify-content: space-between; padding: 0 7%; color: white; position: sticky; top: 0; z-index: 10; }
+    .logo { display: flex; align-items: center; gap: 9px; font-size: 24px; font-weight: 800; letter-spacing: -0.03em; }
+    .logo svg { width: 30px; height: 30px; }
+    .back-home { color: white; text-decoration: none; font-size: 14px; font-weight: 600; opacity: 0.92; display: flex; align-items: center; gap: 6px; }
+    .back-home:hover { opacity: 1; }
 
-        body {
-            font-family: 'Manrope', Arial, Helvetica, sans-serif;
-            background: var(--bg);
-            color: var(--ink);
-            line-height: 1.65;
-            -webkit-font-smoothing: antialiased;
-        }
+    .hero { background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%); color: white; padding: 60px 7% 74px; position: relative; overflow: hidden; }
+    .hero::before { content: ""; position: absolute; top: -120px; right: -100px; width: 420px; height: 420px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 70%); }
+    .hero-inner { max-width: 1100px; margin: 0 auto; position: relative; z-index: 2; }
+    .eyebrow { font-size: 13px; font-weight: 700; color: #c6d4ff; margin-bottom: 14px; }
+    .hero h1 { font-size: clamp(2rem, 4vw, 2.75rem); font-weight: 800; letter-spacing: -0.02em; margin-bottom: 16px; max-width: 18ch; }
+    .hero p { font-size: 16px; color: #dbe3fb; max-width: 640px; }
 
-        /* HEADER */
-        .header {
-            height: 68px;
-            background: var(--brand);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 7%;
-            color: white;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
+    .container { width: 88%; max-width: 1100px; margin: -40px auto 70px; position: relative; }
 
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 9px;
-            font-size: 24px;
-            font-weight: 800;
-            letter-spacing: -0.03em;
-        }
+    .articles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 20px; }
+    .article { background: white; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: 0 16px 30px -22px rgba(11, 63, 174, 0.2); display: flex; flex-direction: column; }
+    .article-image { height: 140px; background: linear-gradient(135deg, #eaf0ff 0%, #dbe6ff 100%); display: flex; align-items: center; justify-content: center; }
+    .article-image svg { width: 46px; height: 46px; stroke: var(--brand); }
+    .article-image img, .article-image video { width: 100%; height: 100%; object-fit: cover; }
+    .article-content { padding: 22px; display: flex; flex-direction: column; flex: 1; }
+    .article-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: var(--brand); background: #eaf0ff; padding: 4px 10px; border-radius: 20px; margin-bottom: 12px; width: fit-content; }
+    .article h2 { font-size: 17px; font-weight: 700; line-height: 1.4; margin-bottom: 10px; }
+    .article p { color: var(--ink-soft); font-size: 13.5px; margin-bottom: 18px; flex: 1; }
+    .read-more { display: inline-flex; align-items: center; gap: 6px; color: var(--brand); text-decoration: none; font-size: 13.5px; font-weight: 700; }
+    .read-more:hover { gap: 10px; }
 
-        .logo svg {
-            width: 30px;
-            height: 30px;
-        }
+    /* SHARE AN UPDATE */
+    .share-panel { background: #fff; border: 1px solid var(--line); border-radius: 14px; margin-bottom: 20px; padding: 34px 38px; box-shadow: 0 16px 30px -22px rgba(11, 63, 174, 0.15); }
+    .share-head { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
+    .share-icon { width: 42px; height: 42px; min-width: 42px; border-radius: 10px; background: #eaf0ff; display: flex; align-items: center; justify-content: center; }
+    .share-icon svg { width: 21px; height: 21px; stroke: var(--brand); }
+    .share-panel h2 { font-size: 19px; }
+    .share-panel > p.sub { color: var(--ink-soft); font-size: 14px; margin: 8px 0 24px; max-width: 640px; }
 
-        .back-home {
-            color: white;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 600;
-            opacity: 0.92;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: opacity 0.15s ease;
-        }
+    .share-form { display: grid; gap: 16px; }
+    .field { display: grid; gap: 6px; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .field label { font-size: 13px; font-weight: 700; color: var(--ink); }
+    .field input, .field textarea, .field select { border: 1.5px solid var(--line); border-radius: 9px; padding: 11px 13px; font-size: 14px; font-family: inherit; color: var(--ink); background: #fbfcfe; outline: none; }
+    .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--brand-light); box-shadow: 0 0 0 3px rgba(79,127,232,0.15); background: #fff; }
+    .field textarea { min-height: 90px; resize: vertical; }
+    .field small { color: #8890a0; font-size: 12px; }
 
-        .back-home:hover {
-            opacity: 1;
-        }
+    .media-drop {
+        border: 2px dashed var(--line);
+        border-radius: 10px;
+        padding: 26px;
+        text-align: center;
+        background: #fafbfe;
+        cursor: pointer;
+        transition: border-color .15s ease, background .15s ease;
+    }
+    .media-drop:hover, .media-drop.dragover { border-color: var(--brand-light); background: #eef3ff; }
+    .media-drop svg { width: 30px; height: 30px; stroke: var(--brand); margin-bottom: 8px; }
+    .media-drop p { font-size: 13.5px; color: var(--ink-soft); }
+    .media-drop strong { color: var(--brand); }
+    .media-drop input[type="file"] { display: none; }
 
-        /* HERO */
-        .hero {
-            background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
-            color: white;
-            padding: 64px 7% 76px;
-            position: relative;
-            overflow: hidden;
-        }
+    .media-preview { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-top: 14px; }
+    .media-thumb { position: relative; border-radius: 8px; overflow: hidden; aspect-ratio: 1 / 1; border: 1px solid var(--line); background: #eef1f8; }
+    .media-thumb img, .media-thumb video { width: 100%; height: 100%; object-fit: cover; }
+    .media-thumb button { position: absolute; top: 5px; right: 5px; width: 22px; height: 22px; border: none; border-radius: 50%; background: rgba(11,17,32,0.65); color: #fff; font-size: 13px; line-height: 1; cursor: pointer; }
+    .media-thumb .badge { position: absolute; bottom: 5px; left: 5px; background: rgba(11,17,32,0.65); color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px; }
 
-        .hero::before {
-            content: "";
-            position: absolute;
-            top: -120px;
-            right: -100px;
-            width: 420px;
-            height: 420px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 70%);
-        }
+    .video-url-preview { margin-top: 4px; }
+    .video-url-preview iframe, .video-url-preview video { width: 100%; max-width: 360px; border-radius: 8px; border: 1px solid var(--line); }
 
-        .hero-inner {
-            max-width: 1100px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1.3fr 0.7fr;
-            gap: 40px;
-            align-items: center;
-            position: relative;
-            z-index: 2;
-        }
+    .publish-btn { justify-self: start; background: var(--brand); color: #fff; border: none; padding: 13px 26px; border-radius: 9px; font-size: 14.5px; font-weight: 700; font-family: inherit; cursor: pointer; }
+    .publish-btn:hover { background: var(--brand-dark); }
+    .publish-note { font-size: 12.5px; color: #8890a0; }
+    .publish-status { font-size: 13.5px; font-weight: 600; min-height: 1.2em; }
+    .publish-status.success { color: var(--ok); }
 
-        .eyebrow {
-            font-size: 13px;
-            font-weight: 700;
-            color: #c6d4ff;
-            margin-bottom: 14px;
-        }
+    /* newly published feed */
+    .fresh-posts { margin-bottom: 20px; }
+    .fresh-posts h2 { font-size: 16px; color: var(--ink-soft); margin-bottom: 14px; font-weight: 600; }
+    .fresh-posts .articles { margin-bottom: 0; }
 
-        .hero h1 {
-            font-size: clamp(2rem, 4vw, 2.75rem);
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            margin-bottom: 16px;
-            max-width: 16ch;
-        }
+    /* INFORMATION */
+    .information { background: white; border: 1px solid var(--line); border-radius: 14px; margin-top: 4px; padding: 34px 38px; display: flex; align-items: center; gap: 20px; box-shadow: 0 16px 30px -22px rgba(11, 63, 174, 0.12); }
+    .information-icon { width: 48px; height: 48px; min-width: 48px; border-radius: 12px; background: #eaf0ff; display: flex; align-items: center; justify-content: center; }
+    .information-icon svg { width: 24px; height: 24px; stroke: var(--brand); }
+    .information h2 { font-size: 19px; font-weight: 800; margin-bottom: 8px; }
+    .information p { color: var(--ink-soft); font-size: 14.5px; max-width: 780px; }
 
-        .hero p {
-            font-size: 16px;
-            color: #dbe3fb;
-            max-width: 640px;
-        }
+    footer { background: #0a1330; color: #aab2c5; text-align: center; padding: 26px 15px; font-size: 13px; }
+    .footer-logo { display: inline-flex; align-items: center; gap: 6px; color: white; font-weight: 800; font-size: 14px; margin-bottom: 10px; }
+    .footer-logo svg { width: 20px; height: 20px; }
+    footer a { color: white; text-decoration: none; font-weight: 600; }
+    footer a:hover { text-decoration: underline; }
 
-        .hero-art {
-            justify-self: end;
-        }
-
-        .hero-art svg {
-            width: 100%;
-            max-width: 260px;
-            height: auto;
-        }
-
-        /* MAIN */
-        .container {
-            width: 88%;
-            max-width: 1100px;
-            margin: -40px auto 70px;
-            position: relative;
-        }
-
-        /* ARTICLES */
-        .articles {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .article {
-            background: white;
-            border: 1px solid var(--line);
-            border-radius: 14px;
-            overflow: hidden;
-            box-shadow: 0 16px 30px -22px rgba(7, 59, 206, 0.18);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .article-image {
-            height: 140px;
-            background: linear-gradient(135deg, #eaf0ff 0%, #dbe6ff 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .article-image svg {
-            width: 46px;
-            height: 46px;
-            stroke: var(--brand);
-        }
-
-        .article-content {
-            padding: 22px;
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-        }
-
-        .article-tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 11.5px;
-            font-weight: 700;
-            color: var(--brand);
-            background: #eaf0ff;
-            padding: 4px 10px;
-            border-radius: 20px;
-            margin-bottom: 12px;
-            width: fit-content;
-            letter-spacing: 0.01em;
-        }
-
-        .article h2 {
-            font-size: 17px;
-            font-weight: 700;
-            line-height: 1.4;
-            margin-bottom: 10px;
-            letter-spacing: -0.01em;
-        }
-
-        .article p {
-            color: var(--muted);
-            font-size: 13.5px;
-            margin-bottom: 18px;
-            flex: 1;
-        }
-
-        .read-more {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            color: var(--brand);
-            text-decoration: none;
-            font-size: 13.5px;
-            font-weight: 700;
-            transition: gap 0.15s ease;
-        }
-
-        .read-more:hover {
-            gap: 10px;
-        }
-
-        /* INFORMATION */
-        .information {
-            background: white;
-            border: 1px solid var(--line);
-            border-radius: 14px;
-            margin-top: 4px;
-            padding: 34px 38px;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            box-shadow: 0 16px 30px -22px rgba(7, 59, 206, 0.12);
-        }
-
-        .information-icon {
-            width: 48px;
-            height: 48px;
-            min-width: 48px;
-            border-radius: 12px;
-            background: #eaf0ff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .information-icon svg {
-            width: 24px;
-            height: 24px;
-            stroke: var(--brand);
-        }
-
-        .information h2 {
-            font-size: 19px;
-            font-weight: 800;
-            margin-bottom: 8px;
-            letter-spacing: -0.01em;
-        }
-
-        .information p {
-            color: var(--muted);
-            font-size: 14.5px;
-            max-width: 780px;
-        }
-
-        /* FOOTER */
-        footer {
-            background: #0a1330;
-            color: #aab2c5;
-            text-align: center;
-            padding: 26px 15px;
-            font-size: 13px;
-        }
-
-        .footer-logo {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            color: white;
-            font-weight: 800;
-            font-size: 14px;
-            margin-bottom: 10px;
-        }
-
-        .footer-logo svg {
-            width: 20px;
-            height: 20px;
-        }
-
-        footer a {
-            color: white;
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        footer a:hover {
-            text-decoration: underline;
-        }
-
-        /* MOBILE */
-        @media (max-width: 800px) {
-            .articles {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-
-        @media (max-width: 600px) {
-            .header {
-                height: 60px;
-                padding: 0 5%;
-            }
-
-            .logo {
-                font-size: 21px;
-            }
-
-            .back-home span.label {
-                display: none;
-            }
-
-            .hero {
-                padding: 44px 6% 60px;
-            }
-
-            .hero-inner {
-                grid-template-columns: 1fr;
-            }
-
-            .hero-art {
-                display: none;
-            }
-
-            .container {
-                width: 92%;
-                margin-top: -30px;
-            }
-
-            .articles {
-                grid-template-columns: 1fr;
-            }
-
-            .article-image {
-                height: 150px;
-            }
-
-            .information {
-                flex-direction: column;
-                align-items: flex-start;
-                padding: 26px 24px;
-            }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            .back-home, .read-more {
-                transition: none;
-            }
-        }
-
-        a:focus-visible {
-            outline: 2px solid white;
-            outline-offset: 3px;
-        }
-    </style>
+    @media (max-width: 800px) {
+        .articles { grid-template-columns: 1fr 1fr; }
+        .field-row { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+        .header { height: 60px; padding: 0 5%; }
+        .logo { font-size: 21px; }
+        .back-home span.label { display: none; }
+        .hero { padding: 44px 6% 60px; }
+        .container { width: 92%; margin-top: -30px; }
+        .articles { grid-template-columns: 1fr; }
+        .share-panel { padding: 26px 22px; }
+        .information { flex-direction: column; align-items: flex-start; padding: 26px 24px; }
+    }
+</style>
 </head>
 
 <body>
 
-    <!-- HEADER -->
-    <header class="header">
-        <div class="logo">
-            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="1" y="1" width="30" height="30" rx="8" fill="white" fill-opacity="0.16"/>
-                <path d="M10 22V10H17C19.5 10 21 11.6 21 14C21 16.4 19.5 18 17 18H10" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            PHYNEX
-        </div>
-        <a href="index.html" class="back-home">
-            ← <span class="label">Back to Store</span>
-        </a>
-    </header>
+<header class="header">
+    <div class="logo">
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="1" y="1" width="30" height="30" rx="8" fill="white" fill-opacity="0.16"/>
+            <path d="M10 22V10H17C19.5 10 21 11.6 21 14C21 16.4 19.5 18 17 18H10" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        PHYNEX
+    </div>
+    <a href="index.html" class="back-home">← <span class="label">Back to Store</span></a>
+</header>
 
-    <!-- HERO -->
-    <section class="hero">
-        <div class="hero-inner">
-            <div>
-                <div class="eyebrow">News & Blog</div>
-                <h1>Updates, guides, and stories from PHYNEX.</h1>
-                <p>
-                    Shopping guides and useful information from PHYNEX.
-                </p>
-            </div>
-            <div class="hero-art">
-                <svg viewBox="0 0 220 220" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="110" cy="110" r="98" fill="white" fill-opacity="0.06"/>
-                    <rect x="50" y="52" width="120" height="86" rx="10" fill="white" fill-opacity="0.14"/>
-                    <path d="M66 76H154" stroke="white" stroke-opacity="0.5" stroke-width="6" stroke-linecap="round"/>
-                    <path d="M66 96H130" stroke="white" stroke-opacity="0.35" stroke-width="6" stroke-linecap="round"/>
-                    <path d="M66 116H110" stroke="white" stroke-opacity="0.25" stroke-width="6" stroke-linecap="round"/>
-                    <rect x="60" y="150" width="100" height="28" rx="8" fill="#c6d4ff" fill-opacity="0.9"/>
-                    <path d="M78 164H142" stroke="#052a96" stroke-width="4" stroke-linecap="round"/>
+<section class="hero">
+    <div class="hero-inner">
+        <div class="eyebrow">News & Blog</div>
+        <h1>Updates, guides, and stories from PHYNEX.</h1>
+        <p>Shopping guides, product news and useful information from PHYNEX — plus the latest updates our team shares here.</p>
+    </div>
+</section>
+
+<main class="container">
+
+    <!-- SHARE AN UPDATE -->
+    <section class="share-panel">
+        <div class="share-head">
+            <div class="share-icon">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="3" y="5" width="18" height="14" rx="2" stroke-width="1.7"/>
+                    <path d="M3 15L8 10L12.5 14.5L16 11L21 16" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="8.5" cy="8.5" r="1.5" stroke-width="1.7"/>
                 </svg>
             </div>
+            <h2>Share an update</h2>
+        </div>
+        <p class="sub">Post a news update to this page. Add photos, or attach a video by uploading a file or pasting a video link.</p>
+
+        <form class="share-form" id="postForm" onsubmit="publishPost(event)">
+
+            <div class="field-row">
+                <div class="field">
+                    <label for="postTag">Category</label>
+                    <select id="postTag">
+                        <option>PHYNEX · News</option>
+                        <option>PHYNEX · Shopping</option>
+                        <option>PHYNEX · Updates</option>
+                        <option>PHYNEX · Community</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="postTitle">Headline</label>
+                    <input type="text" id="postTitle" placeholder="e.g. New arrivals this week" required>
+                </div>
+            </div>
+
+            <div class="field">
+                <label for="postBody">Story</label>
+                <textarea id="postBody" placeholder="Write the update..." required></textarea>
+            </div>
+
+            <div class="field">
+                <label>Photos or video file</label>
+                <div class="media-drop" id="mediaDrop">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 16V4M12 4L7 9M12 4L17 9" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16V18C4 19.1 4.9 20 6 20H18C19.1 20 20 19.1 20 18V16" stroke-width="1.7" stroke-linecap="round"/></svg>
+                    <p><strong>Click to upload</strong> or drag photos / a video here</p>
+                    <input type="file" id="mediaInput" accept="image/*,video/*" multiple>
+                </div>
+                <div class="media-preview" id="mediaPreview"></div>
+                <small>Uploads are previewed in your browser for this demo and are not saved to a server.</small>
+            </div>
+
+            <div class="field">
+                <label for="videoUrl">Or paste a video link (YouTube, etc.)</label>
+                <input type="url" id="videoUrl" placeholder="https://www.youtube.com/watch?v=...">
+                <div class="video-url-preview" id="videoUrlPreview"></div>
+            </div>
+
+            <div>
+                <button type="submit" class="publish-btn">Publish update</button>
+                <p class="publish-status" id="publishStatus"></p>
+            </div>
+            <p class="publish-note">Posts appear below immediately. This is a local preview — connect a PHYNEX backend to make posts permanent.</p>
+        </form>
+    </section>
+
+    <!-- FRESH POSTS FROM VISITORS -->
+    <section class="fresh-posts" id="freshPosts" hidden>
+        <h2>Just posted</h2>
+        <div class="articles" id="freshPostsGrid"></div>
+    </section>
+
+    <!-- ARTICLES -->
+    <section class="articles">
+
+        <article class="article">
+            <div class="article-image">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 21C12 21 4 15.5 4 9.5C4 6.5 6.2 4.5 9 4.5C10.5 4.5 11.5 5.2 12 6C12.5 5.2 13.5 4.5 15 4.5C17.8 4.5 20 6.5 20 9.5C20 15.5 12 21 12 21Z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div class="article-content">
+                <div class="article-tag">PHYNEX · News</div>
+                <h2>Welcome to PHYNEX</h2>
+                <p>Learn more about PHYNEX and our goal of creating a simple and convenient online shopping experience.</p>
+                <a href="about.html" class="read-more">Read more →</a>
+            </div>
+        </article>
+
+        <article class="article">
+            <div class="article-image">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 8H18L17 20H7L6 8Z" stroke-width="1.6" stroke-linejoin="round"/>
+                    <path d="M9 8V6C9 4.3 10.3 3 12 3C13.7 3 15 4.3 15 6V8" stroke-width="1.6" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <div class="article-content">
+                <div class="article-tag">PHYNEX · Shopping</div>
+                <h2>Things to consider before buying technology online</h2>
+                <p>A practical guide to checking product details, specifications, pricing and delivery information.</p>
+                <a href="blog.html" class="read-more">Read more →</a>
+            </div>
+        </article>
+
+        <article class="article">
+            <div class="article-image">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M13 2L4 14H11L10 22L20 9H13L13 2Z" stroke-width="1.6" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div class="article-content">
+                <div class="article-tag">PHYNEX · Updates</div>
+                <h2>What's happening at PHYNEX</h2>
+                <p>Follow PHYNEX for future marketplace updates, new features and announcements.</p>
+                <a href="blog.html" class="read-more">Read more →</a>
+            </div>
+        </article>
+
+    </section>
+
+    <!-- INFORMATION -->
+    <section class="information">
+        <div class="information-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 8V13" stroke-width="1.8" stroke-linecap="round"/>
+                <circle cx="12" cy="16.3" r="0.9" fill="var(--brand)"/>
+                <circle cx="12" cy="12" r="9" stroke-width="1.8"/>
+            </svg>
+        </div>
+        <div>
+            <h2>Stay informed</h2>
+            <p>New articles, announcements and shopping guides can be added to this page as the PHYNEX marketplace grows.</p>
         </div>
     </section>
 
-    <!-- MAIN -->
-    <main class="container">
+</main>
 
-        <!-- ARTICLES -->
-        <section class="articles">
+<footer>
+    <div class="footer-logo">
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="1" y="1" width="30" height="30" rx="8" fill="#0b3fae"/>
+            <path d="M10 22V10H17C19.5 10 21 11.6 21 14C21 16.4 19.5 18 17 18H10" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        PHYNEX
+    </div>
+    <div>
+        © 2026 PHYNEX. All rights reserved. &nbsp;|&nbsp;
+        <a href="index.html">Back to PHYNEX</a>
+    </div>
+</footer>
 
-            <article class="article">
-                <div class="article-image">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 21C12 21 4 15.5 4 9.5C4 6.5 6.2 4.5 9 4.5C10.5 4.5 11.5 5.2 12 6C12.5 5.2 13.5 4.5 15 4.5C17.8 4.5 20 6.5 20 9.5C20 15.5 12 21 12 21Z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </div>
-                <div class="article-content">
-                    <div class="article-tag">PHYNEX · News</div>
-                    <h2>Welcome to PHYNEX</h2>
-                    <p>
-                        Learn more about PHYNEX and our goal of creating a
-                        simple and convenient online shopping experience.
-                    </p>
-                    <a href="about.html" class="read-more">Read more →</a>
-                </div>
-            </article>
+<script>
+    let uploadedMedia = []; // { url, type: 'image'|'video', name }
 
-            <article class="article">
-                <div class="article-image">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M6 8H18L17 20H7L6 8Z" stroke-width="1.6" stroke-linejoin="round"/>
-                        <path d="M9 8V6C9 4.3 10.3 3 12 3C13.7 3 15 4.3 15 6V8" stroke-width="1.6" stroke-linecap="round"/>
-                    </svg>
-                </div>
-                <div class="article-content">
-                    <div class="article-tag">PHYNEX · Shopping</div>
-                    <h2>Things to consider before buying technology online</h2>
-                    <p>
-                        A practical guide to checking product details,
-                        specifications, pricing and delivery information.
-                    </p>
-                    <a href="blog.html" class="read-more">Read more →</a>
-                </div>
-            </article>
+    const mediaDrop = document.getElementById('mediaDrop');
+    const mediaInput = document.getElementById('mediaInput');
+    const mediaPreview = document.getElementById('mediaPreview');
 
-            <article class="article">
-                <div class="article-image">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M13 2L4 14H11L10 22L20 9H13L13 2Z" stroke-width="1.6" stroke-linejoin="round"/>
-                    </svg>
-                </div>
-                <div class="article-content">
-                    <div class="article-tag">PHYNEX · Updates</div>
-                    <h2>What's happening at PHYNEX</h2>
-                    <p>
-                        Follow PHYNEX for future marketplace updates, new
-                        features and announcements.
-                    </p>
-                    <a href="blog.html" class="read-more">Read more →</a>
-                </div>
-            </article>
+    mediaDrop.addEventListener('click', () => mediaInput.click());
 
-        </section>
+    mediaDrop.addEventListener('dragover', (e) => { e.preventDefault(); mediaDrop.classList.add('dragover'); });
+    mediaDrop.addEventListener('dragleave', () => mediaDrop.classList.remove('dragover'));
+    mediaDrop.addEventListener('drop', (e) => {
+        e.preventDefault();
+        mediaDrop.classList.remove('dragover');
+        handleFiles(e.dataTransfer.files);
+    });
 
-        <!-- INFORMATION -->
-        <section class="information">
-            <div class="information-icon">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 8V13" stroke-width="1.8" stroke-linecap="round"/>
-                    <circle cx="12" cy="16.3" r="0.9" fill="var(--brand)"/>
-                    <circle cx="12" cy="12" r="9" stroke-width="1.8"/>
-                </svg>
+    mediaInput.addEventListener('change', () => handleFiles(mediaInput.files));
+
+    function handleFiles(fileList) {
+        Array.from(fileList).forEach(file => {
+            if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) return;
+            const url = URL.createObjectURL(file);
+            const type = file.type.startsWith('video/') ? 'video' : 'image';
+            uploadedMedia.push({ url, type, name: file.name });
+        });
+        renderMediaPreview();
+    }
+
+    function renderMediaPreview() {
+        mediaPreview.innerHTML = '';
+        uploadedMedia.forEach((m, i) => {
+            const thumb = document.createElement('div');
+            thumb.className = 'media-thumb';
+            thumb.innerHTML = m.type === 'video'
+                ? `<video src="${m.url}" muted></video><span class="badge">video</span>`
+                : `<img src="${m.url}" alt="${m.name}">`;
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = '×';
+            removeBtn.type = 'button';
+            removeBtn.onclick = () => { uploadedMedia.splice(i, 1); renderMediaPreview(); };
+            thumb.appendChild(removeBtn);
+            mediaPreview.appendChild(thumb);
+        });
+    }
+
+    // Video URL preview (YouTube embed support)
+    const videoUrlInput = document.getElementById('videoUrl');
+    const videoUrlPreview = document.getElementById('videoUrlPreview');
+
+    videoUrlInput.addEventListener('input', () => {
+        const embed = toEmbedUrl(videoUrlInput.value.trim());
+        videoUrlPreview.innerHTML = embed
+            ? `<iframe src="${embed}" height="200" frameborder="0" allowfullscreen></iframe>`
+            : '';
+    });
+
+    function toEmbedUrl(url) {
+        if (!url) return null;
+        const yt = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([\w-]+)/);
+        if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+        return null;
+    }
+
+    function publishPost(event) {
+        event.preventDefault();
+
+        const tag = document.getElementById('postTag').value;
+        const title = document.getElementById('postTitle').value.trim();
+        const body = document.getElementById('postBody').value.trim();
+        const videoUrl = videoUrlInput.value.trim();
+        const status = document.getElementById('publishStatus');
+
+        if (!title || !body) return;
+
+        const freshSection = document.getElementById('freshPosts');
+        const freshGrid = document.getElementById('freshPostsGrid');
+        freshSection.hidden = false;
+
+        const article = document.createElement('article');
+        article.className = 'article';
+
+        let mediaHtml = '';
+        const firstImage = uploadedMedia.find(m => m.type === 'image');
+        const firstVideo = uploadedMedia.find(m => m.type === 'video');
+        const embed = toEmbedUrl(videoUrl);
+
+        if (firstVideo) {
+            mediaHtml = `<video src="${firstVideo.url}" controls></video>`;
+        } else if (firstImage) {
+            mediaHtml = `<img src="${firstImage.url}" alt="${title}">`;
+        } else if (embed) {
+            mediaHtml = `<iframe src="${embed}" style="width:100%;height:100%;border:0;"></iframe>`;
+        } else {
+            mediaHtml = `<svg viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14H11L10 22L20 9H13L13 2Z" stroke="#0b3fae" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
+        }
+
+        article.innerHTML = `
+            <div class="article-image">${mediaHtml}</div>
+            <div class="article-content">
+                <div class="article-tag">${tag}</div>
+                <h2>${escapeHtml(title)}</h2>
+                <p>${escapeHtml(body)}</p>
+                <a href="#" class="read-more" onclick="return false;">Just now</a>
             </div>
-            <div>
-                <h2>Stay informed</h2>
-                <p>
-                    New articles, announcements and shopping guides can be
-                    added to this page as the PHYNEX marketplace grows.
-                </p>
-            </div>
-        </section>
+        `;
 
-    </main>
+        freshGrid.prepend(article);
 
-    <!-- FOOTER -->
-    <footer>
-        <div class="footer-logo">
-            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="1" y="1" width="30" height="30" rx="8" fill="#073bce"/>
-                <path d="M10 22V10H17C19.5 10 21 11.6 21 14C21 16.4 19.5 18 17 18H10" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            PHYNEX
-        </div>
-        <div>
-            © 2026 PHYNEX. All rights reserved.
-            &nbsp; | &nbsp;
-            <a href="index.html">Back to PHYNEX</a>
-        </div>
-    </footer>
+        status.textContent = 'Update published below.';
+        status.classList.add('success');
+
+        document.getElementById('postForm').reset();
+        uploadedMedia = [];
+        renderMediaPreview();
+        videoUrlPreview.innerHTML = '';
+
+        setTimeout(() => { status.textContent = ''; status.classList.remove('success'); }, 4000);
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+</script>
 
 </body>
 </html>

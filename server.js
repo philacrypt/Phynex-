@@ -1,6 +1,7 @@
 const express = require("express");
 const path = require("path");
 const crypto = require("crypto");
+const nodemailer = require("nodemailer");
 require("dotenv").config();
 
 const app = express();
@@ -341,6 +342,122 @@ app.get(
 );
 
 /* =========================
+   CONTACT FORM
+========================= */
+
+function contactMailConfigured() {
+    return Boolean(
+        process.env.EMAIL_USER &&
+        process.env.EMAIL_PASSWORD
+    );
+}
+
+const mailTransporter = contactMailConfigured()
+    ? nodemailer.createTransport({
+        host: process.env.EMAIL_HOST || "smtp.gmail.com",
+        port: Number(process.env.EMAIL_PORT) || 587,
+        secure: Number(process.env.EMAIL_PORT) === 465,
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASSWORD
+        }
+    })
+    : null;
+
+// Simple in-memory rate limiter: max 5 contact submissions
+// per IP per 10 minutes.
+const contactRateLimit = new Map();
+const CONTACT_WINDOW_MS = 10 * 60 * 1000;
+const CONTACT_MAX_PER_WINDOW = 5;
+
+function isRateLimited(ip) {
+    const now = Date.now();
+    const entry = contactRateLimit.get(ip);
+
+    if (!entry || now - entry.windowStart > CONTACT_WINDOW_MS) {
+        contactRateLimit.set(ip, { windowStart: now, count: 1 });
+        return false;
+    }
+
+    entry.count += 1;
+
+    if (entry.count > CONTACT_MAX_PER_WINDOW) {
+        return true;
+    }
+
+    return false;
+}
+
+app.post("/api/contact", async function (request, response) {
+
+    if (!contactMailConfigured()) {
+        return response.status(503).json({
+            message:
+                "Contact form is not configured yet. Add EMAIL_USER and EMAIL_PASS to .env."
+        });
+    }
+
+    if (isRateLimited(request.ip)) {
+        return response.status(429).json({
+            message:
+                "Too many messages sent. Please try again later."
+        });
+    }
+
+    const body = request.body || {};
+
+    const name = String(body.name || "").trim();
+    const email = String(body.email || "").trim();
+    const message = String(body.message || "").trim();
+
+    if (!name || !email || !message) {
+        return response.status(400).json({
+            message: "Please fill in all fields."
+        });
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return response.status(400).json({
+            message: "Enter a valid email address."
+        });
+    }
+
+    if (name.length > 200) {
+        return response.status(400).json({
+            message: "Name is too long."
+        });
+    }
+
+    if (message.length > 5000) {
+        return response.status(400).json({
+            message: "Message is too long."
+        });
+    }
+
+    try {
+
+        await mailTransporter.sendMail({
+            from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+            to: process.env.CONTACT_TO || process.env.EMAIL_USER,
+            replyTo: email,
+            subject: "New PHYNEX contact form message from " + name,
+            text: "From: " + name + " <" + email + ">\n\n" + message
+        });
+
+        return response.json({ ok: true });
+
+    } catch (error) {
+
+        console.error("Contact form email failed:", error.message);
+
+        return response.status(502).json({
+            message:
+                "Could not send message. Please try again later."
+        });
+    }
+});
+
+/* =========================
    SERVER HEALTH
 ========================= */
 
@@ -351,7 +468,9 @@ app.get(
         response.json({
             ok: true,
             mpesaConfigured:
-                mpesaConfigured()
+                mpesaConfigured(),
+            contactMailConfigured:
+                contactMailConfigured()
         });
     }
 );

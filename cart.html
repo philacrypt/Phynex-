@@ -4,8 +4,31 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cart | PHYNEX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box}body{margin:0;background:#f5f6f8;color:#172033;font-family:Arial,Helvetica,sans-serif}.page{width:min(900px,92%);margin:32px auto}.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}.header a{color:#0875e1;text-decoration:none;font-weight:bold}.header h1{margin:0;color:#071a49}.panel{background:#fff;border:1px solid #e1e4e8;border-radius:6px;padding:24px}.checkout-item{display:grid;grid-template-columns:72px 1fr auto;gap:14px;align-items:center;border-bottom:1px solid #edf0f3;padding:14px 0}.checkout-item:last-child{border-bottom:0}.checkout-item img{width:72px;height:72px;object-fit:contain}.checkout-item p{margin:7px 0;color:#687083}.line-quantity{display:flex;align-items:center;gap:10px}.line-quantity button{width:28px;height:28px;border:1px solid #d9dde5;background:#f7f8fa}.checkout-item>[data-remove]{border:0;background:transparent;color:#e53935}.summary-row{display:flex;justify-content:space-between;margin:14px 0}.total{font-size:20px;font-weight:bold;border-top:1px solid #e1e4e8;padding-top:16px}.primary{display:block;text-align:center;background:#0875e1;color:#fff;padding:13px;border-radius:3px;font-weight:bold;text-decoration:none}.empty{color:#687083}@media(max-width:600px){.page{margin:18px auto}.panel{padding:17px}.checkout-item{grid-template-columns:58px 1fr}.checkout-item img{width:58px;height:58px}.checkout-item>[data-remove]{grid-column:2;text-align:left}}
+*{box-sizing:border-box}
+:root{--navy:#071a49;--blue:#0b3fae;--blue-dark:#082a7a;--text:#172033;--muted:#687083;--border:#e1e4e8;--page:#f5f6f8}
+body{margin:0;background:var(--page);color:var(--text);font-family:'Inter',Arial,Helvetica,sans-serif}
+.page{width:min(900px,92%);margin:32px auto}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+.header a{color:var(--blue);text-decoration:none;font-weight:700;font-size:14px}
+.header h1{margin:0;font-family:'Space Grotesk',sans-serif;color:var(--navy);font-size:24px}
+.panel{background:#fff;border:1px solid var(--border);border-radius:10px;padding:24px}
+.checkout-item{display:grid;grid-template-columns:72px 1fr auto;gap:14px;align-items:center;border-bottom:1px solid #edf0f3;padding:14px 0}
+.checkout-item:last-child{border-bottom:0}
+.checkout-item img{width:72px;height:72px;object-fit:contain}
+.checkout-item p{margin:7px 0;color:var(--muted)}
+.line-quantity{display:flex;align-items:center;gap:10px}
+.line-quantity button{width:28px;height:28px;border:1px solid #d9dde5;border-radius:6px;background:#f7f8fa;cursor:pointer}
+.checkout-item>[data-remove]{border:0;background:transparent;color:#e53935;cursor:pointer;font-size:12px}
+.summary-row{display:flex;justify-content:space-between;margin:14px 0}
+.total{font-size:20px;font-weight:700;border-top:1px solid var(--border);padding-top:16px;font-family:'Space Grotesk',sans-serif;color:var(--navy)}
+.primary{display:block;text-align:center;background:var(--blue);color:#fff;padding:13px;border-radius:8px;font-weight:700;text-decoration:none}
+.primary:hover{background:var(--blue-dark)}
+.empty{color:var(--muted)}
+.empty a{color:var(--blue);font-weight:700}
+@media(max-width:600px){.page{margin:18px auto}.panel{padding:17px}.checkout-item{grid-template-columns:58px 1fr}.checkout-item img{width:58px;height:58px}.checkout-item>[data-remove]{grid-column:2;text-align:left}}
 </style>
 </head>
 <body>

@@ -6,7 +6,7 @@
     <title>About PHYNEX</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
         * {
@@ -16,8 +16,10 @@
         }
 
         :root {
-            --brand: #073bce;
-            --brand-dark: #052a96;
+            --brand: #0b3fae;
+            --brand-dark: #082a7a;
+            --brand-light: #4f7fe8;
+            --accent: #e2971f;
             --ink: #16181d;
             --muted: #5b6270;
             --line: #e5e7ec;
@@ -50,6 +52,7 @@
             display: flex;
             align-items: center;
             gap: 9px;
+            font-family: 'Space Grotesk', sans-serif;
             font-size: 24px;
             font-weight: 800;
             letter-spacing: -0.03em;
@@ -127,8 +130,9 @@
         }
 
         .hero h1 {
+            font-family: 'Space Grotesk', sans-serif;
             font-size: clamp(2rem, 4vw, 2.75rem);
-            font-weight: 800;
+            font-weight: 700;
             letter-spacing: -0.02em;
             margin-bottom: 16px;
             max-width: 16ch;
@@ -153,7 +157,7 @@
             border: 1px solid var(--line);
             border-radius: 14px;
             overflow: hidden;
-            box-shadow: 0 20px 40px -20px rgba(7, 59, 206, 0.15);
+            box-shadow: 0 20px 40px -20px rgba(11, 63, 174, 0.2);
         }
 
         .section {
@@ -166,8 +170,9 @@
         }
 
         .section h2 {
+            font-family: 'Space Grotesk', sans-serif;
             font-size: 21px;
-            font-weight: 800;
+            font-weight: 700;
             margin-bottom: 16px;
             letter-spacing: -0.01em;
         }
@@ -216,6 +221,7 @@
         }
 
         .value h3 {
+            font-family: 'Space Grotesk', sans-serif;
             font-size: 16px;
             font-weight: 700;
             margin-bottom: 8px;
@@ -270,6 +276,32 @@
 
         .section-head h2 {
             margin-bottom: 0;
+        }
+
+        /* STATS STRIP */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 22px;
+        }
+
+        .stat {
+            border-left: 3px solid var(--accent);
+            padding-left: 16px;
+        }
+
+        .stat .num {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--brand-dark);
+        }
+
+        .stat .label {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 2px;
         }
 
         /* FOOTER */
@@ -363,7 +395,7 @@
                 padding: 28px 24px;
             }
 
-            .values {
+            .values, .stats {
                 grid-template-columns: 1fr;
             }
         }
@@ -436,6 +468,21 @@
                     one place, giving shoppers the ability to browse
                     products, compare options and place orders online.
                 </p>
+
+                <div class="stats">
+                    <div class="stat">
+                        <div class="num">100%</div>
+                        <div class="label">Online, from browsing to checkout</div>
+                    </div>
+                    <div class="stat">
+                        <div class="num">Kenya</div>
+                        <div class="label">Where we currently operate</div>
+                    </div>
+                    <div class="stat">
+                        <div class="num">Mon–Sat</div>
+                        <div class="label">Support hours, 8AM–7PM EAT</div>
+                    </div>
+                </div>
             </section>
 
             <!-- WHAT WE DO -->
