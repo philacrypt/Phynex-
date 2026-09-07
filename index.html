@@ -23,8 +23,6 @@
             color: inherit;
         }
 
-        /* ================= TOP BAR ================= */
-
         .top-bar {
             height: 30px;
             background: #071a49;
@@ -41,8 +39,6 @@
             gap: 28px;
         }
 
-        /* ================= HEADER ================= */
-
         .main-header {
             background: white;
             height: 76px;
@@ -52,8 +48,6 @@
             padding: 0 4%;
             border-bottom: 1px solid #e5e7eb;
         }
-
-        /* YOUR LOGO AREA */
 
         .logo {
             width: 155px;
@@ -70,8 +64,6 @@
             object-position: left center;
             display: block;
         }
-
-        /* ================= SEARCH ================= */
 
         .search-box {
             flex: 1;
@@ -111,8 +103,6 @@
             background: #075fc0;
         }
 
-        /* ================= HEADER ACTIONS ================= */
-
         .header-actions {
             display: flex;
             align-items: center;
@@ -136,8 +126,6 @@
             color: #777;
             margin-top: 2px;
         }
-
-        /* ================= NAVIGATION ================= */
 
         .nav {
             height: 48px;
@@ -172,15 +160,11 @@
             color: #e53935;
         }
 
-        /* ================= MAIN ================= */
-
         main {
             width: 97%;
             max-width: 1450px;
             margin: auto;
         }
-
-        /* ================= HERO ================= */
 
         .hero {
             height: 350px;
@@ -346,8 +330,6 @@
             opacity: 1;
         }
 
-        /* ================= SECTION HEADINGS ================= */
-
         .section-heading {
             display: flex;
             justify-content: space-between;
@@ -364,8 +346,6 @@
             font-size: 13px;
             font-weight: bold;
         }
-
-        /* ================= CATEGORIES ================= */
 
         .categories {
             display: grid;
@@ -404,8 +384,6 @@
             font-size: 12px;
             font-weight: bold;
         }
-
-        /* ================= FLASH DEALS ================= */
 
         .flash-title {
             display: flex;
@@ -568,8 +546,6 @@
             color: #fff;
         }
 
-        /* ================= PROMO BANNERS ================= */
-
         .promo-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -618,8 +594,6 @@
             object-fit: contain;
         }
 
-        /* ================= BENEFITS ================= */
-
         .benefits {
             background: white;
             border: 1px solid #e1e4e8;
@@ -656,8 +630,6 @@
             color: #777;
             margin-top: 4px;
         }
-
-        /* ================= PRODUCT POPUP ================= */
 
         .product-popup {
             display: none;
@@ -797,8 +769,6 @@
             opacity: .9;
         }
 
-        /* ================= FOOTER ================= */
-
         footer {
             background: #071a49;
             color: white;
@@ -854,8 +824,6 @@
             color: #4fc3ff;
             padding-left: 4px;
         }
-
-        /* SOCIAL LINKS — turned into circular icon badges */
 
         .social-links {
             display: flex;
@@ -944,8 +912,6 @@
             align-items: center;
             gap: 10px;
         }
-
-        /* ================= MOBILE ================= */
 
         @media (max-width: 900px) {
 
@@ -1169,8 +1135,6 @@
 
 <body>
 
-<!-- ================= TOP BAR ================= -->
-
 <div class="top-bar">
     <span>Welcome to PHYNEX</span>
 
@@ -1182,11 +1146,8 @@
 </div>
 
 
-<!-- ================= HEADER ================= -->
-
 <header class="main-header">
 
-    <!-- YOUR OWN LOGO GOES HERE -->
     <div class="logo">
         <img src="images/pic 30.jpeg" alt="PHYNEX">
     </div>
@@ -1224,8 +1185,6 @@
 </header>
 
 
-<!-- ================= NAVIGATION ================= -->
-
 <nav class="nav">
 
     <div class="nav-item" data-category="all">☰ All Categories</div>
@@ -1241,8 +1200,6 @@
 
 
 <main>
-
-<!-- ================= HERO ================= -->
 
 <section class="hero">
 
@@ -1275,11 +1232,6 @@
     <img src="images/pic 9.jpeg" alt="Headphones">
     <img src="images/pic 10.jpeg" alt="Laptops">
 </div>
-   
-
-
-
-    
 
     <button class="hero-arrow right">›</button>
 
@@ -1291,8 +1243,6 @@
 
 </section>
 
-
-<!-- ================= CATEGORIES ================= -->
 
 <div class="section-heading">
 
@@ -1344,8 +1294,6 @@
 
 </div>
 
-
-<!-- ================= FLASH DEALS ================= -->
 
 <div class="section-heading" id="productsSection">
 
@@ -1567,11 +1515,3490 @@
 
     </div>
 
+
+    <!-- PRODUCT 6 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 6.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 6
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 7 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 7.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 7
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 8 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 8.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 8
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 9 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 9.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 9
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 10 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 10.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 10
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 11 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 11.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 11
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 12 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 12.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 12
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 13 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 13.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 13
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 14 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 14.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 14
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 15 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 15.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 15
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 16 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 16.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 16
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 17 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 17.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 17
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 18 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 18.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 18
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 19 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 19.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 19
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 20 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 20.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 20
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 21 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 21.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 21
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 22 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 22.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 22
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 23 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 23.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 23
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 24 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 24.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 24
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 25 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 25.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 25
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 26 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 26.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 26
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 27 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 27.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 27
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 28 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 28.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 28
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 29 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 29.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 29
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 30 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 30.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 30
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 31 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 31.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 31
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 32 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 32.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 32
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 33 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 33.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 33
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 34 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 34.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 34
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 35 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 35.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 35
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 36 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 36.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 36
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 37 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 37.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 37
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 38 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 38.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 38
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 39 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 39.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 39
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 40 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 40.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 40
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 41 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 41.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 41
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 42 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 42.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 42
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 43 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 43.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 43
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 44 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 44.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 44
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 45 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 45.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 45
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 46 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 46.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 46
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 47 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 47.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 47
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 48 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 48.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 48
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 49 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 49.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 49
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 50 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 50.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 50
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 51 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 51.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 51
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 52 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 52.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 52
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 53 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 53.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 53
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 54 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 54.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 54
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 55 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 55.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 55
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 56 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 56.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 56
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 57 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 57.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 57
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 58 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 58.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 58
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 59 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 59.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 59
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 60 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 60.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 60
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 61 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 61.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 61
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 62 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 62.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 62
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 63 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 63.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 63
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 64 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 64.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 64
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 65 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 65.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 65
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 66 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 66.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 66
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 67 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 67.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 67
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 68 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 68.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 68
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 69 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 69.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 69
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 70 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 70.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 70
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 71 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 71.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 71
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 72 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 72.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 72
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 73 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 73.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 73
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 74 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 74.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 74
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 75 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 75.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 75
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 76 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 76.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 76
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 77 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 77.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 77
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 78 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 78.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 78
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 79 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 79.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 79
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 80 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 80.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 80
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 81 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 81.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 81
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 82 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 82.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 82
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 83 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 83.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 83
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 84 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 84.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 84
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 85 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 85.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 85
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 86 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 86.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 86
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+ <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 87 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 87.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 87
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 88 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 88.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 88
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 89 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 89.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 89
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 90 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 90.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 90
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 91 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 91.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 91
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 92 -->
+
+    <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
+
+        <span class="discount">-0%</span>
+
+        <div class="product-image">
+            <img src="images/pic 92.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                PLACEHOLDER PRODUCT NAME 92
+            </div>
+
+            <div class="rating">
+                ★★★★★ (0)
+            </div>
+
+            <div class="price">
+                KSh 0
+                <span class="old-price">KSh 0</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
 </div>
 <p id="searchMessage" hidden style="padding:24px;text-align:center;color:#687083;background:white;border:1px solid #e1e4e8;">No products found.</p>
 
-
-<!-- ================= PROMOTIONAL BANNERS ================= -->
 
 <div class="promo-grid">
 
@@ -1622,8 +5049,6 @@
 </div>
 
 
-<!-- ================= BENEFITS ================= -->
-
 <div class="benefits">
 
     <div class="benefit">
@@ -1661,11 +5086,6 @@
 </div>
 
 
-
-
-
-<!-- ================= PRODUCT POPUP ================= -->
-
 <div class="product-popup" id="productPopup" role="dialog" aria-modal="true" aria-labelledby="modalProductName">
     <div class="product-popup-content">
         <button class="product-popup-close" type="button" aria-label="Close product details">&times;</button>
@@ -1700,7 +5120,6 @@
     </div>
 </div>
 
-<!-- ================= FOOTER ================= -->
 <footer class="phynex-footer">
     <div class="footer-main">
         <div class="footer-section brand-section">
