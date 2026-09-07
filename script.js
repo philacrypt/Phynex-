@@ -584,10 +584,7 @@ function setupHero() {
     function renderSlide() {
         images.forEach(
             function (image, index) {
-                image.style.opacity =
-                    index === slide
-                        ? "1"
-                        : ".35";
+                image.style.opacity = "1";
             }
         );
 
