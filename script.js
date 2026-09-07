@@ -1357,17 +1357,70 @@ document.addEventListener(
                 "searchInput"
             );
 
+        function runSearchAndScroll() {
+
+            const onProductsPage =
+                document.querySelector(
+                    ".products"
+                ) !== null;
+
+            if (!onProductsPage) {
+
+                const query =
+                    searchInput
+                        ? searchInput.value.trim()
+                        : "";
+
+                window.location.href =
+                    "index.html" +
+                    (
+                        query
+                            ? "?search=" +
+                              encodeURIComponent(query)
+                            : ""
+                    );
+
+                return;
+            }
+
+            searchProducts();
+
+            const section =
+                document.getElementById(
+                    "productsSection"
+                );
+
+            if (section) {
+                section.scrollIntoView(
+                    {
+                        behavior: "smooth"
+                    }
+                );
+            }
+        }
+
         if (searchButton) {
             searchButton.addEventListener(
                 "click",
-                searchProducts
+                runSearchAndScroll
             );
         }
 
         if (searchInput) {
+
             searchInput.addEventListener(
                 "input",
                 searchProducts
+            );
+
+            searchInput.addEventListener(
+                "keydown",
+                function (event) {
+                    if (event.key === "Enter") {
+                        event.preventDefault();
+                        runSearchAndScroll();
+                    }
+                }
             );
         }
 
@@ -1393,7 +1446,14 @@ document.addEventListener(
                             const category =
                                 item.dataset.category;
 
-                            if (category) {
+                            if (!category) return;
+
+                            const onProductsPage =
+                                document.querySelector(
+                                    ".products"
+                                ) !== null;
+
+                            if (onProductsPage) {
 
                                 filterProducts(
                                     category
@@ -1412,6 +1472,23 @@ document.addEventListener(
                                         }
                                     );
                                 }
+
+                                history.replaceState(
+                                    null,
+                                    "",
+                                    "?category=" +
+                                    encodeURIComponent(
+                                        category
+                                    )
+                                );
+
+                            } else {
+
+                                window.location.href =
+                                    "index.html?category=" +
+                                    encodeURIComponent(
+                                        category
+                                    );
                             }
                         }
                     );
@@ -1511,6 +1588,44 @@ document.addEventListener(
             filterProducts(
                 requestedCategory
             );
+
+            const section =
+                document.getElementById(
+                    "productsSection"
+                );
+
+            if (section) {
+                section.scrollIntoView(
+                    {
+                        behavior:
+                            "smooth"
+                    }
+                );
+            }
+        }
+
+        const requestedSearch =
+            new URLSearchParams(
+                window.location.search
+            ).get("search");
+
+        if (
+            requestedSearch &&
+            document.querySelector(
+                ".products"
+            )
+        ) {
+
+            const input =
+                document.getElementById(
+                    "searchInput"
+                );
+
+            if (input) {
+                input.value = requestedSearch;
+            }
+
+            searchProducts();
 
             const section =
                 document.getElementById(
