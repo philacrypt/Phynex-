@@ -3,39 +3,553 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cart | PHYNEX</title>
+<title>Your Cart — PHYNEX</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box}
-:root{--navy:#071a49;--blue:#0b3fae;--blue-dark:#082a7a;--text:#172033;--muted:#687083;--border:#e1e4e8;--page:#f5f6f8}
-body{margin:0;background:var(--page);color:var(--text);font-family:'Inter',Arial,Helvetica,sans-serif}
-.page{width:min(900px,92%);margin:32px auto}
-.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
-.header a{color:var(--blue);text-decoration:none;font-weight:700;font-size:14px}
-.header h1{margin:0;font-family:'Space Grotesk',sans-serif;color:var(--navy);font-size:24px}
-.panel{background:#fff;border:1px solid var(--border);border-radius:10px;padding:24px}
-.checkout-item{display:grid;grid-template-columns:72px 1fr auto;gap:14px;align-items:center;border-bottom:1px solid #edf0f3;padding:14px 0}
-.checkout-item:last-child{border-bottom:0}
-.checkout-item img{width:72px;height:72px;object-fit:contain}
-.checkout-item p{margin:7px 0;color:var(--muted)}
-.line-quantity{display:flex;align-items:center;gap:10px}
-.line-quantity button{width:28px;height:28px;border:1px solid #d9dde5;border-radius:6px;background:#f7f8fa;cursor:pointer}
-.checkout-item>[data-remove]{border:0;background:transparent;color:#e53935;cursor:pointer;font-size:12px}
-.summary-row{display:flex;justify-content:space-between;margin:14px 0}
-.total{font-size:20px;font-weight:700;border-top:1px solid var(--border);padding-top:16px;font-family:'Space Grotesk',sans-serif;color:var(--navy)}
-.primary{display:block;text-align:center;background:var(--blue);color:#fff;padding:13px;border-radius:8px;font-weight:700;text-decoration:none}
-.primary:hover{background:var(--blue-dark)}
-.empty{color:var(--muted)}
-.empty a{color:var(--blue);font-weight:700}
-@media(max-width:600px){.page{margin:18px auto}.panel{padding:17px}.checkout-item{grid-template-columns:58px 1fr}.checkout-item img{width:58px;height:58px}.checkout-item>[data-remove]{grid-column:2;text-align:left}}
+:root{
+  --navy:#071a3a;
+  --navy-2:#0c2354;
+  --blue:#1461e0;
+  --blue-dark:#0f4bb8;
+  --ink:#141b2e;
+  --muted:#5b6478;
+  --line:#e7e9f0;
+  --bg:#f4f5f9;
+  --amber:#e8992a;
+  --red:#d3392f;
+  --green:#1a8f56;
+  --radius:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',Arial,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;}
+a{text-decoration:none;color:inherit;}
+button{font-family:inherit;}
+.icon{width:1em;height:1em;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;display:inline-block;vertical-align:-0.15em;}
+
+/* ---------- Top bar / header (shared look) ---------- */
+.top-bar{height:34px;background:var(--navy);color:#c7d1ea;display:flex;justify-content:space-between;align-items:center;padding:0 4%;font-size:12px;}
+.top-right{display:flex;gap:24px;}
+.top-right a:hover{color:#fff;}
+.main-header{background:#fff;height:78px;display:flex;align-items:center;gap:28px;padding:0 4%;border-bottom:1px solid var(--line);}
+.logo{display:flex;align-items:center;gap:9px;flex-shrink:0;}
+.logo-mark{width:36px;height:36px;border-radius:9px;background:linear-gradient(155deg,var(--blue),var(--navy));display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.logo-mark svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2;}
+.logo-word{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:21px;letter-spacing:-.02em;color:var(--navy);}
+.logo-word span{color:var(--blue);}
+.header-spacer{flex:1;}
+.header-actions{display:flex;align-items:center;gap:8px;}
+.action{display:flex;align-items:center;gap:10px;font-size:13px;padding:8px 12px;border-radius:8px;transition:background .15s;position:relative;}
+.action:hover{background:var(--bg);}
+.action .icon{width:22px;height:22px;color:var(--navy);flex-shrink:0;}
+.action small{display:block;color:var(--muted);font-size:11px;margin-top:1px;}
+.action strong{font-size:13px;font-weight:700;}
+.cart-badge{position:absolute;top:2px;left:22px;background:var(--red);color:#fff;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px;}
+
+/* ---------- Breadcrumb / steps ---------- */
+main{width:94%;max-width:1180px;margin:0 auto;padding-bottom:60px;}
+.breadcrumb{display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--muted);margin:22px 0 6px;}
+.breadcrumb a:hover{color:var(--blue);}
+.page-title{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:600;margin:6px 0 22px;}
+
+.steps{display:flex;align-items:center;gap:10px;margin-bottom:24px;}
+.step{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--muted);}
+.step-num{width:24px;height:24px;border-radius:50%;background:#e7e9f0;color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:12px;}
+.step.active{color:var(--navy);}
+.step.active .step-num{background:var(--blue);color:#fff;}
+.step.done .step-num{background:var(--green);color:#fff;}
+.step-line{width:36px;height:1.5px;background:var(--line);}
+
+/* ---------- Layout ---------- */
+.cart-layout{display:grid;grid-template-columns:1fr 380px;gap:22px;align-items:start;}
+@media (max-width:900px){.cart-layout{grid-template-columns:1fr;}}
+
+.panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:18px;}
+.panel h2{font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.panel h2 .icon{width:17px;height:17px;color:var(--blue);}
+
+/* ---------- Cart items ---------- */
+.cart-item{display:grid;grid-template-columns:76px 1fr auto;gap:14px;padding:14px 0;border-bottom:1px solid var(--line);align-items:center;}
+.cart-item:last-child{border-bottom:none;padding-bottom:2px;}
+.cart-item-img{width:76px;height:76px;border-radius:8px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff;flex-shrink:0;}
+.cart-item-img img{max-width:100%;max-height:100%;object-fit:contain;}
+.cart-item-name{font-size:13.5px;font-weight:600;line-height:1.4;margin-bottom:6px;}
+.cart-item-unit{font-size:12px;color:var(--muted);}
+.cart-item-right{display:flex;flex-direction:column;align-items:flex-end;gap:10px;}
+.cart-item-price{font-size:14.5px;font-weight:800;color:var(--navy);}
+.qty-stepper{display:flex;align-items:center;border:1px solid var(--line);border-radius:7px;overflow:hidden;}
+.qty-stepper button{width:28px;height:28px;border:none;background:var(--bg);cursor:pointer;font-size:13px;color:var(--navy);display:flex;align-items:center;justify-content:center;}
+.qty-stepper button:hover{background:#e3e6ee;}
+.qty-stepper span{min-width:30px;text-align:center;font-size:13px;font-weight:700;}
+.remove-link{font-size:11.5px;color:var(--red);font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;}
+.remove-link:hover{text-decoration:underline;}
+.remove-link .icon{width:12px;height:12px;}
+
+.empty-cart{padding:50px 20px;text-align:center;}
+.empty-cart .icon{width:52px;height:52px;color:var(--line);margin-bottom:14px;}
+.empty-cart p{color:var(--muted);font-size:13.5px;margin-bottom:18px;}
+.empty-cart a{display:inline-flex;align-items:center;gap:8px;background:var(--blue);color:#fff;padding:11px 22px;border-radius:8px;font-size:13.5px;font-weight:700;}
+.empty-cart a:hover{background:var(--blue-dark);}
+
+/* ---------- Form ---------- */
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.field.full{grid-column:1/-1;}
+.field label{font-size:12px;font-weight:700;color:var(--ink);}
+.field label small{color:var(--muted);font-weight:500;}
+.field input,.field select,.field textarea{border:1.5px solid var(--line);border-radius:8px;padding:11px 12px;font-size:13.5px;font-family:inherit;outline:none;transition:border-color .15s,box-shadow .15s;width:100%;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(20,97,224,.1);}
+.field .error-msg{font-size:11.5px;color:var(--red);display:none;}
+.field.invalid input,.field.invalid select{border-color:var(--red);}
+.field.invalid .error-msg{display:block;}
+
+.pay-options{display:flex;flex-direction:column;gap:10px;}
+.pay-option{display:flex;align-items:center;gap:12px;border:1.5px solid var(--line);border-radius:9px;padding:13px 14px;cursor:pointer;transition:border-color .15s,background .15s;}
+.pay-option:hover{border-color:#c6d3ee;}
+.pay-option.selected{border-color:var(--blue);background:#f3f7ff;}
+.pay-option input{accent-color:var(--blue);width:16px;height:16px;flex-shrink:0;}
+.pay-option .icon{width:20px;height:20px;color:var(--navy);flex-shrink:0;}
+.pay-option-text strong{font-size:13px;display:block;}
+.pay-option-text span{font-size:11.5px;color:var(--muted);}
+.mpesa-note{margin-top:10px;background:#eaf1ff;color:var(--blue-dark);font-size:12px;font-weight:600;padding:10px 12px;border-radius:7px;display:none;}
+.mpesa-note.show{display:block;}
+
+/* ---------- Promo ---------- */
+.promo-row{display:flex;gap:8px;margin-bottom:16px;}
+.promo-row input{flex:1;border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;font-size:13px;outline:none;}
+.promo-row input:focus{border-color:var(--blue);}
+.promo-row button{border:none;background:var(--navy);color:#fff;padding:0 16px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;}
+.promo-row button:hover{background:var(--blue-dark);}
+.promo-msg{font-size:12px;margin-bottom:14px;display:none;}
+.promo-msg.ok{color:var(--green);display:block;}
+.promo-msg.bad{color:var(--red);display:block;}
+
+/* ---------- Summary ---------- */
+.summary-panel{position:sticky;top:16px;}
+.summary-line{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);padding:7px 0;}
+.summary-line span:last-child{color:var(--ink);font-weight:600;}
+.summary-line.discount span:last-child{color:var(--green);}
+.summary-line.total{border-top:1.5px solid var(--line);margin-top:8px;padding-top:14px;font-size:15px;font-weight:700;color:var(--ink);}
+.summary-line.total span:last-child{font-size:19px;font-weight:800;color:var(--navy);}
+.vat-note{font-size:11px;color:var(--muted);margin-top:2px;}
+.place-order-btn{width:100%;height:48px;border:none;background:var(--blue);color:#fff;border-radius:9px;font-size:14.5px;font-weight:700;cursor:pointer;margin-top:16px;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .18s;}
+.place-order-btn:hover{background:var(--blue-dark);}
+.place-order-btn:disabled{background:#b7c3dc;cursor:not-allowed;}
+.secure-note{display:flex;align-items:center;justify-content:center;gap:6px;font-size:11.5px;color:var(--muted);margin-top:10px;}
+.secure-note .icon{width:13px;height:13px;}
+
+/* ---------- Confirmation ---------- */
+.confirm-panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:48px 30px;text-align:center;max-width:520px;margin:30px auto;display:none;}
+.confirm-panel.show{display:block;}
+.confirm-icon{width:60px;height:60px;border-radius:50%;background:#e6f6ed;color:var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;}
+.confirm-icon .icon{width:28px;height:28px;}
+.confirm-panel h2{font-size:20px;margin-bottom:8px;}
+.confirm-panel p{color:var(--muted);font-size:13.5px;line-height:1.6;margin-bottom:6px;}
+.confirm-order-id{display:inline-block;background:var(--bg);border:1px dashed var(--line);border-radius:7px;padding:8px 16px;font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:.03em;margin:14px 0 22px;}
+.confirm-actions{display:flex;gap:10px;justify-content:center;}
+.confirm-actions a{padding:11px 20px;border-radius:8px;font-size:13.5px;font-weight:700;}
+.confirm-actions a.primary{background:var(--blue);color:#fff;}
+.confirm-actions a.primary:hover{background:var(--blue-dark);}
+.confirm-actions a.secondary{border:1.5px solid var(--line);color:var(--navy);}
+
+footer{background:var(--navy);color:#a7b3cc;margin-top:20px;padding:22px 4%;text-align:center;font-size:11.5px;}
 </style>
 </head>
 <body>
-<main class="page">
-<header class="header"><h1>Your Cart</h1><a href="index.html">Back to store</a></header>
-<section class="panel"><div id="checkoutItems"></div><p id="checkoutEmpty" class="empty" hidden>Your cart is empty. <a href="index.html">Continue shopping</a>.</p><div class="summary-row"><span>Subtotal</span><strong id="checkoutSubtotal">KSh 0</strong></div><div class="summary-row total"><span>Total</span><strong id="checkoutTotal">KSh 0</strong></div><a class="primary" href="checkout.html">Proceed to checkout</a></section>
+
+<div class="top-bar">
+  <span>Kenya's marketplace for tech, built for speed</span>
+  <div class="top-right"><a href="help.html">Help Centre</a></div>
+</div>
+
+<header class="main-header">
+  <a class="logo" href="index.html">
+    <span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 17V7l8-4 8 4v10l-8 4z"/><path d="M4 7l8 4 8-4M12 11v10"/></svg></span>
+    <span class="logo-word">PHY<span>NEX</span></span>
+  </a>
+  <div class="header-spacer"></div>
+  <div class="header-actions">
+    <a class="action" href="delivery.html#tracking">
+      <i data-lucide="package" class="icon"></i>
+      <div><strong>Orders</strong><small>Track</small></div>
+    </a>
+    <a class="action" href="cart.html" style="position:relative;">
+      <i data-lucide="shopping-cart" class="icon"></i>
+      <span class="cart-badge" id="cartBadge">0</span>
+      <div><strong>Cart</strong><small id="cart-count">0 items</small></div>
+    </a>
+  </div>
+</header>
+
+<main>
+  <div class="breadcrumb"><a href="index.html">Home</a> / <span>Cart</span></div>
+  <h1 class="page-title">Your Cart</h1>
+
+  <div class="steps">
+    <div class="step active" id="stepCart"><span class="step-num">1</span>Cart</div>
+    <div class="step-line"></div>
+    <div class="step" id="stepDetails"><span class="step-num">2</span>Delivery &amp; Payment</div>
+    <div class="step-line"></div>
+    <div class="step" id="stepDone"><span class="step-num">3</span>Confirmation</div>
+  </div>
+
+  <div id="cartView">
+    <div class="cart-layout">
+      <div>
+        <div class="panel">
+          <h2><i data-lucide="shopping-cart" class="icon"></i>Items in your cart (<span id="itemCountText">0</span>)</h2>
+          <div id="cartItemsList"></div>
+          <div class="empty-cart" id="emptyCart" style="display:none;">
+            <i data-lucide="shopping-cart" class="icon"></i>
+            <p>Your cart is empty. Add a few things you like — they'll show up here.</p>
+            <a href="index.html">Continue shopping</a>
+          </div>
+        </div>
+
+        <div class="panel" id="detailsPanel" style="display:none;">
+          <h2><i data-lucide="truck" class="icon"></i>Delivery details</h2>
+          <form id="checkoutForm" novalidate>
+            <div class="field-grid">
+              <div class="field" id="f-name">
+                <label>Full name</label>
+                <input type="text" id="custName" placeholder="e.g. Aisha Wanjiru" required>
+                <span class="error-msg">Enter your full name</span>
+              </div>
+              <div class="field" id="f-phone">
+                <label>Phone number <small>(for M-Pesa &amp; delivery)</small></label>
+                <input type="tel" id="custPhone" placeholder="07XX XXX XXX" required>
+                <span class="error-msg">Enter a valid Kenyan phone number</span>
+              </div>
+              <div class="field full" id="f-email">
+                <label>Email <small>(order confirmation)</small></label>
+                <input type="email" id="custEmail" placeholder="you@example.com" required>
+                <span class="error-msg">Enter a valid email address</span>
+              </div>
+              <div class="field full" id="f-address">
+                <label>Delivery address</label>
+                <input type="text" id="custAddress" placeholder="Street, building, apartment / house no." required>
+                <span class="error-msg">Enter your delivery address</span>
+              </div>
+              <div class="field" id="f-county">
+                <label>County</label>
+                <select id="custCounty" required>
+                  <option value="">Select county</option>
+                  <option value="nairobi">Nairobi</option>
+                  <option value="major">Mombasa / Kisumu / Nakuru</option>
+                  <option value="other">Other county</option>
+                </select>
+                <span class="error-msg">Select a delivery county</span>
+              </div>
+              <div class="field">
+                <label>Order notes <small>(optional)</small></label>
+                <input type="text" id="custNotes" placeholder="e.g. call on arrival">
+              </div>
+            </div>
+          </form>
+
+          <h2 style="margin-top:6px;"><i data-lucide="credit-card" class="icon"></i>Payment method</h2>
+          <div class="pay-options" id="payOptions">
+            <label class="pay-option selected" data-pay="mpesa">
+              <input type="radio" name="pay" value="mpesa" checked>
+              <i data-lucide="smartphone" class="icon"></i>
+              <div class="pay-option-text"><strong>M-Pesa</strong><span>Pay via STK push to your phone</span></div>
+            </label>
+            <label class="pay-option" data-pay="card">
+              <input type="radio" name="pay" value="card">
+              <i data-lucide="credit-card" class="icon"></i>
+              <div class="pay-option-text"><strong>Visa / Mastercard</strong><span>Pay securely with your card</span></div>
+            </label>
+            <label class="pay-option" data-pay="cod">
+              <input type="radio" name="pay" value="cod">
+              <i data-lucide="banknote" class="icon"></i>
+              <div class="pay-option-text"><strong>Cash on Delivery</strong><span>Pay when your order arrives</span></div>
+            </label>
+          </div>
+          <div class="mpesa-note show" id="mpesaNote">You'll get a prompt on your phone to enter your M-Pesa PIN once you place the order.</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel summary-panel">
+          <h2>Order Summary</h2>
+          <div class="promo-row">
+            <input type="text" id="promoInput" placeholder="Promo code">
+            <button type="button" id="promoApply">Apply</button>
+          </div>
+          <div class="promo-msg" id="promoMsg"></div>
+
+          <div class="summary-line"><span>Subtotal</span><span id="sumSubtotal">KSh 0</span></div>
+          <div class="summary-line discount" id="sumDiscountRow" style="display:none;"><span>Discount</span><span id="sumDiscount">− KSh 0</span></div>
+          <div class="summary-line"><span>Delivery</span><span id="sumDelivery">KSh 0</span></div>
+          <div class="vat-note" id="vatNote">Includes VAT (16%): KSh 0</div>
+          <div class="summary-line total"><span>Total</span><span id="sumTotal">KSh 0</span></div>
+
+          <button class="place-order-btn" id="primaryActionBtn" disabled>Enter delivery details</button>
+          <div class="secure-note"><i data-lucide="shield-check" class="icon"></i>120-day support on every order</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="confirm-panel" id="confirmPanel">
+    <div class="confirm-icon"><i data-lucide="check" class="icon"></i></div>
+    <h2>Order placed successfully</h2>
+    <p>Thanks — we've received your order and sent a confirmation to your email.</p>
+    <div class="confirm-order-id" id="confirmOrderId">PHX-000000</div>
+    <p id="confirmPayMsg" style="margin-bottom:0;"></p>
+    <div class="confirm-actions" style="margin-top:24px;">
+      <a href="index.html" class="primary">Continue shopping</a>
+      <a href="delivery.html#tracking" class="secondary">Track order</a>
+    </div>
+  </div>
 </main>
-<script src="script.js"></script>
+
+<footer>© <span id="year"></span> PHYNEX. All rights reserved.</footer>
+
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+/* Icons are created inside renderCartItems() below, since it runs on every
+   load and every cart change — that's the one place new icon markup appears. */
+
+/* ================= Cart data layer (shared with index.html) ================= */
+function getCart(){ try{ return JSON.parse(localStorage.getItem('phynex_cart')||'[]'); }catch(e){ return []; } }
+function saveCart(cart){ localStorage.setItem('phynex_cart', JSON.stringify(cart)); }
+
+const FREE_DELIVERY_THRESHOLD = 15000;
+const DELIVERY_RATES = { nairobi: 300, major: 500, other: 700 };
+const VAT_RATE = 0.16; // Kenya standard VAT — informational only, prices already VAT-inclusive
+const PROMO_CODES = { 'PHYNEX10': 0.10 };
+
+let appliedDiscountRate = 0;
+let selectedCounty = '';
+let checkoutStarted = false;
+
+function money(n){
+  return 'KSh ' + Math.round(n).toLocaleString('en-KE');
+}
+
+function renderCartItems(){
+  const cart = getCart();
+  const list = document.getElementById('cartItemsList');
+  const empty = document.getElementById('emptyCart');
+  const itemCountText = document.getElementById('itemCountText');
+  const totalQty = cart.reduce((n,i)=>n+i.qty,0);
+  itemCountText.textContent = totalQty;
+
+  document.getElementById('cart-count').textContent = totalQty + (totalQty===1?' item':' items');
+  document.getElementById('cartBadge').textContent = totalQty;
+
+  if(cart.length === 0){
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    document.getElementById('detailsPanel').style.display = 'none';
+    updateSummary();
+    lucide.createIcons();
+    return;
+  }
+  empty.style.display = 'none';
+
+  list.innerHTML = cart.map((item, idx) => `
+    <div class="cart-item">
+      <div class="cart-item-img"><img src="${item.img}" alt="${escapeHtml(item.name)}"></div>
+      <div>
+        <div class="cart-item-name">${escapeHtml(item.name)}</div>
+        <div class="cart-item-unit">${money(item.price)} each</div>
+      </div>
+      <div class="cart-item-right">
+        <div class="cart-item-price">${money(item.price * item.qty)}</div>
+        <div class="qty-stepper">
+          <button type="button" data-action="dec" data-idx="${idx}"><i data-lucide="minus" class="icon"></i></button>
+          <span>${item.qty}</span>
+          <button type="button" data-action="inc" data-idx="${idx}"><i data-lucide="plus" class="icon"></i></button>
+        </div>
+        <span class="remove-link" data-action="remove" data-idx="${idx}"><i data-lucide="x" class="icon"></i>Remove</span>
+      </div>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('[data-action]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const idx = +el.dataset.idx;
+      const cart = getCart();
+      if(el.dataset.action === 'inc'){ cart[idx].qty++; }
+      if(el.dataset.action === 'dec'){ cart[idx].qty = Math.max(1, cart[idx].qty - 1); }
+      if(el.dataset.action === 'remove'){ cart.splice(idx,1); }
+      saveCart(cart);
+      renderCartItems();
+    });
+  });
+
+  updateSummary();
+  lucide.createIcons();
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function calcSubtotal(){
+  return getCart().reduce((sum,i)=> sum + (i.price * i.qty), 0);
+}
+
+function calcDelivery(subtotal){
+  if(subtotal === 0) return 0;
+  if(subtotal >= FREE_DELIVERY_THRESHOLD) return 0;
+  if(!selectedCounty) return 0; // not chosen yet — shown once details step starts
+  return DELIVERY_RATES[selectedCounty] || 0;
+}
+
+function updateSummary(){
+  const subtotal = calcSubtotal();
+  const discount = subtotal * appliedDiscountRate;
+  const afterDiscount = subtotal - discount;
+  const delivery = calcDelivery(afterDiscount);
+  const total = afterDiscount + delivery;
+  const vatIncluded = subtotal - (subtotal / (1 + VAT_RATE));
+
+  document.getElementById('sumSubtotal').textContent = money(subtotal);
+
+  const discRow = document.getElementById('sumDiscountRow');
+  if(discount > 0){
+    discRow.style.display = 'flex';
+    document.getElementById('sumDiscount').textContent = '− ' + money(discount);
+  } else {
+    discRow.style.display = 'none';
+  }
+
+  document.getElementById('sumDelivery').textContent = subtotal === 0 ? money(0)
+    : (afterDiscount >= FREE_DELIVERY_THRESHOLD ? 'Free' : (selectedCounty ? money(delivery) : '—'));
+
+  document.getElementById('vatNote').textContent = subtotal > 0
+    ? `Includes VAT (16%): ${money(vatIncluded)}`
+    : 'Includes VAT (16%)';
+
+  document.getElementById('sumTotal').textContent = money(total);
+
+  const btn = document.getElementById('primaryActionBtn');
+  const cart = getCart();
+  if(cart.length === 0){
+    btn.disabled = true;
+    btn.textContent = 'Cart is empty';
+  } else if(!checkoutStarted){
+    btn.disabled = false;
+    btn.textContent = 'Proceed to Checkout';
+  } else {
+    btn.disabled = false;
+    btn.textContent = `Place Order — ${money(total)}`;
+  }
+}
+
+/* ================= Promo code ================= */
+document.getElementById('promoApply').addEventListener('click', ()=>{
+  const code = document.getElementById('promoInput').value.trim().toUpperCase();
+  const msg = document.getElementById('promoMsg');
+  if(!code){ return; }
+  if(PROMO_CODES[code]){
+    appliedDiscountRate = PROMO_CODES[code];
+    msg.className = 'promo-msg ok';
+    msg.textContent = `Code applied — ${PROMO_CODES[code]*100}% off your subtotal.`;
+  } else {
+    appliedDiscountRate = 0;
+    msg.className = 'promo-msg bad';
+    msg.textContent = 'That code is not valid.';
+  }
+  updateSummary();
+});
+
+/* ================= Step 1 -> Step 2 ================= */
+document.getElementById('primaryActionBtn').addEventListener('click', ()=>{
+  const cart = getCart();
+  if(cart.length === 0) return;
+
+  if(!checkoutStarted){
+    checkoutStarted = true;
+    document.getElementById('detailsPanel').style.display = 'block';
+    document.getElementById('stepCart').classList.add('done');
+    document.getElementById('stepDetails').classList.add('active');
+    document.getElementById('detailsPanel').scrollIntoView({behavior:'smooth', block:'start'});
+    updateSummary();
+    return;
+  }
+  submitOrder();
+});
+
+document.getElementById('custCounty').addEventListener('change', (e)=>{
+  selectedCounty = e.target.value;
+  clearFieldError('f-county');
+  updateSummary();
+});
+
+/* ================= Payment method UI ================= */
+document.querySelectorAll('.pay-option').forEach(opt=>{
+  opt.addEventListener('click', ()=>{
+    document.querySelectorAll('.pay-option').forEach(o=>o.classList.remove('selected'));
+    opt.classList.add('selected');
+    opt.querySelector('input').checked = true;
+    document.getElementById('mpesaNote').classList.toggle('show', opt.dataset.pay === 'mpesa');
+  });
+});
+
+/* ================= Validation ================= */
+function clearFieldError(id){
+  document.getElementById(id).classList.remove('invalid');
+}
+function setFieldError(id){
+  document.getElementById(id).classList.add('invalid');
+}
+function validateForm(){
+  let valid = true;
+  const name = document.getElementById('custName').value.trim();
+  const phone = document.getElementById('custPhone').value.trim().replace(/\s+/g,'');
+  const email = document.getElementById('custEmail').value.trim();
+  const address = document.getElementById('custAddress').value.trim();
+  const county = document.getElementById('custCounty').value;
+
+  const phoneRe = /^(?:\+254|0)7\d{8}$|^(?:\+254|0)1\d{8}$/;
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if(name.length < 2){ setFieldError('f-name'); valid = false; } else clearFieldError('f-name');
+  if(!phoneRe.test(phone)){ setFieldError('f-phone'); valid = false; } else clearFieldError('f-phone');
+  if(!emailRe.test(email)){ setFieldError('f-email'); valid = false; } else clearFieldError('f-email');
+  if(address.length < 5){ setFieldError('f-address'); valid = false; } else clearFieldError('f-address');
+  if(!county){ setFieldError('f-county'); valid = false; } else clearFieldError('f-county');
+
+  return valid;
+}
+
+/* ================= Submit ================= */
+function submitOrder(){
+  if(!validateForm()){
+    document.getElementById('checkoutForm').scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+  const payMethod = document.querySelector('input[name="pay"]:checked').value;
+  const orderId = 'PHX-' + Date.now().toString().slice(-6);
+
+  const payMsg = {
+    mpesa: "We've sent an M-Pesa STK push to your phone — enter your PIN to complete payment.",
+    card: "Your card will be charged once payment is confirmed.",
+    cod: "Have the exact amount ready — you'll pay the courier on delivery."
+  }[payMethod];
+
+  document.getElementById('confirmOrderId').textContent = orderId;
+  document.getElementById('confirmPayMsg').textContent = payMsg;
+
+  document.getElementById('cartView').style.display = 'none';
+  document.getElementById('confirmPanel').classList.add('show');
+  document.getElementById('stepDetails').classList.add('done');
+  document.getElementById('stepDone').classList.add('active');
+
+  saveCart([]);
+  document.getElementById('cartBadge').textContent = '0';
+  document.getElementById('cart-count').textContent = '0 items';
+}
+
+document.getElementById('year').textContent = new Date().getFullYear();
+renderCartItems();
+</script>
 </body>
 </html>
