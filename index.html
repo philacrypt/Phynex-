@@ -190,11 +190,60 @@
             transition: transform .6s ease;
         }
 
-        .ad-carousel-track img {
+        .ad-slide {
+            position: relative;
             flex: 0 0 100%;
             width: 100%;
             height: 100%;
+            overflow: hidden;
+        }
+
+        .ad-slide img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
             object-fit: cover;
+            z-index: 1;
+        }
+
+        .ad-slide img.broken {
+            display: none;
+        }
+
+        /* Shows through until a real image is dropped in at the
+           src above (or once that image fails to load). Swap the
+           <img src> — this placeholder disappears on its own. */
+        .ad-slide-placeholder {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background:
+                repeating-linear-gradient(45deg, #eef1f6, #eef1f6 12px, #e3e8f0 12px, #e3e8f0 24px);
+            color: #7c8494;
+            text-align: center;
+        }
+
+        .ad-slide-placeholder i {
+            font-size: 26px;
+            color: #a7afbe;
+        }
+
+        .ad-slide-placeholder span {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .ad-slide-placeholder small {
+            display: block;
+            font-weight: 400;
+            color: #97a0b0;
+            margin-top: 2px;
         }
 
         .ad-carousel-dots {
@@ -253,57 +302,6 @@
             white-space: nowrap;
         }
 
-        .hero {
-            position: relative;
-            width: 100vw;
-            left: 50%;
-            right: 50%;
-            margin-left: -50vw;
-            margin-right: -50vw;
-            margin-top: 0;
-            background: #071a2e;
-            background-image:
-                radial-gradient(circle at 85% 20%, rgba(8,117,225,.18), transparent 45%),
-                radial-gradient(circle at 12% 88%, rgba(8,117,225,.10), transparent 40%);
-            overflow: hidden;
-        }
-
-        .hero-inner {
-            max-width: 1450px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1.15fr .85fr;
-            align-items: center;
-            gap: 40px;
-            padding: 64px 4%;
-        }
-
-        .hero-content {
-            color: #fff;
-        }
-
-        .hero h1 {
-            font-family: 'Space Grotesk', Arial, sans-serif;
-            font-size: 46px;
-            font-weight: 600;
-            line-height: 1.12;
-            letter-spacing: -.01em;
-            margin-bottom: 16px;
-            color: #f3f6fb;
-        }
-
-        .hero h1 span {
-            color: #4fa3ff;
-        }
-
-        .hero p {
-            max-width: 420px;
-            line-height: 1.65;
-            color: #aab6cc;
-            margin-bottom: 28px;
-            font-size: 15px;
-        }
-
         .shop-btn {
             border: none;
             background: #0875e1;
@@ -324,51 +322,123 @@
             transform: scale(.97);
         }
 
-        .hero-links {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px 24px;
-            margin-top: 30px;
-            padding-top: 22px;
-            border-top: 1px solid rgba(255,255,255,.12);
+        /* ---- Showcase: swap each tile's image for your own product
+           photo. Recommended size ~800x900px (portrait) so the crop
+           looks good; filenames below are just placeholders. ---- */
+        .showcase {
+            width: 100vw;
+            position: relative;
+            left: 50%;
+            right: 50%;
+            margin-left: -50vw;
+            margin-right: -50vw;
+            margin-top: 0;
+            background: #f0f2f6;
+            padding: 28px 4% 34px;
         }
 
-        .hero-links a {
-            color: #c7d2e6;
-            font-size: 13px;
-            font-weight: 600;
-            transition: color .15s ease;
+        .showcase-grid {
+            max-width: 1450px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
         }
 
-        .hero-links a:hover {
-            color: #fff;
+        .showcase-tile {
+            position: relative;
+            display: block;
+            aspect-ratio: 4 / 5;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #dde1e8;
+            box-shadow: 0 2px 10px rgba(7,26,73,.08);
         }
 
-        .hero-stats {
-            border-left: 1px solid rgba(255,255,255,.14);
-            padding-left: 40px;
+        .showcase-tile img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: transform .3s ease;
+            z-index: 1;
+        }
+
+        .showcase-tile img.broken {
+            display: none;
+        }
+
+        .showcase-tile:hover img {
+            transform: scale(1.04);
+        }
+
+        /* Shows through until a real photo is dropped in at the
+           src above (or once that image fails to load). Swap the
+           <img src> — this placeholder disappears on its own. */
+        .showcase-tile-placeholder {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
             display: flex;
             flex-direction: column;
-            gap: 26px;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background:
+                repeating-linear-gradient(45deg, #eef1f6, #eef1f6 12px, #e3e8f0 12px, #e3e8f0 24px);
+            color: #7c8494;
+            text-align: center;
+            padding: 16px;
         }
 
-        .hero-stat-icon {
-            font-size: 20px;
-            display: block;
-            margin-bottom: 4px;
+        .showcase-tile-placeholder i {
+            font-size: 24px;
+            color: #a7afbe;
         }
 
-        .hero-stats div strong {
-            display: block;
-            font-family: 'Space Grotesk', Arial, sans-serif;
-            font-size: 26px;
+        .showcase-tile-placeholder span {
+            font-size: 12px;
             font-weight: 600;
-            color: #fff;
         }
 
-        .hero-stats div span {
-            font-size: 13px;
-            color: #93a2bd;
+        .showcase-tile-placeholder small {
+            display: block;
+            font-weight: 400;
+            color: #97a0b0;
+            margin-top: 2px;
+        }
+
+        .showcase-tile-overlay {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 2;
+            padding: 16px;
+            background: linear-gradient(0deg, rgba(7,26,73,.72) 0%, rgba(7,26,73,0) 100%);
+        }
+
+        .showcase-tile-overlay strong {
+            display: block;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .showcase-tile-overlay span {
+            display: block;
+            margin-top: 2px;
+            color: rgba(255,255,255,.85);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        @media (max-width: 900px) {
+            .showcase-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
 
         .section-heading {
@@ -450,6 +520,24 @@
             justify-content: center;
             font-size: 12px;
             box-shadow: 0 2px 6px rgba(7,26,73,.18);
+            overflow: hidden;
+        }
+
+        /* Optional: add your own small icon/logo image at the src
+           given in each badge below (e.g. images/icon-phones.png).
+           Until then, or if it fails to load, the Font Awesome icon
+           underneath keeps showing — nothing looks broken either way. */
+        .cat-badge img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 1;
+        }
+
+        .cat-badge img.broken {
+            display: none;
         }
 
         .category img {
@@ -510,11 +598,51 @@
             height: 100%;
             object-fit: cover;
             display: block;
+            z-index: 1;
+        }
+
+        .ad-banner-media.broken {
+            display: none;
+        }
+
+        /* Shows through until a real image is dropped in at the
+           src above (or once that image fails to load). Swap the
+           <img src> — this placeholder disappears on its own. */
+        .ad-banner-placeholder {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background:
+                repeating-linear-gradient(45deg, #eef1f6, #eef1f6 12px, #e3e8f0 12px, #e3e8f0 24px);
+            color: #7c8494;
+            text-align: center;
+        }
+
+        .ad-banner-placeholder i {
+            font-size: 22px;
+            color: #a7afbe;
+        }
+
+        .ad-banner-placeholder span {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .ad-banner-placeholder small {
+            display: block;
+            font-weight: 400;
+            color: #97a0b0;
+            margin-top: 2px;
         }
 
         .ad-banner-overlay {
             position: relative;
-            z-index: 1;
+            z-index: 2;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -620,26 +748,6 @@
                 transform: none;
                 transition: none;
             }
-        }
-
-        .discount {
-            position: absolute;
-            top: 8px;
-            left: 8px;
-            background: linear-gradient(135deg, #ff7a3d, #e53935);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: bold;
-            box-shadow: 0 3px 8px rgba(229,57,53,.35);
-        }
-
-        .discount::before {
-            content: "\f06d";
-            font-family: "Font Awesome 6 Free";
-            font-weight: 900;
-            margin-right: 4px;
         }
 
         .product-image {
@@ -1468,28 +1576,8 @@
                 grid-template-columns: repeat(2, 1fr);
             }
 
-            .hero-inner {
-                grid-template-columns: 1fr;
-                gap: 30px;
-                padding: 44px 6%;
-            }
-
-            .hero-stats {
-                border-left: none;
-                border-top: 1px solid rgba(255,255,255,.14);
-                padding-left: 0;
-                padding-top: 24px;
-                flex-direction: row;
-                justify-content: space-between;
-                gap: 14px;
-            }
-
-            .hero-stats div strong {
-                font-size: 20px;
-            }
-
-            .hero h1 {
-                font-size: 34px;
+            .showcase-grid {
+                gap: 10px;
             }
 
             .benefits {
@@ -1526,25 +1614,13 @@
                 display: none;
             }
 
-            .hero-inner {
-                padding: 34px 6% 30px;
-                gap: 24px;
+            .showcase-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
             }
 
-            .hero-stats {
-                flex-direction: column;
-                gap: 14px;
-            }
-
-            .hero h1 {
-                font-size: 29px;
-                line-height: 1.08;
-            }
-
-            .hero p {
-                max-width: 245px;
+            .showcase-tile-overlay strong {
                 font-size: 13px;
-                line-height: 1.5;
             }
 
             .categories {
@@ -1690,9 +1766,27 @@
 -->
 <div class="ad-carousel" id="adCarousel">
     <div class="ad-carousel-track" id="adCarouselTrack">
-        <img src="images/ad1.jpg" alt="Advertisement 1">
-        <img src="images/ad2.jpg" alt="Advertisement 2">
-        <img src="images/ad3.jpg" alt="Advertisement 3">
+        <div class="ad-slide">
+            <div class="ad-slide-placeholder">
+                <i class="fa-regular fa-image"></i>
+                <span>Add ad image 1<small>Recommended ~1600×500px</small></span>
+            </div>
+            <img src="images/pic 60.jpeg" alt="Advertisement 1" onerror="this.classList.add('broken')">
+        </div>
+        <div class="ad-slide">
+            <div class="ad-slide-placeholder">
+                <i class="fa-regular fa-image"></i>
+                <span>Add ad image 2<small>Recommended ~1600×500px</small></span>
+            </div>
+            <img src="images/pic 61.jpeg" alt="Advertisement 2" onerror="this.classList.add('broken')">
+        </div>
+        <div class="ad-slide">
+            <div class="ad-slide-placeholder">
+                <i class="fa-regular fa-image"></i>
+                <span>Add ad image 3<small>Recommended ~1600×500px</small></span>
+            </div>
+            <img src="images/pic 62.jpeg" alt="Advertisement 3" onerror="this.classList.add('broken')">
+        </div>
     </div>
     <div class="ad-carousel-dots" id="adCarouselDots">
         <span class="active" data-slide="0"></span>
@@ -1704,51 +1798,61 @@
 
 <main>
 
-<section class="hero">
-    <div class="hero-inner">
+<!--
+    SHOWCASE — replace each <img> src below with your own product
+    photo (recommended ~800x900px, portrait). This grid doubles as
+    quick category links, same as before.
+-->
+<section class="showcase">
+    <div class="showcase-grid">
 
-        <div class="hero-content">
-
-            <h1>
-                Everything you<br>
-                <span>need.</span>
-            </h1>
-
-            <p>
-                Shop phones, computers, electronics,
-                gaming and more at PHYNEX.
-            </p>
-
-            <button class="shop-btn" id="heroShopButton" type="button">
-                Shop now
-            </button>
-
-            <div class="hero-links">
-                <a href="javascript:void(0)" data-category="phones">Phones &amp; Tablets</a>
-                <a href="javascript:void(0)" data-category="computers">Computers</a>
-                <a href="javascript:void(0)" data-category="gaming">Gaming</a>
-                <a href="javascript:void(0)" data-category="accessories">Accessories</a>
+        <a class="showcase-tile" href="javascript:void(0)" data-category="phones">
+            <div class="showcase-tile-placeholder">
+                <i class="fa-regular fa-image"></i>
+                <span>Add photo<small>~800×900px</small></span>
             </div>
+            <img src="images/pic 13.jpeg" alt="Phones & Tablets" loading="lazy" onerror="this.classList.add('broken')">
+            <div class="showcase-tile-overlay">
+                <strong>Phones & Tablets</strong>
+                <span>Shop now</span>
+            </div>
+        </a>
 
-        </div>
+        <a class="showcase-tile" href="javascript:void(0)" data-category="computers">
+            <div class="showcase-tile-placeholder">
+                <i class="fa-regular fa-image"></i>
+                <span>Add photo<small>~800×900px</small></span>
+            </div>
+            <img src="images/pic 14.jpeg" alt="Computers" loading="lazy" onerror="this.classList.add('broken')">
+            <div class="showcase-tile-overlay">
+                <strong>Computers</strong>
+                <span>Shop now</span>
+            </div>
+        </a>
 
-        <div class="hero-stats">
-            <div>
-                <span class="hero-stat-icon"><i class="fa-solid fa-box-open"></i></span>
-                <strong>92+</strong>
-                <span>Products in store</span>
+        <a class="showcase-tile" href="javascript:void(0)" data-category="gaming">
+            <div class="showcase-tile-placeholder">
+                <i class="fa-regular fa-image"></i>
+                <span>Add photo<small>~800×900px</small></span>
             </div>
-            <div>
-                <span class="hero-stat-icon"><i class="fa-solid fa-truck-fast"></i></span>
-                <strong>Same-day</strong>
-                <span>Delivery in Nairobi</span>
+            <img src="images/pic 16.jpeg" alt="Gaming" loading="lazy" onerror="this.classList.add('broken')">
+            <div class="showcase-tile-overlay">
+                <strong>Gaming</strong>
+                <span>Shop now</span>
             </div>
-            <div>
-                <span class="hero-stat-icon"><i class="fa-solid fa-shield-halved"></i></span>
-                <strong>120-day</strong>
-                <span>Support on every order</span>
+        </a>
+
+        <a class="showcase-tile" href="javascript:void(0)" data-category="accessories">
+            <div class="showcase-tile-placeholder">
+                <i class="fa-regular fa-image"></i>
+                <span>Add photo<small>~800×900px</small></span>
             </div>
-        </div>
+            <img src="images/pic 11.jpeg" alt="Accessories" loading="lazy" onerror="this.classList.add('broken')">
+            <div class="showcase-tile-overlay">
+                <strong>Accessories</strong>
+                <span>Shop now</span>
+            </div>
+        </a>
 
     </div>
 </section>
@@ -1791,43 +1895,43 @@
 <div class="categories">
 
     <div class="category" data-category="phones" style="--accent:#0875e1;">
-        <span class="cat-badge"><i class="fa-solid fa-mobile-screen-button"></i></span>
+        <span class="cat-badge"><img src="images/icon-phones.png" alt="" onerror="this.classList.add('broken')"><i class="fa-solid fa-mobile-screen-button"></i></span>
         <img src="images/pic 12.jpeg" loading="lazy">
         <span>Phones & Tablets</span>
     </div>
 
     <div class="category" data-category="computers" style="--accent:#7c3aed;">
-        <span class="cat-badge"><i class="fa-solid fa-desktop"></i></span>
+        <span class="cat-badge"><img src="images/icon-computers.png" alt="" onerror="this.classList.add('broken')"><i class="fa-solid fa-desktop"></i></span>
         <img src="images/pic 14.jpeg" loading="lazy">
         <span>Computers</span>
     </div>
 
     <div class="category" data-category="computers" style="--accent:#0e9f6e;">
-        <span class="cat-badge"><i class="fa-solid fa-laptop"></i></span>
+        <span class="cat-badge"><img src="images/icon-laptops.png" alt="" onerror="this.classList.add('broken')"><i class="fa-solid fa-laptop"></i></span>
         <img src="images/pic 15.jpeg" loading="lazy">
         <span>Laptops</span>
     </div>
 
     <div class="category" data-category="gaming" style="--accent:#e53935;">
-        <span class="cat-badge"><i class="fa-solid fa-gamepad"></i></span>
+        <span class="cat-badge"><img src="images/icon-gaming.png" alt="" onerror="this.classList.add('broken')"><i class="fa-solid fa-gamepad"></i></span>
         <img src="images/pic 16.jpeg" loading="lazy">
         <span>Gaming</span>
     </div>
 
     <div class="category" data-category="accessories" style="--accent:#f59e0b;">
-        <span class="cat-badge"><i class="fa-solid fa-plug"></i></span>
+        <span class="cat-badge"><img src="images/icon-accessories.png" alt="" onerror="this.classList.add('broken')"><i class="fa-solid fa-plug"></i></span>
         <img src="images/pic 17.jpeg" loading="lazy">
         <span>Accessories</span>
     </div>
 
     <div class="category" data-category="electronics" style="--accent:#0891b2;">
-        <span class="cat-badge"><i class="fa-solid fa-clock"></i></span>
+        <span class="cat-badge"><img src="images/icon-smartwatch.png" alt="" onerror="this.classList.add('broken')"><i class="fa-solid fa-clock"></i></span>
         <img src="images/pic 18.jpeg" loading="lazy">
         <span>Smart Watch</span>
     </div>
 
     <div class="category" data-category="electronics" style="--accent:#db2777;">
-        <span class="cat-badge"><i class="fa-solid fa-headphones"></i></span>
+        <span class="cat-badge"><img src="images/icon-audio.png" alt="" onerror="this.classList.add('broken')"><i class="fa-solid fa-headphones"></i></span>
         <img src="images/pic 19.jpeg" loading="lazy">
         <span>Audio</span>
     </div>
@@ -1859,8 +1963,6 @@
     <!-- PRODUCT 1 -->
 
     <div class="product" data-category="computers laptops home-office deals new" data-description="A dependable Dell laptop for work, study and everyday productivity." data-specifications="Intel Core i7 11th Gen | 8GB RAM | 400GB SSD">
-
-        <span class="discount">-13%</span>
 
         <div class="product-image">
             <img src="images/pic 20.jpeg" alt="Laptop" loading="lazy">
@@ -1900,8 +2002,6 @@
 
     <div class="product" data-category="computers desktops home-office deals new" data-description="A professionally refurbished HP desktop with responsive performance for office and home use." data-specifications="Intel Core i5 8th Gen | 8GB RAM | 256GB SSD">
 
-        <span class="discount">-10%</span>
-
         <div class="product-image">
             <img src="images/pic 21.jpeg" alt="Laptop" loading="lazy">
         </div>
@@ -1939,8 +2039,6 @@
     <!-- PRODUCT 3 -->
 
     <div class="product" data-category="electronics audio accessories deals new" data-description="A portable Bluetooth speaker with clear sound for music, calls and everyday entertainment." data-specifications="Bluetooth wireless audio | Portable design | Rechargeable battery">
-
-        <span class="discount">-15%</span>
 
         <div class="product-image">
             <img src="images/pic 22.jpeg" alt="BT speaker" loading="lazy">
@@ -1980,8 +2078,6 @@
 
     <div class="product" data-category="computers laptops deals new" data-description="A compact MacBook with a sharp display and reliable performance for everyday computing." data-specifications="Intel Core i5 | 8GB RAM | 256GB SSD">
 
-        <span class="discount">-8%</span>
-
         <div class="product-image">
             <img src="images/pic 23.jpeg" alt="MacBook" loading="lazy">
         </div>
@@ -2019,8 +2115,6 @@
     <!-- PRODUCT 5 -->
 
     <div class="product" data-category="computers laptops deals new" data-description="A durable Lenovo ThinkPad with a comfortable keyboard and fast SSD storage for work on the go." data-specifications="Intel Core i5 | 8GB RAM | 256GB SSD">
-
-        <span class="discount">-20%</span>
 
         <div class="product-image">
             <img src="images/pic 24.jpeg" alt="Laptop" loading="lazy">
@@ -2060,8 +2154,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 6.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -2099,8 +2191,6 @@
     <!-- PRODUCT 7 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 7.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -2140,8 +2230,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 8.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -2179,8 +2267,6 @@
     <!-- PRODUCT 9 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 9.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -2220,8 +2306,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 10.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -2259,7 +2343,11 @@
     <!-- ADVERTISEMENT 1 — replace the image below with your own ad creative (~1200x300px) -->
     <div class="ad-banner" data-category="tech">
         <span class="ad-banner-label">Advertisement</span>
-        <img class="ad-banner-media" src="images/ad-tech-1.jpg" alt="Advertisement" loading="lazy">
+        <div class="ad-banner-placeholder">
+            <i class="fa-regular fa-image"></i>
+            <span>Add your ad image<small>Recommended ~1200×300px</small></span>
+        </div>
+        <img class="ad-banner-media" src="images/pic 12.jpeg" alt="Advertisement" loading="lazy" onerror="this.classList.add('broken')">
         <div class="ad-banner-overlay">
             <div class="ad-banner-copy">
                 <strong>Level up your setup</strong>
@@ -2272,8 +2360,6 @@
     <!-- PRODUCT 11 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 11.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -2313,8 +2399,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 12.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -2352,8 +2436,6 @@
     <!-- PRODUCT 13 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 13.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -2393,8 +2475,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 14.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -2432,8 +2512,6 @@
     <!-- PRODUCT 15 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 15.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -2473,8 +2551,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 16.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -2512,8 +2588,6 @@
     <!-- PRODUCT 17 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 17.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -2553,8 +2627,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 18.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -2592,8 +2664,6 @@
     <!-- PRODUCT 19 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 19.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -2633,8 +2703,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 20.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -2672,7 +2740,11 @@
     <!-- ADVERTISEMENT 2 — replace the image below with your own ad creative (~1200x300px) -->
     <div class="ad-banner" data-category="clothing">
         <span class="ad-banner-label">Advertisement</span>
-        <img class="ad-banner-media" src="images/ad-fashion-1.jpg" alt="Advertisement" loading="lazy">
+        <div class="ad-banner-placeholder">
+            <i class="fa-regular fa-image"></i>
+            <span>Add your ad image<small>Recommended ~1200×300px</small></span>
+        </div>
+        <img class="ad-banner-media" src="images/ad-fashion-1.jpg" alt="Advertisement" loading="lazy" onerror="this.classList.add('broken')">
         <div class="ad-banner-overlay">
             <div class="ad-banner-copy">
                 <strong>New season styles</strong>
@@ -2685,8 +2757,6 @@
     <!-- PRODUCT 21 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 21.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -2726,8 +2796,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 22.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -2765,8 +2833,6 @@
     <!-- PRODUCT 23 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 23.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -2806,8 +2872,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 24.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -2845,8 +2909,6 @@
     <!-- PRODUCT 25 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 25.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -2886,8 +2948,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 26.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -2925,8 +2985,6 @@
     <!-- PRODUCT 27 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 27.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -2966,8 +3024,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 28.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -3005,8 +3061,6 @@
     <!-- PRODUCT 29 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 29.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -3046,8 +3100,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 30.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -3085,7 +3137,11 @@
     <!-- ADVERTISEMENT 3 — replace the image below with your own ad creative (~1200x300px) -->
     <div class="ad-banner" data-category="tech">
         <span class="ad-banner-label">Advertisement</span>
-        <img class="ad-banner-media" src="images/ad-tech-2.jpg" alt="Advertisement" loading="lazy">
+        <div class="ad-banner-placeholder">
+            <i class="fa-regular fa-image"></i>
+            <span>Add your ad image<small>Recommended ~1200×300px</small></span>
+        </div>
+        <img class="ad-banner-media" src="images/ad-tech-2.jpg" alt="Advertisement" loading="lazy" onerror="this.classList.add('broken')">
         <div class="ad-banner-overlay">
             <div class="ad-banner-copy">
                 <strong>Gaming gear on sale</strong>
@@ -3098,8 +3154,6 @@
     <!-- PRODUCT 31 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 31.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -3139,8 +3193,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 32.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -3178,8 +3230,6 @@
     <!-- PRODUCT 33 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 33.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -3219,8 +3269,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 34.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -3258,8 +3306,6 @@
     <!-- PRODUCT 35 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 35.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -3299,8 +3345,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 36.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -3338,8 +3382,6 @@
     <!-- PRODUCT 37 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 37.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -3379,8 +3421,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 38.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -3418,8 +3458,6 @@
     <!-- PRODUCT 39 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 39.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -3459,8 +3497,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 40.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -3498,7 +3534,11 @@
     <!-- ADVERTISEMENT 4 — replace the image below with your own ad creative (~1200x300px) -->
     <div class="ad-banner" data-category="clothing">
         <span class="ad-banner-label">Advertisement</span>
-        <img class="ad-banner-media" src="images/ad-fashion-2.jpg" alt="Advertisement" loading="lazy">
+        <div class="ad-banner-placeholder">
+            <i class="fa-regular fa-image"></i>
+            <span>Add your ad image<small>Recommended ~1200×300px</small></span>
+        </div>
+        <img class="ad-banner-media" src="images/ad-fashion-2.jpg" alt="Advertisement" loading="lazy" onerror="this.classList.add('broken')">
         <div class="ad-banner-overlay">
             <div class="ad-banner-copy">
                 <strong>Dress for less</strong>
@@ -3511,8 +3551,6 @@
     <!-- PRODUCT 41 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 41.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -3552,8 +3590,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 42.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -3591,8 +3627,6 @@
     <!-- PRODUCT 43 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 43.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -3632,8 +3666,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 44.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -3671,8 +3703,6 @@
     <!-- PRODUCT 45 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 45.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -3712,8 +3742,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 46.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -3751,8 +3779,6 @@
     <!-- PRODUCT 47 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 47.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -3792,8 +3818,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 48.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -3831,8 +3855,6 @@
     <!-- PRODUCT 49 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 49.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -3872,8 +3894,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 50.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -3911,7 +3931,11 @@
     <!-- ADVERTISEMENT 5 — replace the image below with your own ad creative (~1200x300px) -->
     <div class="ad-banner" data-category="tech">
         <span class="ad-banner-label">Advertisement</span>
-        <img class="ad-banner-media" src="images/ad-tech-3.jpg" alt="Advertisement" loading="lazy">
+        <div class="ad-banner-placeholder">
+            <i class="fa-regular fa-image"></i>
+            <span>Add your ad image<small>Recommended ~1200×300px</small></span>
+        </div>
+        <img class="ad-banner-media" src="images/ad-tech-3.jpg" alt="Advertisement" loading="lazy" onerror="this.classList.add('broken')">
         <div class="ad-banner-overlay">
             <div class="ad-banner-copy">
                 <strong>Smart home essentials</strong>
@@ -3924,8 +3948,6 @@
     <!-- PRODUCT 51 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 51.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -3965,8 +3987,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 52.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -4004,8 +4024,6 @@
     <!-- PRODUCT 53 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 53.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -4045,8 +4063,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 54.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -4084,8 +4100,6 @@
     <!-- PRODUCT 55 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 55.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -4125,8 +4139,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 56.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -4164,8 +4176,6 @@
     <!-- PRODUCT 57 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 57.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -4205,8 +4215,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 58.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -4244,8 +4252,6 @@
     <!-- PRODUCT 59 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 59.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -4285,8 +4291,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 60.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -4324,7 +4328,11 @@
     <!-- ADVERTISEMENT 6 — replace the image below with your own ad creative (~1200x300px) -->
     <div class="ad-banner" data-category="clothing">
         <span class="ad-banner-label">Advertisement</span>
-        <img class="ad-banner-media" src="images/ad-fashion-3.jpg" alt="Advertisement" loading="lazy">
+        <div class="ad-banner-placeholder">
+            <i class="fa-regular fa-image"></i>
+            <span>Add your ad image<small>Recommended ~1200×300px</small></span>
+        </div>
+        <img class="ad-banner-media" src="images/ad-fashion-3.jpg" alt="Advertisement" loading="lazy" onerror="this.classList.add('broken')">
         <div class="ad-banner-overlay">
             <div class="ad-banner-copy">
                 <strong>Sneaker restock</strong>
@@ -4337,8 +4345,6 @@
     <!-- PRODUCT 61 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 61.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -4378,8 +4384,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 62.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -4417,8 +4421,6 @@
     <!-- PRODUCT 63 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 63.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -4458,8 +4460,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 64.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -4497,8 +4497,6 @@
     <!-- PRODUCT 65 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 65.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -4538,8 +4536,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 66.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -4577,8 +4573,6 @@
     <!-- PRODUCT 67 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 67.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -4618,8 +4612,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 68.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -4657,8 +4649,6 @@
     <!-- PRODUCT 69 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 69.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -4698,8 +4688,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 70.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -4737,7 +4725,11 @@
     <!-- ADVERTISEMENT 7 — replace the image below with your own ad creative (~1200x300px) -->
     <div class="ad-banner" data-category="tech">
         <span class="ad-banner-label">Advertisement</span>
-        <img class="ad-banner-media" src="images/ad-tech-4.jpg" alt="Advertisement" loading="lazy">
+        <div class="ad-banner-placeholder">
+            <i class="fa-regular fa-image"></i>
+            <span>Add your ad image<small>Recommended ~1200×300px</small></span>
+        </div>
+        <img class="ad-banner-media" src="images/ad-tech-4.jpg" alt="Advertisement" loading="lazy" onerror="this.classList.add('broken')">
         <div class="ad-banner-overlay">
             <div class="ad-banner-copy">
                 <strong>Power up & connect</strong>
@@ -4750,8 +4742,6 @@
     <!-- PRODUCT 71 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 71.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -4791,8 +4781,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 72.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -4830,8 +4818,6 @@
     <!-- PRODUCT 73 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 73.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -4871,8 +4857,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 74.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -4910,8 +4894,6 @@
     <!-- PRODUCT 75 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 75.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -4951,8 +4933,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 76.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -4990,8 +4970,6 @@
     <!-- PRODUCT 77 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 77.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -5031,8 +5009,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 78.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -5070,8 +5046,6 @@
     <!-- PRODUCT 79 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 79.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -5111,8 +5085,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 80.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -5150,7 +5122,11 @@
     <!-- ADVERTISEMENT 8 — replace the image below with your own ad creative (~1200x300px) -->
     <div class="ad-banner" data-category="clothing">
         <span class="ad-banner-label">Advertisement</span>
-        <img class="ad-banner-media" src="images/ad-fashion-4.jpg" alt="Advertisement" loading="lazy">
+        <div class="ad-banner-placeholder">
+            <i class="fa-regular fa-image"></i>
+            <span>Add your ad image<small>Recommended ~1200×300px</small></span>
+        </div>
+        <img class="ad-banner-media" src="images/ad-fashion-4.jpg" alt="Advertisement" loading="lazy" onerror="this.classList.add('broken')">
         <div class="ad-banner-overlay">
             <div class="ad-banner-copy">
                 <strong>Accessorize it</strong>
@@ -5163,8 +5139,6 @@
     <!-- PRODUCT 81 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 81.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -5204,8 +5178,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 82.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -5243,8 +5215,6 @@
     <!-- PRODUCT 83 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 83.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -5284,8 +5254,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 84.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -5323,8 +5291,6 @@
     <!-- PRODUCT 85 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 85.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -5364,8 +5330,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 86.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -5403,8 +5367,6 @@
     <!-- PRODUCT 87 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 87.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -5444,8 +5406,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 88.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -5483,8 +5443,6 @@
     <!-- PRODUCT 89 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 89.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -5524,8 +5482,6 @@
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
 
-        <span class="discount">-0%</span>
-
         <div class="product-image">
             <img src="images/pic 90.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
         </div>
@@ -5563,7 +5519,11 @@
     <!-- ADVERTISEMENT 9 — replace the image below with your own ad creative (~1200x300px) -->
     <div class="ad-banner" data-category="tech">
         <span class="ad-banner-label">Advertisement</span>
-        <img class="ad-banner-media" src="images/ad-tech-5.jpg" alt="Advertisement" loading="lazy">
+        <div class="ad-banner-placeholder">
+            <i class="fa-regular fa-image"></i>
+            <span>Add your ad image<small>Recommended ~1200×300px</small></span>
+        </div>
+        <img class="ad-banner-media" src="images/ad-tech-5.jpg" alt="Advertisement" loading="lazy" onerror="this.classList.add('broken')">
         <div class="ad-banner-overlay">
             <div class="ad-banner-copy">
                 <strong>Refurbished, verified</strong>
@@ -5576,8 +5536,6 @@
     <!-- PRODUCT 91 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 91.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
@@ -5616,8 +5574,6 @@
     <!-- PRODUCT 92 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
-
-        <span class="discount">-0%</span>
 
         <div class="product-image">
             <img src="images/pic 92.jpeg" alt="PLACEHOLDER PRODUCT NAME" loading="lazy">
