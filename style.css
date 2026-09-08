@@ -1530,3 +1530,81 @@ a {
         justify-content: center;
     }
 }
+/* TOP HEADER ICONS */
+.header-icons {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    margin-left: auto;
+}
+
+/* TRACK MY DEVICE */
+.track-device {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    text-decoration: none;
+    color: #17213c;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.track-device i {
+    font-size: 22px;
+    color: #087ee1;
+}
+
+.track-device:hover {
+    color: #087ee1;
+}
+
+/* CART */
+.top-cart {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    text-decoration: none;
+    color: #17213c;
+}
+
+.top-cart i {
+    font-size: 30px;
+}
+
+/* CART NUMBER */
+.cart-count {
+    position: absolute;
+    top: -5px;
+    right: -7px;
+    min-width: 21px;
+    height: 21px;
+    padding: 0 5px;
+    border-radius: 50%;
+    background: #e53935;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid white;
+}
+/* Clean cart + location icons only */
+.header-actions .action-icon {
+    font-size: 23px;
+    color: #075fc0;
+    text-shadow: none;
+    filter: none;
+    box-shadow: none;
+}
+
+.header-actions .cart-icon-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
