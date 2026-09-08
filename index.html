@@ -126,6 +126,49 @@
             font-size: 23px;
         }
 
+        /* Header tracking + cart */
+        .header-actions .action {
+            position: relative;
+        }
+
+        .header-actions .track-icon {
+            color: #0875e1;
+        }
+
+        .header-actions .cart-icon-wrap {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+        }
+
+        .header-actions .cart-icon-wrap i {
+            font-size: 29px;
+            color: #172033;
+        }
+
+        .top-cart-badge {
+            position: absolute;
+            top: -7px;
+            right: -9px;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 5px;
+            border-radius: 50%;
+            background: #e53935;
+            color: #fff;
+            border: 2px solid #fff;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 16px;
+            text-align: center;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
         .action small {
             display: block;
             color: #777;
@@ -1799,16 +1842,19 @@
     <div class="header-actions">
 
        
-        <a class="action" href="delivery.html#tracking">
-            <span class="action-icon"><i class="fa-solid fa-box"></i></span>
+        <a class="action" href="delivery.html#tracking" aria-label="Track My Device">
+            <span class="action-icon track-icon"><i class="fa-solid fa-location-crosshairs"></i></span>
             <div class="action-text">
-                Orders
+                Track My Device
                 <small>Track</small>
             </div>
         </a>
 
-        <a class="action" href="cart.html">
-            <span class="action-icon"><i class="fa-solid fa-cart-shopping"></i></span>
+        <a class="action" href="cart.html" aria-label="Shopping Cart">
+            <span class="action-icon cart-icon-wrap">
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span class="top-cart-badge" id="topCartBadge">0</span>
+            </span>
             <div class="action-text">
                 Cart
                 <small id="cart-count">0 items</small>
@@ -6104,6 +6150,29 @@
 
         sync();
         new MutationObserver(sync).observe(source, { childList: true, characterData: true, subtree: true });
+    })();
+</script>
+
+<script>
+    // Keep the top-right cart badge synced with the existing cart counter.
+    (function () {
+        var source = document.getElementById('cart-count');
+        var badge = document.getElementById('topCartBadge');
+        if (!source || !badge) return;
+
+        function syncTopCart() {
+            var n = parseInt((source.textContent || '').replace(/\D/g, ''), 10);
+            if (isNaN(n)) n = 0;
+            badge.textContent = n;
+            badge.style.display = n > 0 ? 'flex' : 'none';
+        }
+
+        syncTopCart();
+        new MutationObserver(syncTopCart).observe(source, {
+            childList: true,
+            characterData: true,
+            subtree: true
+        });
     })();
 </script>
 
