@@ -192,6 +192,17 @@
             cursor: pointer;
         }
 
+
+        .nav-item {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .category {
+            text-decoration: none;
+            color: inherit;
+        }
+
         .nav-item:hover {
             color: #0875e1;
         }
@@ -1866,14 +1877,14 @@
 
 <nav class="nav" id="categoryNav">
 
-    <div class="nav-item" data-category="all"><i class="fa-solid fa-bars"></i> All Categories</div>
-    <div class="nav-item" data-category="phones">Phones & Tablets</div>
-    <div class="nav-item" data-category="computers">Computers</div>
-    <div class="nav-item" data-category="electronics">Electronics</div>
-    <div class="nav-item" data-category="gaming">Gaming</div>
-    <div class="nav-item" data-category="accessories">Accessories</div>
-    <div class="nav-item" data-category="home-office">Home & Office</div>
-    <div class="nav-item deals" data-category="deals">Deals</div>
+    <a class="nav-item" href="category.html?category=all"><i class="fa-solid fa-bars"></i> All Categories</a>
+    <a class="nav-item" href="category.html?category=phones">Phones & Tablets</a>
+    <a class="nav-item" href="category.html?category=computers">Computers</a>
+    <a class="nav-item" href="category.html?category=electronics">Electronics</a>
+    <a class="nav-item" href="category.html?category=gaming">Gaming</a>
+    <a class="nav-item" href="category.html?category=accessories">Accessories</a>
+    <a class="nav-item" href="category.html?category=home-office">Home & Office</a>
+    <a class="nav-item deals" href="category.html?category=deals">Deals</a>
 
 </nav>
 
@@ -1891,21 +1902,21 @@
                 <i class="fa-regular fa-image"></i>
                 <span>Add ad image 1<small>Recommended ~1600×500px</small></span>
             </div>
-            <img src="images/pic 60.jpeg" alt="Advertisement 1" onerror="this.classList.add('broken')">
+            <img src="images/ad1.jpg" alt="Advertisement 1" onerror="this.classList.add('broken')">
         </div>
         <div class="ad-slide">
             <div class="ad-slide-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add ad image 2<small>Recommended ~1600×500px</small></span>
             </div>
-            <img src="images/pic 61.jpeg" alt="Advertisement 2" onerror="this.classList.add('broken')">
+            <img src="images/ad2.jpg" alt="Advertisement 2" onerror="this.classList.add('broken')">
         </div>
         <div class="ad-slide">
             <div class="ad-slide-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add ad image 3<small>Recommended ~1600×500px</small></span>
             </div>
-            <img src="images/pic 62.jpeg" alt="Advertisement 3" onerror="this.classList.add('broken')">
+            <img src="images/ad3.jpg" alt="Advertisement 3" onerror="this.classList.add('broken')">
         </div>
     </div>
     <div class="ad-carousel-dots" id="adCarouselDots">
@@ -1926,48 +1937,48 @@
 <section class="showcase">
     <div class="showcase-grid">
 
-        <a class="showcase-tile" href="javascript:void(0)" data-category="phones">
+        <a class="showcase-tile" href="category.html?category=phones" data-category="phones">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
             </div>
-            <img src="images/pic 13.jpeg" alt="Phones & Tablets" loading="lazy" onerror="this.classList.add('broken')">
+            <img src="images/showcase-phones.jpg" alt="Phones & Tablets" loading="lazy" onerror="this.classList.add('broken')">
             <div class="showcase-tile-overlay">
                 <strong>Phones & Tablets</strong>
                 <span>Shop now</span>
             </div>
         </a>
 
-        <a class="showcase-tile" href="javascript:void(0)" data-category="computers">
+        <a class="showcase-tile" href="category.html?category=computers" data-category="computers">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
             </div>
-            <img src="images/pic 14.jpeg" alt="Computers" loading="lazy" onerror="this.classList.add('broken')">
+            <img src="images/showcase-computers.jpg" alt="Computers" loading="lazy" onerror="this.classList.add('broken')">
             <div class="showcase-tile-overlay">
                 <strong>Computers</strong>
                 <span>Shop now</span>
             </div>
         </a>
 
-        <a class="showcase-tile" href="javascript:void(0)" data-category="gaming">
+        <a class="showcase-tile" href="category.html?category=gaming" data-category="gaming">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
             </div>
-            <img src="images/pic 26.jpeg" alt="Gaming" loading="lazy" onerror="this.classList.add('broken')">
+            <img src="images/showcase-gaming.jpg" alt="Gaming" loading="lazy" onerror="this.classList.add('broken')">
             <div class="showcase-tile-overlay">
                 <strong>Gaming</strong>
                 <span>Shop now</span>
             </div>
         </a>
 
-        <a class="showcase-tile" href="javascript:void(0)" data-category="accessories">
+        <a class="showcase-tile" href="category.html?category=accessories" data-category="accessories">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
             </div>
-            <img src="images/pic 11.jpeg" alt="Accessories" loading="lazy" onerror="this.classList.add('broken')">
+            <img src="images/showcase-accessories.jpg" alt="Accessories" loading="lazy" onerror="this.classList.add('broken')">
             <div class="showcase-tile-overlay">
                 <strong>Accessories</strong>
                 <span>Shop now</span>
@@ -1990,7 +2001,7 @@
 
     <h2><span class="heading-icon"><i class="fa-solid fa-star"></i></span>New Arrivals</h2>
 
-    <a href="#newArrivalsSection" class="view-all">
+    <a href="category.html?category=new" class="view-all">
         View All New Arrivals
     </a>
 
@@ -2005,7 +2016,7 @@
 
     <h2><span class="heading-icon"><i class="fa-solid fa-grip"></i></span>Shop by Category</h2>
 
-    <a href="categories.html" class="view-all">
+    <a href="category.html?category=all" class="view-all">
         View All Categories
     </a>
 
@@ -2014,47 +2025,47 @@
 
 <div class="categories">
 
-    <div class="category" data-category="phones" style="--accent:#0875e1;">
+    <a class="category" href="category.html?category=phones" data-category="phones" style="--accent:#0875e1;">
         <span class="cat-badge"><img src="images/icon-phones.png" alt="" onerror="this.classList.add('broken')"><i class="fa-solid fa-mobile-screen-button"></i></span>
         <img src="images/pic 12.jpeg" loading="lazy">
         <span>Phones & Tablets</span>
-    </div>
+    </a>
 
-    <div class="category" data-category="computers" style="--accent:#7c3aed;">
+    <a class="category" href="category.html?category=computers" data-category="computers" style="--accent:#7c3aed;">
         <span class="cat-badge"><img src="images/icon-computers.png" alt="" onerror="this.classList.add('broken')"><i class="fa-solid fa-desktop"></i></span>
         <img src="images/pic 14.jpeg" loading="lazy">
         <span>Computers</span>
-    </div>
+    </a>
 
-    <div class="category" data-category="computers" style="--accent:#0e9f6e;">
+    <a class="category" href="category.html?category=laptops" data-category="laptops" style="--accent:#0e9f6e;">
         <span class="cat-badge"><img src="images/icon-laptops.png" alt="" onerror="this.classList.add('broken')"><i class="fa-solid fa-laptop"></i></span>
         <img src="images/pic 15.jpeg" loading="lazy">
         <span>Laptops</span>
-    </div>
+    </a>
 
-    <div class="category" data-category="gaming" style="--accent:#e53935;">
+    <a class="category" href="category.html?category=gaming" data-category="gaming" style="--accent:#e53935;">
         <span class="cat-badge"><img src="images/icon-gaming.png" alt="" onerror="this.classList.add('broken')"><i class="fa-solid fa-gamepad"></i></span>
         <img src="images/pic 16.jpeg" loading="lazy">
         <span>Gaming</span>
-    </div>
+    </a>
 
-    <div class="category" data-category="accessories" style="--accent:#f59e0b;">
+    <a class="category" href="category.html?category=accessories" data-category="accessories" style="--accent:#f59e0b;">
         <span class="cat-badge"><img src="images/icon-accessories.png" alt="" onerror="this.classList.add('broken')"><i class="fa-solid fa-plug"></i></span>
         <img src="images/pic 17.jpeg" loading="lazy">
         <span>Accessories</span>
-    </div>
+    </a>
 
-    <div class="category" data-category="electronics" style="--accent:#0891b2;">
+    <a class="category" href="category.html?category=smartwatch" data-category="smartwatch" style="--accent:#0891b2;">
         <span class="cat-badge"><img src="images/icon-smartwatch.png" alt="" onerror="this.classList.add('broken')"><i class="fa-solid fa-clock"></i></span>
         <img src="images/pic 18.jpeg" loading="lazy">
         <span>Smart Watch</span>
-    </div>
+    </a>
 
-    <div class="category" data-category="electronics" style="--accent:#db2777;">
+    <a class="category" href="category.html?category=audio" data-category="audio" style="--accent:#db2777;">
         <span class="cat-badge"><img src="images/icon-audio.png" alt="" onerror="this.classList.add('broken')"><i class="fa-solid fa-headphones"></i></span>
         <img src="images/pic 19.jpeg" loading="lazy">
         <span>Audio</span>
-    </div>
+    </a>
 
 </div>
 
@@ -2071,7 +2082,7 @@
 
     </div>
 
-    <a href="#productsSection" class="view-all">
+    <a href="category.html?category=deals" class="view-all">
         View All Deals
     </a>
 
@@ -5948,7 +5959,7 @@
         Home
     </a>
 
-    <a class="mbn-item" href="#categoryNav">
+    <a class="mbn-item" href="category.html?category=all">
         <i class="fa-solid fa-list"></i>
         Category
     </a>
@@ -6175,6 +6186,30 @@
 </script>
 
 <script src="script.js"></script>
+
+<script>
+    // If a category/product page sends a customer back to the homepage
+    // with ?product=..., automatically open that product's existing detail view.
+    document.addEventListener('DOMContentLoaded', function () {
+        var params = new URLSearchParams(window.location.search);
+        var wanted = params.get('product');
+        if (!wanted) return;
+        var target = wanted.trim().toLowerCase();
+        var cards = Array.from(document.querySelectorAll('.product'));
+        var match = cards.find(function (card) {
+            var name = card.querySelector('.product-name');
+            return name && name.textContent.trim().toLowerCase() === target;
+        });
+        if (match) {
+            setTimeout(function () {
+                match.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                match.click();
+                var img = match.querySelector('.product-image img');
+                if (img) img.click();
+            }, 250);
+        }
+    });
+</script>
 
 </body>
 </html>
