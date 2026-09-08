@@ -124,29 +124,27 @@
 
         .action-icon {
             font-size: 23px;
+            color: #071a49;
+            text-shadow: none !important;
+            filter: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Clean styling ONLY for the header location and shopping cart icons */
+        .header-actions .clean-header-icon {
+            color: #075fc0;
+            text-shadow: none !important;
+            filter: none !important;
+            box-shadow: none !important;
+            background: transparent !important;
+            border: none !important;
         }
 
         /* Header tracking + cart */
         .header-actions .action {
             position: relative;
-        }
-
-        .header-actions .track-icon {
-            color: #0875e1;
-        }
-
-        .header-actions .cart-icon-wrap {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 34px;
-            height: 34px;
-        }
-
-        .header-actions .cart-icon-wrap i {
-            font-size: 29px;
-            color: #172033;
+            text-shadow: none !important;
+            filter: none !important;
         }
 
         .top-cart-badge {
@@ -1843,7 +1841,7 @@
 
        
         <a class="action" href="delivery.html#tracking" aria-label="Track My Device">
-            <span class="action-icon track-icon"><i class="fa-solid fa-location-crosshairs"></i></span>
+            <span class="action-icon"><i class="fas fa-location-dot" aria-hidden="true"></i></span>
             <div class="action-text">
                 Track My Device
                 <small>Track</small>
@@ -1852,7 +1850,7 @@
 
         <a class="action" href="cart.html" aria-label="Shopping Cart">
             <span class="action-icon cart-icon-wrap">
-                <i class="fa-solid fa-cart-shopping"></i>
+                <i class="fas fa-cart-shopping" aria-hidden="true"></i>
                 <span class="top-cart-badge" id="topCartBadge">0</span>
             </span>
             <div class="action-text">
