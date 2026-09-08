@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Your Cart — PHYNEX</title>
+<title>Your Cart</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -34,10 +34,7 @@ button{font-family:inherit;}
 .top-right a:hover{color:#fff;}
 .main-header{background:#fff;height:78px;display:flex;align-items:center;gap:28px;padding:0 4%;border-bottom:1px solid var(--line);}
 .logo{display:flex;align-items:center;gap:9px;flex-shrink:0;}
-.logo-mark{width:36px;height:36px;border-radius:9px;background:linear-gradient(155deg,var(--blue),var(--navy));display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.logo-mark svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2;}
-.logo-word{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:21px;letter-spacing:-.02em;color:var(--navy);}
-.logo-word span{color:var(--blue);}
+.logo-slot{width:150px;height:44px;border:1.5px dashed var(--line);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted);font-size:11.5px;font-weight:600;background:var(--bg);}
 .header-spacer{flex:1;}
 .header-actions{display:flex;align-items:center;gap:8px;}
 .action{display:flex;align-items:center;gap:10px;font-size:13px;padding:8px 12px;border-radius:8px;transition:background .15s;position:relative;}
@@ -159,14 +156,13 @@ footer{background:var(--navy);color:#a7b3cc;margin-top:20px;padding:22px 4%;text
 <body>
 
 <div class="top-bar">
-  <span>Kenya's marketplace for tech, built for speed</span>
+  <span>Fast, reliable online shopping</span>
   <div class="top-right"><a href="help.html">Help Centre</a></div>
 </div>
 
 <header class="main-header">
   <a class="logo" href="index.html">
-    <span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 17V7l8-4 8 4v10l-8 4z"/><path d="M4 7l8 4 8-4M12 11v10"/></svg></span>
-    <span class="logo-word">PHY<span>NEX</span></span>
+    <span class="logo-slot">Your Logo</span>
   </a>
   <div class="header-spacer"></div>
   <div class="header-actions">
@@ -296,7 +292,7 @@ footer{background:var(--navy);color:#a7b3cc;margin-top:20px;padding:22px 4%;text
     <div class="confirm-icon"><i data-lucide="check" class="icon"></i></div>
     <h2>Order placed successfully</h2>
     <p>Thanks — we've received your order and sent a confirmation to your email.</p>
-    <div class="confirm-order-id" id="confirmOrderId">PHX-000000</div>
+    <div class="confirm-order-id" id="confirmOrderId">ORD-000000</div>
     <p id="confirmPayMsg" style="margin-bottom:0;"></p>
     <div class="confirm-actions" style="margin-top:24px;">
       <a href="index.html" class="primary">Continue shopping</a>
@@ -305,7 +301,7 @@ footer{background:var(--navy);color:#a7b3cc;margin-top:20px;padding:22px 4%;text
   </div>
 </main>
 
-<footer>© <span id="year"></span> PHYNEX. All rights reserved.</footer>
+<footer>© <span id="year"></span> All rights reserved.</footer>
 
 <script src="https://unpkg.com/lucide@latest"></script>
 <script>
@@ -313,13 +309,13 @@ footer{background:var(--navy);color:#a7b3cc;margin-top:20px;padding:22px 4%;text
    load and every cart change — that's the one place new icon markup appears. */
 
 /* ================= Cart data layer (shared with index.html) ================= */
-function getCart(){ try{ return JSON.parse(localStorage.getItem('phynex_cart')||'[]'); }catch(e){ return []; } }
-function saveCart(cart){ localStorage.setItem('phynex_cart', JSON.stringify(cart)); }
+function getCart(){ try{ return JSON.parse(localStorage.getItem('site_cart')||'[]'); }catch(e){ return []; } }
+function saveCart(cart){ localStorage.setItem('site_cart', JSON.stringify(cart)); }
 
 const FREE_DELIVERY_THRESHOLD = 15000;
 const DELIVERY_RATES = { nairobi: 300, major: 500, other: 700 };
 const VAT_RATE = 0.16; // Kenya standard VAT — informational only, prices already VAT-inclusive
-const PROMO_CODES = { 'PHYNEX10': 0.10 };
+const PROMO_CODES = { 'SAVE10': 0.10 };
 
 let appliedDiscountRate = 0;
 let selectedCounty = '';
@@ -527,7 +523,7 @@ function submitOrder(){
     return;
   }
   const payMethod = document.querySelector('input[name="pay"]:checked').value;
-  const orderId = 'PHX-' + Date.now().toString().slice(-6);
+  const orderId = 'ORD-' + Date.now().toString().slice(-6);
 
   const payMsg = {
     mpesa: "We've sent an M-Pesa STK push to your phone — enter your PIN to complete payment.",
