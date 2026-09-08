@@ -270,6 +270,82 @@
             transform: scale(1.25);
         }
 
+        /* ---- Mobile bottom navigation bar ----
+           Hidden on desktop; becomes a fixed bar pinned to the
+           bottom of the screen on phones, showing Home / Category /
+           Message / Cart / Account, like most shopping apps use. */
+        .mobile-bottom-nav {
+            display: none;
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding-bottom: 64px;
+            }
+
+            .mobile-bottom-nav {
+                display: flex;
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 999;
+                height: 60px;
+                background: white;
+                border-top: 1px solid #e5e7eb;
+                box-shadow: 0 -4px 14px rgba(7, 26, 73, .1);
+                align-items: center;
+                justify-content: space-around;
+            }
+
+            .mbn-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 3px;
+                flex: 1;
+                height: 100%;
+                position: relative;
+                color: #687083;
+                font-size: 10px;
+                font-weight: 600;
+            }
+
+            .mbn-item.active {
+                color: #0875e1;
+            }
+
+            .mbn-item i {
+                font-size: 19px;
+                line-height: 1;
+            }
+
+            .mbn-logo {
+                width: 22px;
+                height: 22px;
+                object-fit: contain;
+                border-radius: 5px;
+            }
+
+            .mbn-badge {
+                position: absolute;
+                top: 2px;
+                right: 22%;
+                min-width: 15px;
+                height: 15px;
+                padding: 0 3px;
+                border-radius: 8px;
+                background: #e53935;
+                color: white;
+                font-size: 9px;
+                font-weight: 700;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+
         @media (max-width: 640px) {
             .ad-carousel {
                 aspect-ratio: 16 / 9;
@@ -1744,7 +1820,7 @@
 </header>
 
 
-<nav class="nav">
+<nav class="nav" id="categoryNav">
 
     <div class="nav-item" data-category="all"><i class="fa-solid fa-bars"></i> All Categories</div>
     <div class="nav-item" data-category="phones">Phones & Tablets</div>
@@ -1771,21 +1847,21 @@
                 <i class="fa-regular fa-image"></i>
                 <span>Add ad image 1<small>Recommended ~1600×500px</small></span>
             </div>
-            <img src="images/pic 60.jpeg" alt="Advertisement 1" onerror="this.classList.add('broken')">
+            <img src="images/ad1.jpg" alt="Advertisement 1" onerror="this.classList.add('broken')">
         </div>
         <div class="ad-slide">
             <div class="ad-slide-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add ad image 2<small>Recommended ~1600×500px</small></span>
             </div>
-            <img src="images/pic 61.jpeg" alt="Advertisement 2" onerror="this.classList.add('broken')">
+            <img src="images/ad2.jpg" alt="Advertisement 2" onerror="this.classList.add('broken')">
         </div>
         <div class="ad-slide">
             <div class="ad-slide-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add ad image 3<small>Recommended ~1600×500px</small></span>
             </div>
-            <img src="images/pic 62.jpeg" alt="Advertisement 3" onerror="this.classList.add('broken')">
+            <img src="images/ad3.jpg" alt="Advertisement 3" onerror="this.classList.add('broken')">
         </div>
     </div>
     <div class="ad-carousel-dots" id="adCarouselDots">
@@ -1811,7 +1887,7 @@
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
             </div>
-            <img src="images/pic 13.jpeg" alt="Phones & Tablets" loading="lazy" onerror="this.classList.add('broken')">
+            <img src="images/showcase-phones.jpg" alt="Phones & Tablets" loading="lazy" onerror="this.classList.add('broken')">
             <div class="showcase-tile-overlay">
                 <strong>Phones & Tablets</strong>
                 <span>Shop now</span>
@@ -1823,7 +1899,7 @@
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
             </div>
-            <img src="images/pic 14.jpeg" alt="Computers" loading="lazy" onerror="this.classList.add('broken')">
+            <img src="images/showcase-computers.jpg" alt="Computers" loading="lazy" onerror="this.classList.add('broken')">
             <div class="showcase-tile-overlay">
                 <strong>Computers</strong>
                 <span>Shop now</span>
@@ -1835,7 +1911,7 @@
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
             </div>
-            <img src="images/pic 16.jpeg" alt="Gaming" loading="lazy" onerror="this.classList.add('broken')">
+            <img src="images/showcase-gaming.jpg" alt="Gaming" loading="lazy" onerror="this.classList.add('broken')">
             <div class="showcase-tile-overlay">
                 <strong>Gaming</strong>
                 <span>Shop now</span>
@@ -1847,7 +1923,7 @@
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
             </div>
-            <img src="images/pic 11.jpeg" alt="Accessories" loading="lazy" onerror="this.classList.add('broken')">
+            <img src="images/showcase-accessories.jpg" alt="Accessories" loading="lazy" onerror="this.classList.add('broken')">
             <div class="showcase-tile-overlay">
                 <strong>Accessories</strong>
                 <span>Shop now</span>
@@ -2347,7 +2423,7 @@
             <i class="fa-regular fa-image"></i>
             <span>Add your ad image<small>Recommended ~1200×300px</small></span>
         </div>
-        <img class="ad-banner-media" src="images/pic 12.jpeg" alt="Advertisement" loading="lazy" onerror="this.classList.add('broken')">
+        <img class="ad-banner-media" src="images/ad-tech-1.jpg" alt="Advertisement" loading="lazy" onerror="this.classList.add('broken')">
         <div class="ad-banner-overlay">
             <div class="ad-banner-copy">
                 <strong>Level up your setup</strong>
@@ -5821,6 +5897,36 @@
 
 </div>
 
+<nav class="mobile-bottom-nav">
+
+    <a class="mbn-item active" href="index.html">
+        <img class="mbn-logo" src="images/pic 30.jpeg" alt="PHYNEX">
+        Home
+    </a>
+
+    <a class="mbn-item" href="#categoryNav">
+        <i class="fa-solid fa-list"></i>
+        Category
+    </a>
+
+    <a class="mbn-item" href="https://wa.me/254793977389" target="_blank" rel="noopener">
+        <i class="fa-regular fa-comment-dots"></i>
+        Message
+    </a>
+
+    <a class="mbn-item" href="cart.html">
+        <i class="fa-solid fa-cart-shopping"></i>
+        <span class="mbn-badge" id="mbnCartCount">0</span>
+        Cart
+    </a>
+
+    <a class="mbn-item" href="account.html">
+        <i class="fa-solid fa-user"></i>
+        Account
+    </a>
+
+</nav>
+
 <footer class="phynex-footer">
     <div class="footer-main">
         <div class="footer-section brand-section">
@@ -6013,6 +6119,26 @@
 
         cards.forEach(function (card) { observer.observe(card); });
     });
+</script>
+
+<script>
+    // Keeps the mobile bottom-nav Cart badge in sync with the
+    // header's cart-count element (updated by script.js), by
+    // watching it for changes instead of duplicating cart logic.
+    (function () {
+        var source = document.getElementById('cart-count');
+        var badge = document.getElementById('mbnCartCount');
+        if (!source || !badge) return;
+
+        function sync() {
+            var n = parseInt((source.textContent || '').replace(/\D/g, ''), 10);
+            badge.textContent = isNaN(n) ? '0' : n;
+            badge.style.display = n > 0 ? 'flex' : 'none';
+        }
+
+        sync();
+        new MutationObserver(sync).observe(source, { childList: true, characterData: true, subtree: true });
+    })();
 </script>
 
 <script src="script.js"></script>
