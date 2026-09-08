@@ -125,12 +125,6 @@
             font-size: 23px;
         }
 
-        .action-icon svg {
-            width: 22px;
-            height: 22px;
-            display: block;
-        }
-
         .action small {
             display: block;
             color: #777;
@@ -357,6 +351,12 @@
             gap: 26px;
         }
 
+        .hero-stat-icon {
+            font-size: 20px;
+            display: block;
+            margin-bottom: 4px;
+        }
+
         .hero-stats div strong {
             display: block;
             font-family: 'Space Grotesk', Arial, sans-serif;
@@ -379,6 +379,26 @@
 
         .section-heading h2 {
             font-size: 19px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .heading-icon {
+            font-size: 18px;
+        }
+
+        @keyframes timerPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(229, 57, 53, .45); }
+            50% { box-shadow: 0 0 0 6px rgba(229, 57, 53, 0); }
+        }
+
+        .timer {
+            animation: timerPulse 1.8s ease-out infinite;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .timer { animation: none; }
         }
 
         .view-all {
@@ -394,9 +414,11 @@
         }
 
         .category {
+            position: relative;
             background: white;
             border: 1px solid #e5e7eb;
             border-radius: 12px;
+            border-top: 3px solid transparent;
             height: 125px;
             display: flex;
             flex-direction: column;
@@ -410,8 +432,23 @@
 
         .category:hover {
             transform: translateY(-4px);
-            border-color: #0875e1;
+            border-color: var(--accent, #0875e1);
             box-shadow: 0 10px 22px rgba(7,26,73,.12);
+        }
+
+        .cat-badge {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--accent, #0875e1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            box-shadow: 0 2px 6px rgba(7,26,73,.18);
         }
 
         .category img {
@@ -446,108 +483,6 @@
             gap: 14px;
         }
 
-        .new-arrivals-panel {
-            background: #f7f8fa;
-            border: 1px solid #e5e7eb;
-            border-radius: 14px;
-            padding: 20px 20px 24px;
-            margin: 22px 0 28px;
-            opacity: 0;
-            transform: translateY(14px);
-            transition: opacity .6s ease, transform .6s ease;
-        }
-
-        .new-arrivals-panel.is-visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .new-arrivals-panel .section-heading {
-            margin: 0 0 4px;
-            align-items: flex-start;
-        }
-
-        .new-arrivals-heading {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .new-arrivals-heading .accent-bar {
-            width: 4px;
-            height: 22px;
-            background: #0875e1;
-            border-radius: 2px;
-        }
-
-        .new-arrivals-heading h2 {
-            font-size: 19px;
-            color: #071a49;
-        }
-
-        .new-arrivals-subtitle {
-            color: #687083;
-            font-size: 13px;
-            margin: 0 0 16px;
-        }
-
-        .new-arrivals-grid .product {
-            border: 1px solid #e1e4e8;
-        }
-
-        .new-arrivals-grid .new-tag {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            z-index: 2;
-            background: #0875e1;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: bold;
-        }
-
-        .new-arrivals-grid .product-image {
-            height: 110px;
-            flex: 0 0 110px;
-            padding: 8px;
-        }
-
-        .new-arrivals-grid .product-name {
-            font-size: 11px;
-            min-height: 30px;
-            margin-bottom: 5px;
-        }
-
-        .new-arrivals-grid .price {
-            font-size: 14px;
-        }
-
-        .new-arrivals-grid .product-info {
-            padding: 8px;
-        }
-
-        @media (max-width: 900px) {
-            .new-arrivals-grid {
-                grid-template-columns: repeat(3, minmax(0, 1fr));
-            }
-        }
-
-        @media (max-width: 480px) {
-            .new-arrivals-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            .new-arrivals-panel {
-                transition: none;
-                opacity: 1;
-                transform: none;
-            }
-        }
-
         .product {
             display: flex;
             flex-direction: column;
@@ -565,16 +500,43 @@
             box-shadow: 0 14px 28px rgba(7, 26, 73, .14);
         }
 
+        /* Scroll-reveal animation for product cards.
+           The 'reveal' class is only added by JS, so if JS fails
+           to load, cards stay fully visible by default. */
+        .product.reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity .6s ease, transform .6s ease;
+        }
+
+        .product.reveal.in-view {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .product.reveal {
+                opacity: 1;
+                transform: none;
+                transition: none;
+            }
+        }
+
         .discount {
             position: absolute;
             top: 8px;
             left: 8px;
-            background: #0875e1;
+            background: linear-gradient(135deg, #ff7a3d, #e53935);
             color: white;
             padding: 4px 8px;
             border-radius: 4px;
             font-size: 11px;
             font-weight: bold;
+            box-shadow: 0 3px 8px rgba(229,57,53,.35);
+        }
+
+        .discount::before {
+            content: "🔥 ";
         }
 
         .product-image {
@@ -636,11 +598,19 @@
             margin-bottom: 10px;
         }
 
+        .express::before {
+            content: "⚡ ";
+        }
+
         .stock-status {
             color: #218739;
             font-size: 11px;
             font-weight: bold;
             margin-bottom: 12px;
+        }
+
+        .stock-status::before {
+            content: "🟢 ";
         }
 
         .product-actions {
@@ -668,6 +638,14 @@
 
         .cart-btn:active {
             transform: scale(.97);
+        }
+
+        .cart-btn::before {
+            content: "🛒 ";
+        }
+
+        .buy-btn::before {
+            content: "⚡ ";
         }
 
         .buy-btn {
@@ -1334,67 +1312,6 @@
             gap: 10px;
         }
 
-        .mobile-bottom-nav {
-            display: none;
-        }
-
-        @media (max-width: 900px) {
-
-            body {
-                padding-bottom: 62px;
-            }
-
-            .mobile-bottom-nav {
-                display: flex;
-                position: fixed;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                z-index: 500;
-                background: #fff;
-                border-top: 1px solid #e5e7eb;
-                box-shadow: 0 -2px 12px rgba(7, 26, 73, .08);
-            }
-
-            .mobile-bottom-nav a {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                gap: 3px;
-                padding: 8px 0 6px;
-                color: #687083;
-                font-size: 11px;
-                position: relative;
-            }
-
-            .mobile-bottom-nav a svg {
-                width: 22px;
-                height: 22px;
-            }
-
-            .mobile-bottom-nav a.active {
-                color: #0875e1;
-            }
-
-            .mobile-bottom-nav .nav-badge {
-                position: absolute;
-                top: 2px;
-                right: 22%;
-                background: #e53935;
-                color: #fff;
-                font-size: 9px;
-                font-weight: bold;
-                line-height: 1;
-                padding: 2px 4px;
-                border-radius: 999px;
-                min-width: 14px;
-                text-align: center;
-            }
-
-        }
-
         @media (max-width: 900px) {
 
             .main-header {
@@ -1612,16 +1529,7 @@
 
     <div class="header-actions">
 
-        <a class="action" href="contact.html">
-            <span class="action-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-            </span>
-            <div class="action-text">
-                Message
-                <small>Support</small>
-            </div>
-        </a>
-
+       
         <a class="action" href="delivery.html#tracking">
             <span class="action-icon">□</span>
             <div class="action-text">
@@ -1635,16 +1543,6 @@
             <div class="action-text">
                 Cart
                 <small id="cart-count">0 items</small>
-            </div>
-        </a>
-
-        <a class="action" href="account.html">
-            <span class="action-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            </span>
-            <div class="action-text">
-                Account
-                <small>Sign in</small>
             </div>
         </a>
 
@@ -1673,38 +1571,6 @@
     (recommended size: roughly 1600x500px, same ratio for all).
     Add or remove <img> + matching <span> pairs to add more slides.
 -->
-<main>
-
-<div class="new-arrivals-panel" id="newArrivalsSection">
-
-    <div class="section-heading new-arrivals-heading-row">
-
-        <div class="new-arrivals-heading">
-            <span class="accent-bar"></span>
-            <h2>New Arrivals</h2>
-        </div>
-
-        <a href="#newArrivalsSection" class="view-all">
-            View All New Arrivals
-        </a>
-
-    </div>
-
-    <p class="new-arrivals-subtitle">The latest additions to the PHYNEX catalog, in stock now.</p>
-
-    <div class="products new-arrivals-grid" id="newArrivalsGrid">
-        <!-- Populated automatically from products tagged data-category="...new" -->
-    </div>
-
-</div>
-
-
-<!--
-    ADVERTISEMENT CAROUSEL
-    Replace the src on each <img> below with your own ad images
-    (recommended size: roughly 1600x500px, same ratio for all).
-    Add or remove <img> + matching <span> pairs to add more slides.
--->
 <div class="ad-carousel" id="adCarousel">
     <div class="ad-carousel-track" id="adCarouselTrack">
         <img src="images/pic 60.jpeg" alt="Advertisement 1">
@@ -1717,6 +1583,9 @@
         <span data-slide="2"></span>
     </div>
 </div>
+
+
+<main>
 
 <section class="hero">
     <div class="hero-inner">
@@ -1748,14 +1617,17 @@
 
         <div class="hero-stats">
             <div>
+                <span class="hero-stat-icon">📦</span>
                 <strong>92+</strong>
                 <span>Products in store</span>
             </div>
             <div>
+                <span class="hero-stat-icon">🚚</span>
                 <strong>Same-day</strong>
                 <span>Delivery in Nairobi</span>
             </div>
             <div>
+                <span class="hero-stat-icon">🛡️</span>
                 <strong>120-day</strong>
                 <span>Support on every order</span>
             </div>
@@ -1773,9 +1645,24 @@
 </div>
 
 
+<div class="section-heading" id="newArrivalsSection">
+
+    <h2><span class="heading-icon">✨</span>New Arrivals</h2>
+
+    <a href="#newArrivalsSection" class="view-all">
+        View All New Arrivals
+    </a>
+
+</div>
+
+<div class="products" id="newArrivalsGrid">
+    <!-- Populated automatically from products tagged data-category="...new" -->
+</div>
+
+
 <div class="section-heading">
 
-    <h2>Shop by Category</h2>
+    <h2><span class="heading-icon">🗂️</span>Shop by Category</h2>
 
     <a href="categories.html" class="view-all">
         View All Categories
@@ -1786,37 +1673,44 @@
 
 <div class="categories">
 
-    <div class="category" data-category="phones">
+    <div class="category" data-category="phones" style="--accent:#0875e1;">
+        <span class="cat-badge">📱</span>
         <img src="images/pic 12.jpeg" loading="lazy">
         <span>Phones & Tablets</span>
     </div>
 
-    <div class="category" data-category="computers">
+    <div class="category" data-category="computers" style="--accent:#7c3aed;">
+        <span class="cat-badge">🖥️</span>
         <img src="images/pic 14.jpeg" loading="lazy">
         <span>Computers</span>
     </div>
 
-    <div class="category" data-category="computers">
+    <div class="category" data-category="computers" style="--accent:#0e9f6e;">
+        <span class="cat-badge">💻</span>
         <img src="images/pic 15.jpeg" loading="lazy">
         <span>Laptops</span>
     </div>
 
-    <div class="category" data-category="gaming">
+    <div class="category" data-category="gaming" style="--accent:#e53935;">
+        <span class="cat-badge">🎮</span>
         <img src="images/pic 16.jpeg" loading="lazy">
         <span>Gaming</span>
     </div>
 
-    <div class="category" data-category="accessories">
+    <div class="category" data-category="accessories" style="--accent:#f59e0b;">
+        <span class="cat-badge">🔌</span>
         <img src="images/pic 17.jpeg" loading="lazy">
         <span>Accessories</span>
     </div>
 
-    <div class="category" data-category="electronics">
+    <div class="category" data-category="electronics" style="--accent:#0891b2;">
+        <span class="cat-badge">⌚</span>
         <img src="images/pic 18.jpeg" loading="lazy">
         <span>Smart Watch</span>
     </div>
 
-    <div class="category" data-category="electronics">
+    <div class="category" data-category="electronics" style="--accent:#db2777;">
+        <span class="cat-badge">🎧</span>
         <img src="images/pic 19.jpeg" loading="lazy">
         <span>Audio</span>
     </div>
@@ -1828,10 +1722,10 @@
 
     <div class="flash-title">
 
-        <h2>Flash Deals</h2>
+        <h2><span class="heading-icon">🔥</span>Flash Deals</h2>
 
         <span class="timer" id="flashDealsTimer">
-            Ends in: 03 : 00 : 00
+            ⏱️ Ends in: 03 : 00 : 00
         </span>
 
     </div>
@@ -5806,34 +5700,8 @@
         }
 
         newProducts.forEach(function (p) {
-            var clone = p.cloneNode(true);
-            var tag = document.createElement('span');
-            tag.className = 'new-tag';
-            tag.textContent = 'New';
-            clone.appendChild(tag);
-            grid.appendChild(clone);
+            grid.appendChild(p.cloneNode(true));
         });
-    })();
-</script>
-
-<script>
-    // Reveals the New Arrivals panel with a single fade-and-rise
-    // the first time it scrolls into view.
-    (function () {
-        var panel = document.getElementById('newArrivalsSection');
-        if (!panel || !('IntersectionObserver' in window)) {
-            if (panel) panel.classList.add('is-visible');
-            return;
-        }
-        var observer = new IntersectionObserver(function (entries) {
-            entries.forEach(function (entry) {
-                if (entry.isIntersecting) {
-                    panel.classList.add('is-visible');
-                    observer.disconnect();
-                }
-            });
-        }, { threshold: 0.15 });
-        observer.observe(panel);
     })();
 </script>
 
@@ -5917,56 +5785,47 @@
     });
 </script>
 
-<script src="script.js"></script>
-
-<nav class="mobile-bottom-nav">
-
-    <a href="index.html" class="active">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg>
-        Home
-    </a>
-
-    <a href="categories.html">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-        Category
-    </a>
-
-    <a href="contact.html">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-        Message
-    </a>
-
-    <a href="cart.html">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>
-        Cart
-        <span class="nav-badge" id="bottomNavCartBadge" style="display:none;">0</span>
-    </a>
-
-    <a href="account.html">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        Account
-    </a>
-
-</nav>
-
 <script>
-    // Keeps the mobile bottom-nav cart badge in sync with the
-    // existing header cart count, whenever that count changes.
-    (function () {
-        var source = document.getElementById('cart-count');
-        var badge = document.getElementById('bottomNavCartBadge');
-        if (!source || !badge) return;
+    // Fades + slides each product card into view as it scrolls into
+    // the viewport, with a slight stagger across a row so cards don't
+    // all pop in at once. Runs after the New Arrivals grid has been
+    // populated (that script runs synchronously above) so those
+    // cloned cards get the effect too.
+    document.addEventListener('DOMContentLoaded', function () {
+        var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reduceMotion || !('IntersectionObserver' in window)) return;
 
-        function sync() {
-            var n = parseInt(source.textContent, 10) || 0;
-            badge.textContent = n;
-            badge.style.display = n > 0 ? 'block' : 'none';
-        }
+        var cards = document.querySelectorAll('.products .product');
 
-        sync();
-        new MutationObserver(sync).observe(source, { childList: true, characterData: true, subtree: true });
-    })();
+        cards.forEach(function (card, i) {
+            card.classList.add('reveal');
+            // Stagger cards in roughly the same row (assumes ~4 per row
+            // on desktop; harmless if the actual column count differs).
+            card.style.transitionDelay = (i % 4) * 80 + 'ms';
+        });
+
+        var observer = new IntersectionObserver(function (entries, obs) {
+            entries.forEach(function (entry) {
+                if (!entry.isIntersecting) return;
+                var card = entry.target;
+                card.classList.add('in-view');
+                obs.unobserve(card);
+                // Once the transition finishes, drop the 'reveal' class
+                // entirely so it stops overriding the hover transform.
+                card.addEventListener('transitionend', function handler(e) {
+                    if (e.propertyName !== 'transform') return;
+                    card.classList.remove('reveal', 'in-view');
+                    card.style.transitionDelay = '';
+                    card.removeEventListener('transitionend', handler);
+                });
+            });
+        }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+        cards.forEach(function (card) { observer.observe(card); });
+    });
 </script>
+
+<script src="script.js"></script>
 
 </body>
 </html>
