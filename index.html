@@ -6001,41 +6001,7 @@
     })();
 </script>
 
-<script>
-    // Advertisement carousel — auto-advances every 2 seconds,
-    // loops back to the first slide, and lets people tap a dot
-    // to jump to a slide directly.
-    (function () {
-        var track = document.getElementById('adCarouselTrack');
-        var dots = document.querySelectorAll('#adCarouselDots span');
-        if (!track || !dots.length) return;
 
-        var total = dots.length;
-        var current = 0;
-
-        function goToSlide(index) {
-            current = index;
-            track.style.transform = 'translateX(-' + (current * 100) + '%)';
-            dots.forEach(function (dot, i) {
-                dot.classList.toggle('active', i === current);
-            });
-        }
-
-        var timer = window.setInterval(function () {
-            goToSlide((current + 1) % total);
-        }, 2000);
-
-        dots.forEach(function (dot) {
-            dot.addEventListener('click', function () {
-                window.clearInterval(timer);
-                goToSlide(Number(dot.dataset.slide));
-                timer = window.setInterval(function () {
-                    goToSlide((current + 1) % total);
-                }, 2000);
-            });
-        });
-    })();
-</script>
 
 <script>
     // Switches between Description / Specifications / Reviews
