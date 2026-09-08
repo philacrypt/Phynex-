@@ -67,9 +67,9 @@ main{width:94%;max-width:1180px;margin:0 auto;padding-bottom:60px;}
 .panel h2 .icon{width:17px;height:17px;color:var(--blue);}
 
 /* ---------- Cart items ---------- */
-.cart-item{display:grid;grid-template-columns:76px 1fr auto;gap:14px;padding:14px 0;border-bottom:1px solid var(--line);align-items:center;}
+.cart-item{display:grid;grid-template-columns:24px 76px 1fr auto;gap:14px;padding:14px 0;border-bottom:1px solid var(--line);align-items:center;}
 .cart-item:last-child{border-bottom:none;padding-bottom:2px;}
-.cart-item-img{width:76px;height:76px;border-radius:8px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff;flex-shrink:0;}
+.cart-select{width:18px;height:18px;accent-color:var(--blue);cursor:pointer;justify-self:center;}\n.cart-item-img{width:76px;height:76px;border-radius:8px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff;flex-shrink:0;}
 .cart-item-img img{max-width:100%;max-height:100%;object-fit:contain;}
 .cart-item-name{font-size:13.5px;font-weight:600;line-height:1.4;margin-bottom:6px;}
 .cart-item-unit{font-size:12px;color:var(--muted);}
@@ -194,7 +194,7 @@ footer{background:var(--navy);color:#a7b3cc;margin-top:20px;padding:22px 4%;text
     <div class="cart-layout">
       <div>
         <div class="panel">
-          <h2><i data-lucide="shopping-cart" class="icon"></i>Items in your cart (<span id="itemCountText">0</span>)</h2>
+          <h2><i data-lucide="shopping-cart" class="icon"></i>Items in your cart (<span id="itemCountText">0</span>)</h2><label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);margin:-6px 0 8px;cursor:pointer;"><input type="checkbox" id="selectAllCart" class="cart-select" style="width:16px;height:16px;"> Select all</label>
           <div id="cartItemsList"></div>
           <div class="empty-cart" id="emptyCart" style="display:none;">
             <i data-lucide="shopping-cart" class="icon"></i>
@@ -209,22 +209,22 @@ footer{background:var(--navy);color:#a7b3cc;margin-top:20px;padding:22px 4%;text
             <div class="field-grid">
               <div class="field" id="f-name">
                 <label>Full name</label>
-                <input type="text" id="custName" placeholder="e.g. Aisha Wanjiru" required>
+                <input type="text" id="custName" placeholder="e.g. Aisha Wanjiru" autocomplete="name" required>
                 <span class="error-msg">Enter your full name</span>
               </div>
               <div class="field" id="f-phone">
                 <label>Phone number <small>(for M-Pesa &amp; delivery)</small></label>
-                <input type="tel" id="custPhone" placeholder="07XX XXX XXX" required>
+                <input type="tel" id="custPhone" placeholder="07XX XXX XXX" autocomplete="tel" required>
                 <span class="error-msg">Enter a valid Kenyan phone number</span>
               </div>
               <div class="field full" id="f-email">
                 <label>Email <small>(order confirmation)</small></label>
-                <input type="email" id="custEmail" placeholder="you@example.com" required>
+                <input type="email" id="custEmail" placeholder="you@example.com" autocomplete="email" required>
                 <span class="error-msg">Enter a valid email address</span>
               </div>
               <div class="field full" id="f-address">
                 <label>Delivery address</label>
-                <input type="text" id="custAddress" placeholder="Street, building, apartment / house no." required>
+                <input type="text" id="custAddress" placeholder="Street, building, apartment / house no." autocomplete="street-address" required>
                 <span class="error-msg">Enter your delivery address</span>
               </div>
               <div class="field" id="f-county">
@@ -244,7 +244,12 @@ footer{background:var(--navy);color:#a7b3cc;margin-top:20px;padding:22px 4%;text
             </div>
           </form>
 
-          <h2 style="margin-top:6px;"><i data-lucide="credit-card" class="icon"></i>Payment method</h2>
+          <div id="deliveryPreview" style="display:none;margin-top:4px;padding:12px;border:1px solid var(--line);border-radius:9px;background:#f8faff;font-size:12px;line-height:1.6;color:var(--muted);">
+            <strong style="color:var(--navy);">Delivery summary</strong>
+            <div id="deliveryPreviewText"></div>
+          </div>
+
+          <h2 style="margin-top:16px;"><i data-lucide="credit-card" class="icon"></i>Payment method</h2>
           <div class="pay-options" id="payOptions">
             <label class="pay-option selected" data-pay="mpesa">
               <input type="radio" name="pay" value="mpesa" checked>
@@ -309,8 +314,26 @@ footer{background:var(--navy);color:#a7b3cc;margin-top:20px;padding:22px 4%;text
    load and every cart change — that's the one place new icon markup appears. */
 
 /* ================= Cart data layer (shared with index.html) ================= */
-function getCart(){ try{ return JSON.parse(localStorage.getItem('site_cart')||'[]'); }catch(e){ return []; } }
-function saveCart(cart){ localStorage.setItem('site_cart', JSON.stringify(cart)); }
+function getCart(){
+  try{
+    const raw = JSON.parse(localStorage.getItem('site_cart')||'[]');
+    if(!Array.isArray(raw)) return [];
+    return raw.map(i=>({
+      ...i,
+      price: Number(i.price)||0,
+      qty: Math.max(1, Number(i.qty)||1),
+      selected: i.selected !== false
+    }));
+  }catch(e){ return []; }
+}
+function saveCart(cart){
+  localStorage.setItem('site_cart', JSON.stringify(cart.map(i=>({
+    ...i,
+    price: Number(i.price)||0,
+    qty: Math.max(1, Number(i.qty)||1),
+    selected: i.selected !== false
+  }))));
+}
 
 const FREE_DELIVERY_THRESHOLD = 15000;
 const DELIVERY_RATES = { nairobi: 300, major: 500, other: 700 };
@@ -342,12 +365,14 @@ function renderCartItems(){
     document.getElementById('detailsPanel').style.display = 'none';
     updateSummary();
     lucide.createIcons();
+    syncSelectAll();
     return;
   }
   empty.style.display = 'none';
 
   list.innerHTML = cart.map((item, idx) => `
     <div class="cart-item">
+      <input type="checkbox" class="cart-select item-select" data-idx="${idx}" ${item.selected !== false ? 'checked' : ''} aria-label="Select ${escapeHtml(item.name)}">
       <div class="cart-item-img"><img src="${item.img}" alt="${escapeHtml(item.name)}"></div>
       <div>
         <div class="cart-item-name">${escapeHtml(item.name)}</div>
@@ -377,8 +402,22 @@ function renderCartItems(){
     });
   });
 
+  list.querySelectorAll('.item-select').forEach(box=>{
+    box.addEventListener('change', ()=>{
+      const cart = getCart();
+      const idx = Number(box.dataset.idx);
+      if(cart[idx]){
+        cart[idx].selected = box.checked;
+        saveCart(cart);
+        updateSummary();
+        syncSelectAll();
+      }
+    });
+  });
+
   updateSummary();
   lucide.createIcons();
+  syncSelectAll();
 }
 
 function escapeHtml(str){
@@ -388,7 +427,14 @@ function escapeHtml(str){
 }
 
 function calcSubtotal(){
-  return getCart().reduce((sum,i)=> sum + (i.price * i.qty), 0);
+  return getCart().reduce((sum,i)=>{
+    if(i.selected === false) return sum;
+    return sum + (Number(i.price)||0) * (Number(i.qty)||0);
+  }, 0);
+}
+
+function getSelectedCount(){
+  return getCart().filter(i => i.selected !== false).length;
 }
 
 function calcDelivery(subtotal){
@@ -430,6 +476,9 @@ function updateSummary(){
   if(cart.length === 0){
     btn.disabled = true;
     btn.textContent = 'Cart is empty';
+  } else if(getSelectedCount() === 0){
+    btn.disabled = true;
+    btn.textContent = 'Select an item';
   } else if(!checkoutStarted){
     btn.disabled = false;
     btn.textContent = 'Proceed to Checkout';
@@ -438,6 +487,23 @@ function updateSummary(){
     btn.textContent = `Place Order — ${money(total)}`;
   }
 }
+
+function syncSelectAll(){
+  const cart = getCart();
+  const boxes = document.querySelectorAll('.item-select');
+  const all = document.getElementById('selectAllCart');
+  if(!all) return;
+  const selected = cart.filter(i => i.selected !== false).length;
+  all.checked = boxes.length > 0 && selected === boxes.length;
+  all.indeterminate = selected > 0 && selected < boxes.length;
+}
+
+document.getElementById('selectAllCart').addEventListener('change', (e)=>{
+  const cart = getCart();
+  cart.forEach(i => i.selected = e.target.checked);
+  saveCart(cart);
+  renderCartItems();
+});
 
 /* ================= Promo code ================= */
 document.getElementById('promoApply').addEventListener('click', ()=>{
@@ -460,6 +526,10 @@ document.getElementById('promoApply').addEventListener('click', ()=>{
 document.getElementById('primaryActionBtn').addEventListener('click', ()=>{
   const cart = getCart();
   if(cart.length === 0) return;
+  if(getSelectedCount() === 0){
+    alert('Please select at least one item to continue.');
+    return;
+  }
 
   if(!checkoutStarted){
     checkoutStarted = true;
@@ -473,10 +543,44 @@ document.getElementById('primaryActionBtn').addEventListener('click', ()=>{
   submitOrder();
 });
 
+/* ================= Delivery details ================= */
+function updateDeliveryPreview(){
+  const name = document.getElementById('custName').value.trim();
+  const phone = document.getElementById('custPhone').value.trim();
+  const address = document.getElementById('custAddress').value.trim();
+  const countyEl = document.getElementById('custCounty');
+  const county = countyEl.options[countyEl.selectedIndex]?.text || '';
+  const box = document.getElementById('deliveryPreview');
+  const text = document.getElementById('deliveryPreviewText');
+
+  if(name || phone || address || county){
+    box.style.display = 'block';
+    text.innerHTML =
+      (name ? `<div><b>Name:</b> ${escapeHtml(name)}</div>` : '') +
+      (phone ? `<div><b>Phone:</b> ${escapeHtml(phone)}</div>` : '') +
+      (address ? `<div><b>Address:</b> ${escapeHtml(address)}</div>` : '') +
+      (county ? `<div><b>County:</b> ${escapeHtml(county)}</div>` : '');
+  } else {
+    box.style.display = 'none';
+  }
+}
+
+['custName','custPhone','custEmail','custAddress','custNotes'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', ()=>{
+    updateDeliveryPreview();
+    const fieldMap = {
+      custName:'f-name', custPhone:'f-phone',
+      custEmail:'f-email', custAddress:'f-address'
+    };
+    if(fieldMap[id]) clearFieldError(fieldMap[id]);
+  });
+});
+
 document.getElementById('custCounty').addEventListener('change', (e)=>{
   selectedCounty = e.target.value;
   clearFieldError('f-county');
   updateSummary();
+  updateDeliveryPreview();
 });
 
 /* ================= Payment method UI ================= */
@@ -522,26 +626,66 @@ function submitOrder(){
     document.getElementById('checkoutForm').scrollIntoView({behavior:'smooth', block:'center'});
     return;
   }
+
+  const cart = getCart();
+  const selectedItems = cart.filter(i => i.selected !== false);
+  if(selectedItems.length === 0){
+    alert('Please select at least one item to order.');
+    return;
+  }
+
   const payMethod = document.querySelector('input[name="pay"]:checked').value;
   const orderId = 'ORD-' + Date.now().toString().slice(-6);
 
+  const name = document.getElementById('custName').value.trim();
+  const phone = document.getElementById('custPhone').value.trim();
+  const email = document.getElementById('custEmail').value.trim();
+  const address = document.getElementById('custAddress').value.trim();
+  const county = document.getElementById('custCounty').value;
+  const notes = document.getElementById('custNotes').value.trim();
+
+  const subtotal = calcSubtotal();
+  const discount = subtotal * appliedDiscountRate;
+  const afterDiscount = subtotal - discount;
+  const delivery = calcDelivery(afterDiscount);
+  const total = afterDiscount + delivery;
+
   const payMsg = {
-    mpesa: "We've sent an M-Pesa STK push to your phone — enter your PIN to complete payment.",
-    card: "Your card will be charged once payment is confirmed.",
-    cod: "Have the exact amount ready — you'll pay the courier on delivery."
+    mpesa: "M-Pesa payment selected. The customer can complete payment using the M-Pesa prompt.",
+    card: "Card payment selected. Payment will be completed securely.",
+    cod: "Cash on Delivery selected. Have the exact amount ready for the courier."
   }[payMethod];
 
+  const order = {
+    orderId,
+    customer: {name, phone, email, address, county, notes},
+    items: selectedItems,
+    subtotal,
+    discount,
+    delivery,
+    total,
+    paymentMethod: payMethod,
+    status: 'Pending',
+    createdAt: new Date().toISOString()
+  };
+
+  const orders = JSON.parse(localStorage.getItem('site_orders') || '[]');
+  orders.push(order);
+  localStorage.setItem('site_orders', JSON.stringify(orders));
+
   document.getElementById('confirmOrderId').textContent = orderId;
-  document.getElementById('confirmPayMsg').textContent = payMsg;
+  document.getElementById('confirmPayMsg').textContent =
+    `${payMsg} Delivery to ${address}, ${document.getElementById('custCounty').options[document.getElementById('custCounty').selectedIndex].text}. Total: ${money(total)}.`;
 
   document.getElementById('cartView').style.display = 'none';
   document.getElementById('confirmPanel').classList.add('show');
   document.getElementById('stepDetails').classList.add('done');
   document.getElementById('stepDone').classList.add('active');
 
-  saveCart([]);
-  document.getElementById('cartBadge').textContent = '0';
-  document.getElementById('cart-count').textContent = '0 items';
+  saveCart(cart.filter(i => i.selected === false));
+  document.getElementById('cartBadge').textContent = getCart().reduce((n,i)=>n+i.qty,0);
+  document.getElementById('cart-count').textContent =
+    getCart().reduce((n,i)=>n+i.qty,0) + (getCart().reduce((n,i)=>n+i.qty,0)===1?' item':' items');
 }
 
 document.getElementById('year').textContent = new Date().getFullYear();
