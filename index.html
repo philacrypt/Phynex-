@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" referrerpolicy="no-referrer" />
 
     <style>
         * {
@@ -483,6 +484,105 @@
             gap: 14px;
         }
 
+        /* ---- In-feed advertisement slots ----
+           These sit inside the product grid and span the full row so
+           they read as sponsored banners rather than products. Swap
+           the <img> src on each .ad-banner-media for your own creative;
+           recommended size is roughly 1200x300px (or 4:1). The
+           .ad-banner-label badge is there so visitors can tell it's an
+           ad, which most ad networks/marketplaces require anyway. */
+        .ad-banner {
+            grid-column: 1 / -1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            min-height: 140px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: linear-gradient(120deg, #eef1f6, #e3e8f0);
+            border: 1px solid #e1e4e8;
+        }
+
+        .ad-banner-media {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .ad-banner-overlay {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            width: 100%;
+            padding: 22px 28px;
+            background: linear-gradient(90deg, rgba(7,26,73,.55) 0%, rgba(7,26,73,.15) 55%, rgba(7,26,73,0) 100%);
+        }
+
+        .ad-banner-copy strong {
+            display: block;
+            font-size: 19px;
+            color: white;
+            text-shadow: 0 1px 4px rgba(0,0,0,.35);
+        }
+
+        .ad-banner-copy span {
+            display: block;
+            margin-top: 4px;
+            font-size: 13px;
+            color: rgba(255,255,255,.9);
+            text-shadow: 0 1px 4px rgba(0,0,0,.35);
+        }
+
+        .ad-banner-cta {
+            flex-shrink: 0;
+            padding: 10px 20px;
+            border-radius: 6px;
+            background: white;
+            color: #071a49;
+            font-weight: 700;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .ad-banner-label {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 2;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .04em;
+            color: white;
+            background: rgba(7,26,73,.55);
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+
+        @media (max-width: 640px) {
+            .ad-banner {
+                min-height: 110px;
+            }
+
+            .ad-banner-overlay {
+                padding: 16px;
+            }
+
+            .ad-banner-copy strong {
+                font-size: 15px;
+            }
+
+            .ad-banner-cta {
+                padding: 8px 14px;
+                font-size: 12px;
+            }
+        }
+
         .product {
             display: flex;
             flex-direction: column;
@@ -536,7 +636,10 @@
         }
 
         .discount::before {
-            content: "🔥 ";
+            content: "\f06d";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            margin-right: 4px;
         }
 
         .product-image {
@@ -599,7 +702,10 @@
         }
 
         .express::before {
-            content: "⚡ ";
+            content: "\f0e7";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            margin-right: 4px;
         }
 
         .stock-status {
@@ -610,7 +716,12 @@
         }
 
         .stock-status::before {
-            content: "🟢 ";
+            content: "\f111";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            font-size: 7px;
+            margin-right: 5px;
+            vertical-align: 1px;
         }
 
         .product-actions {
@@ -641,11 +752,17 @@
         }
 
         .cart-btn::before {
-            content: "🛒 ";
+            content: "\f07a";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            margin-right: 6px;
         }
 
         .buy-btn::before {
-            content: "⚡ ";
+            content: "\f0e7";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            margin-right: 6px;
         }
 
         .buy-btn {
@@ -1531,7 +1648,7 @@
 
        
         <a class="action" href="delivery.html#tracking">
-            <span class="action-icon">□</span>
+            <span class="action-icon"><i class="fa-solid fa-box"></i></span>
             <div class="action-text">
                 Orders
                 <small>Track</small>
@@ -1539,7 +1656,7 @@
         </a>
 
         <a class="action" href="cart.html">
-            <span class="action-icon">🛒</span>
+            <span class="action-icon"><i class="fa-solid fa-cart-shopping"></i></span>
             <div class="action-text">
                 Cart
                 <small id="cart-count">0 items</small>
@@ -1553,7 +1670,7 @@
 
 <nav class="nav">
 
-    <div class="nav-item" data-category="all">☰ All Categories</div>
+    <div class="nav-item" data-category="all"><i class="fa-solid fa-bars"></i> All Categories</div>
     <div class="nav-item" data-category="phones">Phones & Tablets</div>
     <div class="nav-item" data-category="computers">Computers</div>
     <div class="nav-item" data-category="electronics">Electronics</div>
@@ -1617,17 +1734,17 @@
 
         <div class="hero-stats">
             <div>
-                <span class="hero-stat-icon">📦</span>
+                <span class="hero-stat-icon"><i class="fa-solid fa-box-open"></i></span>
                 <strong>92+</strong>
                 <span>Products in store</span>
             </div>
             <div>
-                <span class="hero-stat-icon">🚚</span>
+                <span class="hero-stat-icon"><i class="fa-solid fa-truck-fast"></i></span>
                 <strong>Same-day</strong>
                 <span>Delivery in Nairobi</span>
             </div>
             <div>
-                <span class="hero-stat-icon">🛡️</span>
+                <span class="hero-stat-icon"><i class="fa-solid fa-shield-halved"></i></span>
                 <strong>120-day</strong>
                 <span>Support on every order</span>
             </div>
@@ -1647,7 +1764,7 @@
 
 <div class="section-heading" id="newArrivalsSection">
 
-    <h2><span class="heading-icon">✨</span>New Arrivals</h2>
+    <h2><span class="heading-icon"><i class="fa-solid fa-star"></i></span>New Arrivals</h2>
 
     <a href="#newArrivalsSection" class="view-all">
         View All New Arrivals
@@ -1662,7 +1779,7 @@
 
 <div class="section-heading">
 
-    <h2><span class="heading-icon">🗂️</span>Shop by Category</h2>
+    <h2><span class="heading-icon"><i class="fa-solid fa-grip"></i></span>Shop by Category</h2>
 
     <a href="categories.html" class="view-all">
         View All Categories
@@ -1674,43 +1791,43 @@
 <div class="categories">
 
     <div class="category" data-category="phones" style="--accent:#0875e1;">
-        <span class="cat-badge">📱</span>
+        <span class="cat-badge"><i class="fa-solid fa-mobile-screen-button"></i></span>
         <img src="images/pic 12.jpeg" loading="lazy">
         <span>Phones & Tablets</span>
     </div>
 
     <div class="category" data-category="computers" style="--accent:#7c3aed;">
-        <span class="cat-badge">🖥️</span>
+        <span class="cat-badge"><i class="fa-solid fa-desktop"></i></span>
         <img src="images/pic 14.jpeg" loading="lazy">
         <span>Computers</span>
     </div>
 
     <div class="category" data-category="computers" style="--accent:#0e9f6e;">
-        <span class="cat-badge">💻</span>
+        <span class="cat-badge"><i class="fa-solid fa-laptop"></i></span>
         <img src="images/pic 15.jpeg" loading="lazy">
         <span>Laptops</span>
     </div>
 
     <div class="category" data-category="gaming" style="--accent:#e53935;">
-        <span class="cat-badge">🎮</span>
+        <span class="cat-badge"><i class="fa-solid fa-gamepad"></i></span>
         <img src="images/pic 16.jpeg" loading="lazy">
         <span>Gaming</span>
     </div>
 
     <div class="category" data-category="accessories" style="--accent:#f59e0b;">
-        <span class="cat-badge">🔌</span>
+        <span class="cat-badge"><i class="fa-solid fa-plug"></i></span>
         <img src="images/pic 17.jpeg" loading="lazy">
         <span>Accessories</span>
     </div>
 
     <div class="category" data-category="electronics" style="--accent:#0891b2;">
-        <span class="cat-badge">⌚</span>
+        <span class="cat-badge"><i class="fa-solid fa-clock"></i></span>
         <img src="images/pic 18.jpeg" loading="lazy">
         <span>Smart Watch</span>
     </div>
 
     <div class="category" data-category="electronics" style="--accent:#db2777;">
-        <span class="cat-badge">🎧</span>
+        <span class="cat-badge"><i class="fa-solid fa-headphones"></i></span>
         <img src="images/pic 19.jpeg" loading="lazy">
         <span>Audio</span>
     </div>
@@ -1722,10 +1839,10 @@
 
     <div class="flash-title">
 
-        <h2><span class="heading-icon">🔥</span>Flash Deals</h2>
+        <h2><span class="heading-icon"><i class="fa-solid fa-bolt"></i></span>Flash Deals</h2>
 
         <span class="timer" id="flashDealsTimer">
-            ⏱️ Ends in: 03 : 00 : 00
+            <i class="fa-regular fa-clock"></i> Ends in: 03 : 00 : 00
         </span>
 
     </div>
@@ -2139,6 +2256,19 @@
     </div>
 
 
+    <!-- ADVERTISEMENT 1 — replace the image below with your own ad creative (~1200x300px) -->
+    <div class="ad-banner" data-category="tech">
+        <span class="ad-banner-label">Advertisement</span>
+        <img class="ad-banner-media" src="images/ad-tech-1.jpg" alt="Advertisement" loading="lazy">
+        <div class="ad-banner-overlay">
+            <div class="ad-banner-copy">
+                <strong>Level up your setup</strong>
+                <span>Laptops, monitors and accessories — this week's tech picks.</span>
+            </div>
+            <span class="ad-banner-cta">Shop Tech</span>
+        </div>
+    </div>
+
     <!-- PRODUCT 11 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
@@ -2538,6 +2668,19 @@
 
     </div>
 
+
+    <!-- ADVERTISEMENT 2 — replace the image below with your own ad creative (~1200x300px) -->
+    <div class="ad-banner" data-category="clothing">
+        <span class="ad-banner-label">Advertisement</span>
+        <img class="ad-banner-media" src="images/ad-fashion-1.jpg" alt="Advertisement" loading="lazy">
+        <div class="ad-banner-overlay">
+            <div class="ad-banner-copy">
+                <strong>New season styles</strong>
+                <span>Fresh clothing and footwear drops, just added.</span>
+            </div>
+            <span class="ad-banner-cta">Shop Fashion</span>
+        </div>
+    </div>
 
     <!-- PRODUCT 21 -->
 
@@ -2939,6 +3082,19 @@
     </div>
 
 
+    <!-- ADVERTISEMENT 3 — replace the image below with your own ad creative (~1200x300px) -->
+    <div class="ad-banner" data-category="tech">
+        <span class="ad-banner-label">Advertisement</span>
+        <img class="ad-banner-media" src="images/ad-tech-2.jpg" alt="Advertisement" loading="lazy">
+        <div class="ad-banner-overlay">
+            <div class="ad-banner-copy">
+                <strong>Gaming gear on sale</strong>
+                <span>Consoles, controllers and headsets at PHYNEX prices.</span>
+            </div>
+            <span class="ad-banner-cta">Shop Gaming</span>
+        </div>
+    </div>
+
     <!-- PRODUCT 31 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
@@ -3338,6 +3494,19 @@
 
     </div>
 
+
+    <!-- ADVERTISEMENT 4 — replace the image below with your own ad creative (~1200x300px) -->
+    <div class="ad-banner" data-category="clothing">
+        <span class="ad-banner-label">Advertisement</span>
+        <img class="ad-banner-media" src="images/ad-fashion-2.jpg" alt="Advertisement" loading="lazy">
+        <div class="ad-banner-overlay">
+            <div class="ad-banner-copy">
+                <strong>Dress for less</strong>
+                <span>Everyday and occasion wear, up to 40% off.</span>
+            </div>
+            <span class="ad-banner-cta">Shop Now</span>
+        </div>
+    </div>
 
     <!-- PRODUCT 41 -->
 
@@ -3739,6 +3908,19 @@
     </div>
 
 
+    <!-- ADVERTISEMENT 5 — replace the image below with your own ad creative (~1200x300px) -->
+    <div class="ad-banner" data-category="tech">
+        <span class="ad-banner-label">Advertisement</span>
+        <img class="ad-banner-media" src="images/ad-tech-3.jpg" alt="Advertisement" loading="lazy">
+        <div class="ad-banner-overlay">
+            <div class="ad-banner-copy">
+                <strong>Smart home essentials</strong>
+                <span>Speakers, plugs and lighting to upgrade your space.</span>
+            </div>
+            <span class="ad-banner-cta">Shop Smart Home</span>
+        </div>
+    </div>
+
     <!-- PRODUCT 51 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
@@ -4138,6 +4320,19 @@
 
     </div>
 
+
+    <!-- ADVERTISEMENT 6 — replace the image below with your own ad creative (~1200x300px) -->
+    <div class="ad-banner" data-category="clothing">
+        <span class="ad-banner-label">Advertisement</span>
+        <img class="ad-banner-media" src="images/ad-fashion-3.jpg" alt="Advertisement" loading="lazy">
+        <div class="ad-banner-overlay">
+            <div class="ad-banner-copy">
+                <strong>Sneaker restock</strong>
+                <span>Fresh pairs just landed — sizes going fast.</span>
+            </div>
+            <span class="ad-banner-cta">Shop Shoes</span>
+        </div>
+    </div>
 
     <!-- PRODUCT 61 -->
 
@@ -4539,6 +4734,19 @@
     </div>
 
 
+    <!-- ADVERTISEMENT 7 — replace the image below with your own ad creative (~1200x300px) -->
+    <div class="ad-banner" data-category="tech">
+        <span class="ad-banner-label">Advertisement</span>
+        <img class="ad-banner-media" src="images/ad-tech-4.jpg" alt="Advertisement" loading="lazy">
+        <div class="ad-banner-overlay">
+            <div class="ad-banner-copy">
+                <strong>Power up & connect</strong>
+                <span>Chargers, cables and portable power for every device.</span>
+            </div>
+            <span class="ad-banner-cta">Shop Accessories</span>
+        </div>
+    </div>
+
     <!-- PRODUCT 71 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
@@ -4938,6 +5146,19 @@
 
     </div>
 
+
+    <!-- ADVERTISEMENT 8 — replace the image below with your own ad creative (~1200x300px) -->
+    <div class="ad-banner" data-category="clothing">
+        <span class="ad-banner-label">Advertisement</span>
+        <img class="ad-banner-media" src="images/ad-fashion-4.jpg" alt="Advertisement" loading="lazy">
+        <div class="ad-banner-overlay">
+            <div class="ad-banner-copy">
+                <strong>Accessorize it</strong>
+                <span>Bags, watches and jewellery to finish the look.</span>
+            </div>
+            <span class="ad-banner-cta">Shop Accessories</span>
+        </div>
+    </div>
 
     <!-- PRODUCT 81 -->
 
@@ -5339,6 +5560,19 @@
     </div>
 
 
+    <!-- ADVERTISEMENT 9 — replace the image below with your own ad creative (~1200x300px) -->
+    <div class="ad-banner" data-category="tech">
+        <span class="ad-banner-label">Advertisement</span>
+        <img class="ad-banner-media" src="images/ad-tech-5.jpg" alt="Advertisement" loading="lazy">
+        <div class="ad-banner-overlay">
+            <div class="ad-banner-copy">
+                <strong>Refurbished, verified</strong>
+                <span>Quality laptops and desktops, tested and warrantied.</span>
+            </div>
+            <span class="ad-banner-cta">Shop Refurbished</span>
+        </div>
+    </div>
+
     <!-- PRODUCT 91 -->
 
     <div class="product" data-category="electronics" data-description="PLACEHOLDER — replace with a short description of this product." data-specifications="PLACEHOLDER — e.g. Feature 1 | Feature 2 | Feature 3">
@@ -5474,7 +5708,7 @@
 <div class="benefits">
 
     <div class="benefit">
-        <div class="benefit-icon">🚚</div>
+        <div class="benefit-icon"><i class="fa-solid fa-truck-fast"></i></div>
         <div>
             <strong>Fast Delivery</strong>
             <p>Delivery across Kenya</p>
@@ -5482,7 +5716,7 @@
     </div>
 
     <div class="benefit">
-        <div class="benefit-icon">🛡</div>
+        <div class="benefit-icon"><i class="fa-solid fa-shield-halved"></i></div>
         <div>
             <strong>Secure Payments</strong>
             <p>Safe and secure checkout</p>
@@ -5490,7 +5724,7 @@
     </div>
 
     <div class="benefit">
-        <div class="benefit-icon">✓</div>
+        <div class="benefit-icon"><i class="fa-solid fa-circle-check"></i></div>
         <div>
             <strong>Genuine Products</strong>
             <p>Original products only</p>
@@ -5498,7 +5732,7 @@
     </div>
 
     <div class="benefit">
-        <div class="benefit-icon">♧</div>
+        <div class="benefit-icon"><i class="fa-solid fa-headset"></i></div>
         <div>
             <strong>Customer Support</strong>
             <p>We are here to help</p>
@@ -5563,12 +5797,12 @@
         </div>
 
         <div class="pp-section">
-            <div class="pp-dispatch">📍 Local Dispatch</div>
+            <div class="pp-dispatch"><i class="fa-solid fa-location-dot"></i> Local Dispatch</div>
             <p class="pp-shipping-note">Ships from <strong>PHYNEX Nairobi</strong>. Select a delivery address at checkout to see delivery times for your area.</p>
         </div>
 
         <div class="pp-section">
-            <div class="pp-section-title">🛡 Warranty Options</div>
+            <div class="pp-section-title"><i class="fa-solid fa-shield-halved"></i> Warranty Options</div>
             <div class="pp-tags">
                 <span>7-Day No-Reason Return</span>
                 <span>7-Day Return</span>
@@ -5579,12 +5813,12 @@
         </div>
 
         <div class="pp-section">
-            <div class="pp-section-title">✔ Shopping Security</div>
+            <div class="pp-section-title"><i class="fa-solid fa-lock"></i> Shopping Security</div>
             <div class="pp-security-grid">
-                <span>• Safe Payments</span>
-                <span>• Secure Logistics</span>
-                <span>• Secure Privacy</span>
-                <span>• Purchase Protection</span>
+                <span><i class="fa-solid fa-check"></i> Safe Payments</span>
+                <span><i class="fa-solid fa-check"></i> Secure Logistics</span>
+                <span><i class="fa-solid fa-check"></i> Secure Privacy</span>
+                <span><i class="fa-solid fa-check"></i> Purchase Protection</span>
             </div>
         </div>
 
@@ -5614,13 +5848,13 @@
     <div class="pp-bottombar">
         <div class="pp-icon-actions">
             <a href="https://wa.me/254793977389" target="_blank" rel="noopener">
-                <span>💬</span>Chat
+                <span><i class="fa-brands fa-whatsapp"></i></span>Chat
             </a>
             <a href="index.html">
-                <span>🏬</span>Store
+                <span><i class="fa-solid fa-store"></i></span>Store
             </a>
             <a href="checkout.html">
-                <span>🛒</span>Cart
+                <span><i class="fa-solid fa-cart-shopping"></i></span>Cart
             </a>
         </div>
         <div class="popup-actions">
