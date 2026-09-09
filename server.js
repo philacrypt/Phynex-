@@ -60,6 +60,16 @@ db.exec(`
     );
 `);
 
+// Migration: older databases won't have the "media" column yet
+// (it stores a JSON array of {url, type} for multi-image/video
+// listings). Add it if missing, without touching existing rows.
+const productColumns = db.prepare("PRAGMA table_info(products)").all();
+const hasMediaColumn = productColumns.some(function (col) { return col.name === "media"; });
+
+if (!hasMediaColumn) {
+    db.exec("ALTER TABLE products ADD COLUMN media TEXT");
+}
+
 /* =========================
    SMALL HELPERS
 ========================= */
@@ -87,6 +97,23 @@ function publicCustomer(customer) {
 }
 
 function publicProduct(product) {
+
+    var media = [];
+
+    if (product.media) {
+        try {
+            media = JSON.parse(product.media) || [];
+        } catch (error) {
+            media = [];
+        }
+    }
+
+    // Backwards compatibility: older rows only have a single
+    // "image" column and no media array yet.
+    if (media.length === 0 && product.image) {
+        media = [{ url: product.image, type: "image" }];
+    }
+
     return {
         id: product.id,
         sellerId: product.seller_id,
@@ -97,7 +124,9 @@ function publicProduct(product) {
         price: product.price,
         oldPrice: product.old_price || null,
         category: product.category || "",
-        image: product.image || "",
+        image: (media[0] && media[0].url) || product.image || "",
+        images: media.filter(function (m) { return m.type === "image"; }).map(function (m) { return m.url; }),
+        media: media,
         status: product.status,
         sponsored: Boolean(product.sponsored),
         rejectionReason: product.rejection_reason || null,
@@ -348,12 +377,73 @@ app.get("/api/sellers/me", requireSeller, function (request, response) {
 });
 
 /* =========================
+   MEDIA UPLOAD (images + short videos)
+   Files are saved to /uploads on disk and served statically.
+   NOTE: on most hosts (including Render's free web service tier)
+   local disk is EPHEMERAL — files can be wiped on redeploy or
+   restart. For production, swap the multer diskStorage below for
+   an upload to Cloudinary/S3/Supabase Storage instead, and store
+   the returned URL the same way.
+========================= */
+
+const fs = require("fs");
+const multer = require("multer");
+
+const uploadsDir = path.join(__dirname, "uploads");
+
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+app.use("/uploads", express.static(uploadsDir));
+
+const mediaStorage = multer.diskStorage({
+    destination: function (request, file, callback) {
+        callback(null, uploadsDir);
+    },
+    filename: function (request, file, callback) {
+        const ext = path.extname(file.originalname || "");
+        const unique = Date.now() + "-" + crypto.randomBytes(6).toString("hex");
+        callback(null, unique + ext);
+    }
+});
+
+const uploadMedia = multer({
+    storage: mediaStorage,
+    limits: {
+        fileSize: 25 * 1024 * 1024, // 25MB per file
+        files: 6
+    },
+    fileFilter: function (request, file, callback) {
+        if (/^image\/|^video\//.test(file.mimetype)) {
+            callback(null, true);
+        } else {
+            callback(new Error("Only image and video files are allowed."));
+        }
+    }
+});
+
+/* =========================
    SELLER — SUBMIT / VIEW OWN PRODUCTS
    New submissions always start as "pending" and need
    admin approval before they appear on the store.
 ========================= */
 
-app.post("/api/products", requireSeller, function (request, response) {
+app.post("/api/products", requireSeller, function (request, response, next) {
+
+    uploadMedia.array("media", 6)(request, response, function (error) {
+
+        if (error) {
+            const message = error instanceof multer.MulterError
+                ? (error.code === "LIMIT_FILE_SIZE" ? "Each file must be under 25MB." : error.message)
+                : error.message;
+            return response.status(400).json({ message: message || "Could not upload files." });
+        }
+
+        next();
+    });
+
+}, function (request, response) {
 
     const body = request.body || {};
 
@@ -363,17 +453,28 @@ app.post("/api/products", requireSeller, function (request, response) {
     const price = Math.round(Number(body.price));
     const oldPrice = body.oldPrice ? Math.round(Number(body.oldPrice)) : null;
     const category = String(body.category || "").trim();
-    const image = String(body.image || "").trim();
 
     if (!name || !Number.isFinite(price) || price < 1) {
         return response.status(400).json({ message: "Product name and a valid price are required." });
     }
 
+    const files = request.files || [];
+
+    const media = files.map(function (file) {
+        return {
+            url: "/uploads/" + file.filename,
+            type: file.mimetype.indexOf("video/") === 0 ? "video" : "image"
+        };
+    });
+
+    const mediaJson = JSON.stringify(media);
+    const firstImage = (media.find(function (m) { return m.type === "image"; }) || media[0] || {}).url || "";
+
     const result = db
         .prepare(
             `INSERT INTO products
-                (seller_id, name, description, specifications, price, old_price, category, image, status, sponsored, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, ?)`
+                (seller_id, name, description, specifications, price, old_price, category, image, media, status, sponsored, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, ?)`
         )
         .run(
             request.seller.id,
@@ -383,7 +484,8 @@ app.post("/api/products", requireSeller, function (request, response) {
             price,
             oldPrice,
             category,
-            image,
+            firstImage,
+            mediaJson,
             Date.now()
         );
 

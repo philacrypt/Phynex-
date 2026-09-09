@@ -16,6 +16,7 @@
     "better-sqlite3": "^13.0.3",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "multer": "^2.3.0",
     "nodemailer": "^10.0.0"
   }
 }

@@ -114,6 +114,99 @@
 
         .categories input { width: auto; }
 
+        /* ---- Media upload (images + short videos) ---- */
+
+        .media-upload {
+            border: 1.5px dashed #c7cddb;
+            border-radius: 6px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            background: #fafbfc;
+            transition: border-color .15s ease, background .15s ease;
+        }
+
+        .media-upload:hover,
+        .media-upload.dragover {
+            border-color: #073bce;
+            background: #f1f5ff;
+        }
+
+        .media-upload input[type="file"] {
+            display: none;
+        }
+
+        .media-upload-label {
+            font-size: 13px;
+            color: #555;
+        }
+
+        .media-upload-label strong {
+            color: #073bce;
+        }
+
+        .media-hint {
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .media-previews {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .media-thumb {
+            position: relative;
+            width: 64px;
+            height: 64px;
+            border-radius: 5px;
+            overflow: hidden;
+            background: #eee;
+            border: 1px solid #ddd;
+            flex-shrink: 0;
+        }
+
+        .media-thumb img,
+        .media-thumb video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .media-thumb .remove-thumb {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: rgba(0,0,0,.6);
+            color: #fff;
+            border: none;
+            font-size: 11px;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .media-thumb .video-tag {
+            position: absolute;
+            bottom: 2px;
+            left: 2px;
+            background: rgba(0,0,0,.65);
+            color: #fff;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 1px 4px;
+            border-radius: 3px;
+        }
+
         button.submit {
             width: 100%;
             margin-top: 20px;
@@ -243,8 +336,13 @@
                 <label for="name">Product name</label>
                 <input type="text" id="name" required>
 
-                <label for="image">Image URL</label>
-                <input type="url" id="image" placeholder="https://...">
+                <label for="media">Photos & videos</label>
+                <div class="media-upload" id="mediaUpload">
+                    <input type="file" id="media" accept="image/*,video/*" multiple>
+                    <div class="media-upload-label"><strong>Click to upload</strong> or drag files here</div>
+                    <div class="media-hint">Images (JPG, PNG, WebP) or short videos (MP4, MOV) · up to 6 files</div>
+                    <div class="media-previews" id="mediaPreviews"></div>
+                </div>
 
                 <div class="price-row">
                     <div>
@@ -313,6 +411,99 @@
             return div.innerHTML;
         }
 
+        /* ---- Media upload handling ---- */
+
+        var MAX_FILES = 6;
+        var selectedFiles = []; // File objects, kept in sync with the previews
+
+        var mediaInput = document.getElementById('media');
+        var mediaUpload = document.getElementById('mediaUpload');
+        var mediaPreviews = document.getElementById('mediaPreviews');
+
+        mediaUpload.addEventListener('click', function (e) {
+            if (e.target === mediaInput) return;
+            mediaInput.click();
+        });
+
+        ['dragover', 'dragenter'].forEach(function (evt) {
+            mediaUpload.addEventListener(evt, function (e) {
+                e.preventDefault();
+                mediaUpload.classList.add('dragover');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(function (evt) {
+            mediaUpload.addEventListener(evt, function (e) {
+                e.preventDefault();
+                mediaUpload.classList.remove('dragover');
+            });
+        });
+
+        mediaUpload.addEventListener('drop', function (e) {
+            addFiles(e.dataTransfer.files);
+        });
+
+        mediaInput.addEventListener('change', function () {
+            addFiles(mediaInput.files);
+            mediaInput.value = ''; // allow re-selecting the same file later
+        });
+
+        function addFiles(fileList) {
+            Array.from(fileList).forEach(function (file) {
+                if (selectedFiles.length >= MAX_FILES) return;
+                if (!/^image\/|^video\//.test(file.type)) return;
+                selectedFiles.push(file);
+            });
+            renderPreviews();
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            renderPreviews();
+        }
+
+        function renderPreviews() {
+            mediaPreviews.innerHTML = '';
+
+            selectedFiles.forEach(function (file, index) {
+                var url = URL.createObjectURL(file);
+                var thumb = document.createElement('div');
+                thumb.className = 'media-thumb';
+
+                var mediaEl;
+                if (file.type.indexOf('video/') === 0) {
+                    mediaEl = document.createElement('video');
+                    mediaEl.src = url;
+                    mediaEl.muted = true;
+                } else {
+                    mediaEl = document.createElement('img');
+                    mediaEl.src = url;
+                }
+                thumb.appendChild(mediaEl);
+
+                if (file.type.indexOf('video/') === 0) {
+                    var tag = document.createElement('span');
+                    tag.className = 'video-tag';
+                    tag.textContent = 'VIDEO';
+                    thumb.appendChild(tag);
+                }
+
+                var removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'remove-thumb';
+                removeBtn.textContent = '×';
+                removeBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    removeFile(index);
+                });
+                thumb.appendChild(removeBtn);
+
+                mediaPreviews.appendChild(thumb);
+            });
+        }
+
+        /* ---- Product list ---- */
+
         async function loadProducts() {
 
             var list = document.getElementById('productList');
@@ -347,9 +538,11 @@
                         ? '<span class="badge sponsored">Sponsored</span>'
                         : '';
 
+                    var thumbSrc = (product.images && product.images[0]) || product.image || '';
+
                     return '' +
                         '<div class="product-row" data-id="' + product.id + '">' +
-                            '<img src="' + escapeHtml(product.image || '') + '" onerror="this.style.visibility=\'hidden\'">' +
+                            '<img src="' + escapeHtml(thumbSrc) + '" onerror="this.style.visibility=\'hidden\'">' +
                             '<div class="info">' +
                                 '<div class="name">' + escapeHtml(product.name) + '</div>' +
                                 '<div class="price">' + money(product.price) + '</div>' +
@@ -394,21 +587,29 @@
             btn.textContent = 'Submitting...';
 
             try {
+                // Sends the form as multipart/form-data so the actual
+                // image/video files travel with the request, instead
+                // of a JSON body with an image URL string.
+                var formData = new FormData();
+                formData.append('name', document.getElementById('name').value.trim());
+                formData.append('price', document.getElementById('price').value);
+                formData.append('oldPrice', document.getElementById('oldPrice').value);
+                formData.append('description', document.getElementById('description').value.trim());
+                formData.append('specifications', document.getElementById('specifications').value.trim());
+                formData.append('category', categories);
+
+                selectedFiles.forEach(function (file) {
+                    formData.append('media', file);
+                });
+
                 var response = await fetch('/api/products', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
                         Authorization: 'Bearer ' + token
+                        // No Content-Type here — the browser sets the
+                        // correct multipart boundary automatically.
                     },
-                    body: JSON.stringify({
-                        name: document.getElementById('name').value.trim(),
-                        image: document.getElementById('image').value.trim(),
-                        price: document.getElementById('price').value,
-                        oldPrice: document.getElementById('oldPrice').value,
-                        description: document.getElementById('description').value.trim(),
-                        specifications: document.getElementById('specifications').value.trim(),
-                        category: categories
-                    })
+                    body: formData
                 });
 
                 var data = await response.json();
@@ -424,6 +625,8 @@
                 msg.className = 'msg success';
                 msg.textContent = 'Submitted! Your product is pending review.';
                 document.getElementById('productForm').reset();
+                selectedFiles = [];
+                renderPreviews();
                 btn.disabled = false;
                 btn.textContent = 'Submit for Review';
 
