@@ -1,7 +1,7 @@
 /* =========================================================
    PHYNEX — MAIN JAVASCRIPT
    CART + QUANTITY + PRODUCT POPUP + SEARCH + CATEGORIES
-   + ADVERTISEMENT CAROUSEL
+   + ADVERTISEMENT CAROUSEL + CHECKOUT PAGE RENDERING
    ========================================================= */
 
 (function () {
@@ -9,6 +9,7 @@
 
     const CART_KEY = 'phynexCart';
     const CUSTOMER_TOKEN_KEY = 'phynexCustomerToken';
+    const DELIVERY_FEE = 300; // adjust to your real delivery pricing logic
 
     /* =====================================================
        BASIC HELPERS
@@ -33,6 +34,12 @@
             .replace(/(^-|-$)/g, '');
     }
 
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text || '';
+        return div.innerHTML;
+    }
+
     function getCart() {
         try {
             const cart = JSON.parse(
@@ -52,6 +59,7 @@
         );
 
         updateCartCount();
+        renderCheckoutPage();
     }
 
     /* =====================================================
@@ -118,6 +126,127 @@
     }
 
     window.updateCartCount = updateCartCount;
+
+    /* =====================================================
+       CHECKOUT PAGE RENDERING
+       Fills in #checkoutItems / #checkoutSubtotal /
+       #checkoutDeliveryFee / #checkoutTotal on checkout.html
+       from whatever is in the cart (or from a Buy Now item).
+       Safely no-ops on any page that doesn't have these
+       elements, so it's safe to call on every page load and
+       every saveCart().
+       ===================================================== */
+
+    function renderCheckoutPage() {
+
+        const itemsBox =
+            document.getElementById('checkoutItems');
+
+        if (!itemsBox) return; // not on checkout.html
+
+        const emptyMsg =
+            document.getElementById('checkoutEmpty');
+
+        const subtotalEl =
+            document.getElementById('checkoutSubtotal');
+
+        const deliveryEl =
+            document.getElementById('checkoutDeliveryFee');
+
+        const totalEl =
+            document.getElementById('checkoutTotal');
+
+        const cart = getCart();
+
+        if (!cart.length) {
+
+            itemsBox.innerHTML = '';
+
+            if (emptyMsg) emptyMsg.hidden = false;
+            if (subtotalEl) subtotalEl.textContent = money(0);
+            if (deliveryEl) deliveryEl.textContent = money(0);
+            if (totalEl) totalEl.textContent = money(0);
+
+            return;
+        }
+
+        if (emptyMsg) emptyMsg.hidden = true;
+
+        let subtotal = 0;
+
+        itemsBox.innerHTML = cart.map(function (item, index) {
+
+            const qty =
+                Math.max(1, Number(item.qty || item.quantity) || 1);
+
+            const price = Number(item.price) || 0;
+
+            subtotal += price * qty;
+
+            return (
+                '<div class="checkout-item">' +
+                    '<img src="' + escapeHtml(item.image || '') + '" alt="' + escapeHtml(item.name || '') + '">' +
+                    '<div>' +
+                        '<strong>' + escapeHtml(item.name || '') + '</strong>' +
+                        '<p>' + money(price) + ' each</p>' +
+                        '<div class="line-quantity">' +
+                            '<button type="button" data-qty="-1" data-index="' + index + '">−</button>' +
+                            '<span>' + qty + '</span>' +
+                            '<button type="button" data-qty="1" data-index="' + index + '">+</button>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div>' +
+                        '<strong>' + money(price * qty) + '</strong><br>' +
+                        '<button type="button" data-remove="' + index + '">Remove</button>' +
+                    '</div>' +
+                '</div>'
+            );
+
+        }).join('');
+
+        const deliveryFee = DELIVERY_FEE;
+
+        if (subtotalEl) subtotalEl.textContent = money(subtotal);
+        if (deliveryEl) deliveryEl.textContent = money(deliveryFee);
+        if (totalEl) totalEl.textContent = money(subtotal + deliveryFee);
+
+        itemsBox.querySelectorAll('[data-qty]').forEach(function (button) {
+
+            button.addEventListener('click', function () {
+
+                const index = Number(button.dataset.index);
+                const currentCart = getCart();
+
+                if (!currentCart[index]) return;
+
+                const newQty = Math.max(
+                    1,
+                    (Number(currentCart[index].qty || currentCart[index].quantity) || 1) +
+                        Number(button.dataset.qty)
+                );
+
+                currentCart[index].qty = newQty;
+                currentCart[index].quantity = newQty;
+
+                saveCart(currentCart);
+            });
+        });
+
+        itemsBox.querySelectorAll('[data-remove]').forEach(function (button) {
+
+            button.addEventListener('click', function () {
+
+                const index = Number(button.dataset.remove);
+                const currentCart = getCart();
+
+                currentCart.splice(index, 1);
+
+                saveCart(currentCart);
+            });
+        });
+    }
+
+    window.renderCheckoutPage = renderCheckoutPage;
 
     /* =====================================================
        TOAST MESSAGE
@@ -932,6 +1061,8 @@
 
             updateCartCount();
 
+            renderCheckoutPage();
+
             startFlashTimer();
 
             startAdCarousel();
@@ -1284,6 +1415,7 @@
                 event.key === CART_KEY
             ) {
                 updateCartCount();
+                renderCheckoutPage();
             }
 
         }
