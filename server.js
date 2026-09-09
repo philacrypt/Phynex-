@@ -2,6 +2,8 @@ const express = require("express");
 const path = require("path");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
+const bcrypt = require("bcryptjs");
+const Database = require("better-sqlite3");
 require("dotenv").config();
 
 const app = express();
@@ -11,6 +13,513 @@ const payments = new Map();
 
 app.use(express.json({ limit: "100kb" }));
 app.use(express.static(__dirname));
+
+/* =========================
+   DATABASE (sellers + products)
+========================= */
+
+const db = new Database(path.join(__dirname, "phynex.db"));
+db.pragma("journal_mode = WAL");
+
+db.exec(`
+    CREATE TABLE IF NOT EXISTS sellers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        business_name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        phone TEXT,
+        password_hash TEXT NOT NULL,
+        token TEXT,
+        created_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS products (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        seller_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        description TEXT,
+        specifications TEXT,
+        price INTEGER NOT NULL,
+        old_price INTEGER,
+        category TEXT,
+        image TEXT,
+        status TEXT NOT NULL DEFAULT 'pending',
+        sponsored INTEGER NOT NULL DEFAULT 0,
+        rejection_reason TEXT,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY (seller_id) REFERENCES sellers(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS customers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        phone TEXT,
+        password_hash TEXT NOT NULL,
+        token TEXT,
+        created_at INTEGER NOT NULL
+    );
+`);
+
+/* =========================
+   SMALL HELPERS
+========================= */
+
+function newToken() {
+    return crypto.randomBytes(24).toString("hex");
+}
+
+function publicSeller(seller) {
+    return {
+        id: seller.id,
+        businessName: seller.business_name,
+        email: seller.email,
+        phone: seller.phone
+    };
+}
+
+function publicCustomer(customer) {
+    return {
+        id: customer.id,
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone
+    };
+}
+
+function publicProduct(product) {
+    return {
+        id: product.id,
+        sellerId: product.seller_id,
+        sellerName: product.business_name || undefined,
+        name: product.name,
+        description: product.description || "",
+        specifications: product.specifications || "",
+        price: product.price,
+        oldPrice: product.old_price || null,
+        category: product.category || "",
+        image: product.image || "",
+        status: product.status,
+        sponsored: Boolean(product.sponsored),
+        rejectionReason: product.rejection_reason || null,
+        createdAt: product.created_at
+    };
+}
+
+/* =========================
+   SELLER AUTH MIDDLEWARE
+========================= */
+
+function requireSeller(request, response, next) {
+
+    const header = request.headers.authorization || "";
+    const token = header.startsWith("Bearer ") ? header.slice(7) : "";
+
+    if (!token) {
+        return response.status(401).json({ message: "Please log in as a seller." });
+    }
+
+    const seller = db
+        .prepare("SELECT * FROM sellers WHERE token = ?")
+        .get(token);
+
+    if (!seller) {
+        return response.status(401).json({ message: "Your session has expired. Please log in again." });
+    }
+
+    request.seller = seller;
+    next();
+}
+
+/* =========================
+   ADMIN AUTH (simple shared password)
+========================= */
+
+const adminTokens = new Set();
+
+function requireAdmin(request, response, next) {
+
+    const header = request.headers.authorization || "";
+    const token = header.startsWith("Bearer ") ? header.slice(7) : "";
+
+    if (!token || !adminTokens.has(token)) {
+        return response.status(401).json({ message: "Admin login required." });
+    }
+
+    next();
+}
+
+app.post("/api/admin/login", function (request, response) {
+
+    const password = String((request.body || {}).password || "");
+
+    if (!process.env.ADMIN_PASSWORD) {
+        return response.status(503).json({
+            message: "Admin login is not configured yet. Set ADMIN_PASSWORD in .env."
+        });
+    }
+
+    if (password !== process.env.ADMIN_PASSWORD) {
+        return response.status(401).json({ message: "Incorrect admin password." });
+    }
+
+    const token = newToken();
+    adminTokens.add(token);
+
+    response.json({ token: token });
+});
+
+/* =========================
+   CUSTOMER AUTH MIDDLEWARE
+   Used to gate checkout — browsing, cart and search stay open to
+   everyone; only placing an order requires a logged-in customer.
+========================= */
+
+function requireCustomer(request, response, next) {
+
+    const header = request.headers.authorization || "";
+    const token = header.startsWith("Bearer ") ? header.slice(7) : "";
+
+    if (!token) {
+        return response.status(401).json({ message: "Please log in to continue." });
+    }
+
+    const customer = db
+        .prepare("SELECT * FROM customers WHERE token = ?")
+        .get(token);
+
+    if (!customer) {
+        return response.status(401).json({ message: "Your session has expired. Please log in again." });
+    }
+
+    request.customer = customer;
+    next();
+}
+
+/* =========================
+   CUSTOMER REGISTER / LOGIN
+========================= */
+
+app.post("/api/customers/register", async function (request, response) {
+
+    const body = request.body || {};
+
+    const name = String(body.name || "").trim();
+    const email = String(body.email || "").trim().toLowerCase();
+    const phone = String(body.phone || "").trim();
+    const password = String(body.password || "");
+
+    if (!name || !email || !password) {
+        return response.status(400).json({ message: "Name, email and password are required." });
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return response.status(400).json({ message: "Enter a valid email address." });
+    }
+
+    if (password.length < 6) {
+        return response.status(400).json({ message: "Password must be at least 6 characters." });
+    }
+
+    const existing = db.prepare("SELECT id FROM customers WHERE email = ?").get(email);
+
+    if (existing) {
+        return response.status(409).json({ message: "An account with that email already exists." });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const token = newToken();
+
+    const result = db
+        .prepare(
+            `INSERT INTO customers (name, email, phone, password_hash, token, created_at)
+             VALUES (?, ?, ?, ?, ?, ?)`
+        )
+        .run(name, email, phone, passwordHash, token, Date.now());
+
+    const customer = db.prepare("SELECT * FROM customers WHERE id = ?").get(result.lastInsertRowid);
+
+    response.json({ token: token, customer: publicCustomer(customer) });
+});
+
+app.post("/api/customers/login", async function (request, response) {
+
+    const body = request.body || {};
+
+    const email = String(body.email || "").trim().toLowerCase();
+    const password = String(body.password || "");
+
+    const customer = db.prepare("SELECT * FROM customers WHERE email = ?").get(email);
+
+    if (!customer) {
+        return response.status(401).json({ message: "Incorrect email or password." });
+    }
+
+    const valid = await bcrypt.compare(password, customer.password_hash);
+
+    if (!valid) {
+        return response.status(401).json({ message: "Incorrect email or password." });
+    }
+
+    const token = newToken();
+
+    db.prepare("UPDATE customers SET token = ? WHERE id = ?").run(token, customer.id);
+
+    response.json({ token: token, customer: publicCustomer(customer) });
+});
+
+app.get("/api/customers/me", requireCustomer, function (request, response) {
+    response.json({ customer: publicCustomer(request.customer) });
+});
+
+/* =========================
+   SELLER REGISTER / LOGIN
+========================= */
+
+app.post("/api/sellers/register", async function (request, response) {
+
+    const body = request.body || {};
+
+    const businessName = String(body.businessName || "").trim();
+    const email = String(body.email || "").trim().toLowerCase();
+    const phone = String(body.phone || "").trim();
+    const password = String(body.password || "");
+
+    if (!businessName || !email || !password) {
+        return response.status(400).json({ message: "Business name, email and password are required." });
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return response.status(400).json({ message: "Enter a valid email address." });
+    }
+
+    if (password.length < 6) {
+        return response.status(400).json({ message: "Password must be at least 6 characters." });
+    }
+
+    const existing = db.prepare("SELECT id FROM sellers WHERE email = ?").get(email);
+
+    if (existing) {
+        return response.status(409).json({ message: "An account with that email already exists." });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const token = newToken();
+
+    const result = db
+        .prepare(
+            `INSERT INTO sellers (business_name, email, phone, password_hash, token, created_at)
+             VALUES (?, ?, ?, ?, ?, ?)`
+        )
+        .run(businessName, email, phone, passwordHash, token, Date.now());
+
+    const seller = db.prepare("SELECT * FROM sellers WHERE id = ?").get(result.lastInsertRowid);
+
+    response.json({ token: token, seller: publicSeller(seller) });
+});
+
+app.post("/api/sellers/login", async function (request, response) {
+
+    const body = request.body || {};
+
+    const email = String(body.email || "").trim().toLowerCase();
+    const password = String(body.password || "");
+
+    const seller = db.prepare("SELECT * FROM sellers WHERE email = ?").get(email);
+
+    if (!seller) {
+        return response.status(401).json({ message: "Incorrect email or password." });
+    }
+
+    const valid = await bcrypt.compare(password, seller.password_hash);
+
+    if (!valid) {
+        return response.status(401).json({ message: "Incorrect email or password." });
+    }
+
+    const token = newToken();
+
+    db.prepare("UPDATE sellers SET token = ? WHERE id = ?").run(token, seller.id);
+
+    response.json({ token: token, seller: publicSeller(seller) });
+});
+
+app.get("/api/sellers/me", requireSeller, function (request, response) {
+    response.json({ seller: publicSeller(request.seller) });
+});
+
+/* =========================
+   SELLER — SUBMIT / VIEW OWN PRODUCTS
+   New submissions always start as "pending" and need
+   admin approval before they appear on the store.
+========================= */
+
+app.post("/api/products", requireSeller, function (request, response) {
+
+    const body = request.body || {};
+
+    const name = String(body.name || "").trim();
+    const description = String(body.description || "").trim();
+    const specifications = String(body.specifications || "").trim();
+    const price = Math.round(Number(body.price));
+    const oldPrice = body.oldPrice ? Math.round(Number(body.oldPrice)) : null;
+    const category = String(body.category || "").trim();
+    const image = String(body.image || "").trim();
+
+    if (!name || !Number.isFinite(price) || price < 1) {
+        return response.status(400).json({ message: "Product name and a valid price are required." });
+    }
+
+    const result = db
+        .prepare(
+            `INSERT INTO products
+                (seller_id, name, description, specifications, price, old_price, category, image, status, sponsored, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, ?)`
+        )
+        .run(
+            request.seller.id,
+            name,
+            description,
+            specifications,
+            price,
+            oldPrice,
+            category,
+            image,
+            Date.now()
+        );
+
+    const product = db.prepare("SELECT * FROM products WHERE id = ?").get(result.lastInsertRowid);
+
+    response.json({ product: publicProduct(product) });
+});
+
+app.get("/api/seller/products", requireSeller, function (request, response) {
+
+    const products = db
+        .prepare("SELECT * FROM products WHERE seller_id = ? ORDER BY created_at DESC")
+        .all(request.seller.id);
+
+    response.json({ products: products.map(publicProduct) });
+});
+
+app.delete("/api/seller/products/:id", requireSeller, function (request, response) {
+
+    const product = db
+        .prepare("SELECT * FROM products WHERE id = ? AND seller_id = ?")
+        .get(request.params.id, request.seller.id);
+
+    if (!product) {
+        return response.status(404).json({ message: "Product not found." });
+    }
+
+    db.prepare("DELETE FROM products WHERE id = ?").run(product.id);
+
+    response.json({ ok: true });
+});
+
+/* =========================
+   PUBLIC — APPROVED PRODUCTS
+   Used by the storefront to load seller products
+   (and the sponsored-products rail) into the page.
+========================= */
+
+app.get("/api/products", function (request, response) {
+
+    const sponsoredOnly = request.query.sponsored === "1";
+
+    const rows = sponsoredOnly
+        ? db.prepare(
+            `SELECT products.*, sellers.business_name FROM products
+             JOIN sellers ON sellers.id = products.seller_id
+             WHERE products.status = 'approved' AND products.sponsored = 1
+             ORDER BY products.created_at DESC`
+        ).all()
+        : db.prepare(
+            `SELECT products.*, sellers.business_name FROM products
+             JOIN sellers ON sellers.id = products.seller_id
+             WHERE products.status = 'approved'
+             ORDER BY products.created_at DESC`
+        ).all();
+
+    response.json({ products: rows.map(publicProduct) });
+});
+
+/* =========================
+   ADMIN — REVIEW / APPROVE / SPONSOR PRODUCTS
+========================= */
+
+app.get("/api/admin/products", requireAdmin, function (request, response) {
+
+    const status = String(request.query.status || "").trim();
+
+    const rows = status
+        ? db.prepare(
+            `SELECT products.*, sellers.business_name, sellers.email FROM products
+             JOIN sellers ON sellers.id = products.seller_id
+             WHERE products.status = ?
+             ORDER BY products.created_at DESC`
+        ).all(status)
+        : db.prepare(
+            `SELECT products.*, sellers.business_name, sellers.email FROM products
+             JOIN sellers ON sellers.id = products.seller_id
+             ORDER BY products.created_at DESC`
+        ).all();
+
+    response.json({
+        products: rows.map(function (row) {
+            return Object.assign(publicProduct(row), { sellerEmail: row.email });
+        })
+    });
+});
+
+app.post("/api/admin/products/:id/approve", requireAdmin, function (request, response) {
+
+    const result = db
+        .prepare("UPDATE products SET status = 'approved', rejection_reason = NULL WHERE id = ?")
+        .run(request.params.id);
+
+    if (result.changes === 0) {
+        return response.status(404).json({ message: "Product not found." });
+    }
+
+    response.json({ ok: true });
+});
+
+app.post("/api/admin/products/:id/reject", requireAdmin, function (request, response) {
+
+    const reason = String((request.body || {}).reason || "").trim();
+
+    const result = db
+        .prepare("UPDATE products SET status = 'rejected', rejection_reason = ? WHERE id = ?")
+        .run(reason || "Not specified", request.params.id);
+
+    if (result.changes === 0) {
+        return response.status(404).json({ message: "Product not found." });
+    }
+
+    response.json({ ok: true });
+});
+
+app.post("/api/admin/products/:id/sponsor", requireAdmin, function (request, response) {
+
+    const sponsored = (request.body || {}).sponsored ? 1 : 0;
+
+    const result = db
+        .prepare("UPDATE products SET sponsored = ? WHERE id = ?")
+        .run(sponsored, request.params.id);
+
+    if (result.changes === 0) {
+        return response.status(404).json({ message: "Product not found." });
+    }
+
+    response.json({ ok: true });
+});
+
+app.delete("/api/admin/products/:id", requireAdmin, function (request, response) {
+
+    db.prepare("DELETE FROM products WHERE id = ?").run(request.params.id);
+
+    response.json({ ok: true });
+});
 
 /* =========================
    M-PESA CONFIGURATION
@@ -470,7 +979,9 @@ app.get(
             mpesaConfigured:
                 mpesaConfigured(),
             contactMailConfigured:
-                contactMailConfigured()
+                contactMailConfigured(),
+            adminConfigured:
+                Boolean(process.env.ADMIN_PASSWORD)
         });
     }
 );

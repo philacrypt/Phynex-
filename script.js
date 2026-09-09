@@ -8,6 +8,7 @@
     'use strict';
 
     const CART_KEY = 'phynexCart';
+    const CUSTOMER_TOKEN_KEY = 'phynexCustomerToken';
 
     /* =====================================================
        BASIC HELPERS
@@ -54,6 +55,30 @@
     }
 
     /* =====================================================
+       CHECKOUT GATE
+       Browsing, cart and Add to Cart stay open to everyone.
+       Only the moment someone tries to actually go to checkout
+       (Buy Now on a card, or Order Now in the product popup)
+       do we require a signed-in customer. Anonymous shoppers
+       are sent to log in / sign up, then bounced straight back
+       into checkout.html afterward.
+       ===================================================== */
+
+    function goToCheckout() {
+
+        if (!localStorage.getItem(CUSTOMER_TOKEN_KEY)) {
+
+            window.location.href =
+                'customer-login.html?redirect=' +
+                encodeURIComponent('checkout.html');
+
+            return;
+        }
+
+        window.location.href = 'checkout.html';
+    }
+
+    /* =====================================================
        CART COUNT
        ===================================================== */
 
@@ -91,6 +116,8 @@
                 total > 0 ? 'flex' : 'none';
         }
     }
+
+    window.updateCartCount = updateCartCount;
 
     /* =====================================================
        TOAST MESSAGE
@@ -343,6 +370,7 @@
 
     /* =====================================================
        CARD — BUY NOW
+       (goes straight to checkout, so it's gated on login)
        ===================================================== */
 
     window.buyNowFromCard = function (button) {
@@ -368,8 +396,7 @@
             JSON.stringify([item])
         );
 
-        window.location.href =
-            'checkout.html';
+        goToCheckout();
     };
 
     /* =====================================================
@@ -1199,6 +1226,7 @@
 
             /* ---------------------------------------------
                POPUP ORDER NOW
+               (goes straight to checkout, so it's gated on login)
                --------------------------------------------- */
 
             const modalBuy =
@@ -1236,8 +1264,7 @@
                             )
                         );
 
-                        window.location.href =
-                            'checkout.html';
+                        goToCheckout();
 
                     }
                 );

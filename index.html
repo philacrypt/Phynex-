@@ -124,47 +124,6 @@
 
         .action-icon {
             font-size: 23px;
-            color: #071a49;
-            text-shadow: none !important;
-            filter: none !important;
-            box-shadow: none !important;
-        }
-
-        /* Clean styling ONLY for the header location and shopping cart icons */
-        .header-actions .clean-header-icon {
-            color: #075fc0;
-            text-shadow: none !important;
-            filter: none !important;
-            box-shadow: none !important;
-            background: transparent !important;
-            border: none !important;
-        }
-
-        /* Header tracking + cart */
-        .header-actions .action {
-            position: relative;
-            text-shadow: none !important;
-            filter: none !important;
-        }
-
-        .top-cart-badge {
-            position: absolute;
-            top: -7px;
-            right: -9px;
-            min-width: 20px;
-            height: 20px;
-            padding: 0 5px;
-            border-radius: 50%;
-            background: #e53935;
-            color: #fff;
-            border: 2px solid #fff;
-            font-size: 11px;
-            font-weight: 700;
-            line-height: 16px;
-            text-align: center;
-            display: none;
-            align-items: center;
-            justify-content: center;
         }
 
         .action small {
@@ -190,17 +149,6 @@
         .nav-item {
             transition: color .15s ease;
             cursor: pointer;
-        }
-
-
-        .nav-item {
-            text-decoration: none;
-            color: inherit;
-        }
-
-        .category {
-            text-decoration: none;
-            color: inherit;
         }
 
         .nav-item:hover {
@@ -958,6 +906,28 @@
             font-size: 7px;
             margin-right: 5px;
             vertical-align: 1px;
+        }
+
+        /* Ribbon shown on seller listings flagged as sponsored by admin */
+        .sponsored-tag {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: #073bce;
+            color: white;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: .03em;
+            text-transform: uppercase;
+            padding: 3px 9px;
+            border-radius: 20px;
+            z-index: 2;
+        }
+
+        .seller-tag {
+            color: #8a92a3;
+            font-size: 11px;
+            margin-bottom: 6px;
         }
 
         .product-actions {
@@ -1851,19 +1821,16 @@
     <div class="header-actions">
 
        
-        <a class="action" href="delivery.html#tracking" aria-label="Track My Device">
-            <span class="action-icon"><i class="fas fa-location-dot" aria-hidden="true"></i></span>
+        <a class="action" href="delivery.html#tracking">
+            <span class="action-icon"><i class="fa-solid fa-box"></i></span>
             <div class="action-text">
-                Track My Device
+                Orders
                 <small>Track</small>
             </div>
         </a>
 
-        <a class="action" href="cart.html" aria-label="Shopping Cart">
-            <span class="action-icon cart-icon-wrap">
-                <i class="fas fa-cart-shopping" aria-hidden="true"></i>
-                <span class="top-cart-badge" id="topCartBadge">0</span>
-            </span>
+        <a class="action" href="cart.html">
+            <span class="action-icon"><i class="fa-solid fa-cart-shopping"></i></span>
             <div class="action-text">
                 Cart
                 <small id="cart-count">0 items</small>
@@ -1877,14 +1844,14 @@
 
 <nav class="nav" id="categoryNav">
 
-    <a class="nav-item" href="category.html?category=all"><i class="fa-solid fa-bars"></i> All Categories</a>
-    <a class="nav-item" href="category.html?category=phones">Phones & Tablets</a>
-    <a class="nav-item" href="category.html?category=computers">Computers</a>
-    <a class="nav-item" href="category.html?category=electronics">Electronics</a>
-    <a class="nav-item" href="category.html?category=gaming">Gaming</a>
-    <a class="nav-item" href="category.html?category=accessories">Accessories</a>
-    <a class="nav-item" href="category.html?category=home-office">Home & Office</a>
-    <a class="nav-item deals" href="category.html?category=deals">Deals</a>
+    <div class="nav-item" data-category="all"><i class="fa-solid fa-bars"></i> All Categories</div>
+    <div class="nav-item" data-category="phones">Phones & Tablets</div>
+    <div class="nav-item" data-category="computers">Computers</div>
+    <div class="nav-item" data-category="electronics">Electronics</div>
+    <div class="nav-item" data-category="gaming">Gaming</div>
+    <div class="nav-item" data-category="accessories">Accessories</div>
+    <div class="nav-item" data-category="home-office">Home & Office</div>
+    <div class="nav-item deals" data-category="deals">Deals</div>
 
 </nav>
 
@@ -1902,21 +1869,21 @@
                 <i class="fa-regular fa-image"></i>
                 <span>Add ad image 1<small>Recommended ~1600×500px</small></span>
             </div>
-            <img src="images/pic 62.jpeg" alt="Advertisement 1" onerror="this.classList.add('broken')">
+            <img src="images/ad1.jpg" alt="Advertisement 1" onerror="this.classList.add('broken')">
         </div>
         <div class="ad-slide">
             <div class="ad-slide-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add ad image 2<small>Recommended ~1600×500px</small></span>
             </div>
-            <img src="images/pic 61.jpeg" alt="Advertisement 2" onerror="this.classList.add('broken')">
+            <img src="images/ad2.jpg" alt="Advertisement 2" onerror="this.classList.add('broken')">
         </div>
         <div class="ad-slide">
             <div class="ad-slide-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add ad image 3<small>Recommended ~1600×500px</small></span>
             </div>
-            <img src="images/pic 60.jpeg" alt="Advertisement 3" onerror="this.classList.add('broken')">
+            <img src="images/ad3.jpg" alt="Advertisement 3" onerror="this.classList.add('broken')">
         </div>
     </div>
     <div class="ad-carousel-dots" id="adCarouselDots">
@@ -1930,6 +1897,21 @@
 <main>
 
 <!--
+    SPONSORED PRODUCTS — populated at runtime from approved seller
+    listings that an admin has flagged as sponsored (see script.js
+    at the bottom of the page / admin-dashboard.html). The whole
+    section hides itself automatically if there are none yet.
+-->
+<div class="section-heading" id="sponsoredSection" style="display:none;">
+    <div class="flash-title">
+        <h2><span class="heading-icon"><i class="fa-solid fa-star"></i></span>Sponsored</h2>
+    </div>
+</div>
+
+<div class="products" id="sponsoredGrid" style="display:none;"></div>
+
+
+<!--
     SHOWCASE — replace each <img> src below with your own product
     photo (recommended ~800x900px, portrait). This grid doubles as
     quick category links, same as before.
@@ -1937,48 +1919,48 @@
 <section class="showcase">
     <div class="showcase-grid">
 
-        <a class="showcase-tile" href="category.html?category=phones" data-category="phones">
+        <a class="showcase-tile" href="javascript:void(0)" data-category="phones">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
             </div>
-            <img src="images/pic 13.jpeg" alt="Phones & Tablets" loading="lazy" onerror="this.classList.add('broken')">
+            <img src="images/showcase-phones.jpg" alt="Phones & Tablets" loading="lazy" onerror="this.classList.add('broken')">
             <div class="showcase-tile-overlay">
                 <strong>Phones & Tablets</strong>
                 <span>Shop now</span>
             </div>
         </a>
 
-        <a class="showcase-tile" href="category.html?category=computers" data-category="computers">
+        <a class="showcase-tile" href="javascript:void(0)" data-category="computers">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
             </div>
-            <img src="images/pic 14.jpeg" alt="Computers" loading="lazy" onerror="this.classList.add('broken')">
+            <img src="images/showcase-computers.jpg" alt="Computers" loading="lazy" onerror="this.classList.add('broken')">
             <div class="showcase-tile-overlay">
                 <strong>Computers</strong>
                 <span>Shop now</span>
             </div>
         </a>
 
-        <a class="showcase-tile" href="category.html?category=gaming" data-category="gaming">
+        <a class="showcase-tile" href="javascript:void(0)" data-category="gaming">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
             </div>
-            <img src="images/pic 26.jpeg" alt="Gaming" loading="lazy" onerror="this.classList.add('broken')">
+            <img src="images/showcase-gaming.jpg" alt="Gaming" loading="lazy" onerror="this.classList.add('broken')">
             <div class="showcase-tile-overlay">
                 <strong>Gaming</strong>
                 <span>Shop now</span>
             </div>
         </a>
 
-        <a class="showcase-tile" href="category.html?category=accessories" data-category="accessories">
+        <a class="showcase-tile" href="javascript:void(0)" data-category="accessories">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
             </div>
-            <img src="images/pic 11.jpeg" alt="Accessories" loading="lazy" onerror="this.classList.add('broken')">
+            <img src="images/showcase-accessories.jpg" alt="Accessories" loading="lazy" onerror="this.classList.add('broken')">
             <div class="showcase-tile-overlay">
                 <strong>Accessories</strong>
                 <span>Shop now</span>
@@ -2001,7 +1983,7 @@
 
     <h2><span class="heading-icon"><i class="fa-solid fa-star"></i></span>New Arrivals</h2>
 
-    <a href="category.html?category=new" class="view-all">
+    <a href="#newArrivalsSection" class="view-all">
         View All New Arrivals
     </a>
 
@@ -2016,7 +1998,7 @@
 
     <h2><span class="heading-icon"><i class="fa-solid fa-grip"></i></span>Shop by Category</h2>
 
-    <a href="category.html?category=all" class="view-all">
+    <a href="categories.html" class="view-all">
         View All Categories
     </a>
 
@@ -2025,47 +2007,47 @@
 
 <div class="categories">
 
-    <a class="category" href="category.html?category=phones" data-category="phones" style="--accent:#0875e1;">
+    <div class="category" data-category="phones" style="--accent:#0875e1;">
         <span class="cat-badge"><img src="images/icon-phones.png" alt="" onerror="this.classList.add('broken')"><i class="fa-solid fa-mobile-screen-button"></i></span>
         <img src="images/pic 12.jpeg" loading="lazy">
         <span>Phones & Tablets</span>
-    </a>
+    </div>
 
-    <a class="category" href="category.html?category=computers" data-category="computers" style="--accent:#7c3aed;">
+    <div class="category" data-category="computers" style="--accent:#7c3aed;">
         <span class="cat-badge"><img src="images/icon-computers.png" alt="" onerror="this.classList.add('broken')"><i class="fa-solid fa-desktop"></i></span>
         <img src="images/pic 14.jpeg" loading="lazy">
         <span>Computers</span>
-    </a>
+    </div>
 
-    <a class="category" href="category.html?category=laptops" data-category="laptops" style="--accent:#0e9f6e;">
+    <div class="category" data-category="computers" style="--accent:#0e9f6e;">
         <span class="cat-badge"><img src="images/icon-laptops.png" alt="" onerror="this.classList.add('broken')"><i class="fa-solid fa-laptop"></i></span>
         <img src="images/pic 15.jpeg" loading="lazy">
         <span>Laptops</span>
-    </a>
+    </div>
 
-    <a class="category" href="category.html?category=gaming" data-category="gaming" style="--accent:#e53935;">
+    <div class="category" data-category="gaming" style="--accent:#e53935;">
         <span class="cat-badge"><img src="images/icon-gaming.png" alt="" onerror="this.classList.add('broken')"><i class="fa-solid fa-gamepad"></i></span>
         <img src="images/pic 16.jpeg" loading="lazy">
         <span>Gaming</span>
-    </a>
+    </div>
 
-    <a class="category" href="category.html?category=accessories" data-category="accessories" style="--accent:#f59e0b;">
+    <div class="category" data-category="accessories" style="--accent:#f59e0b;">
         <span class="cat-badge"><img src="images/icon-accessories.png" alt="" onerror="this.classList.add('broken')"><i class="fa-solid fa-plug"></i></span>
         <img src="images/pic 17.jpeg" loading="lazy">
         <span>Accessories</span>
-    </a>
+    </div>
 
-    <a class="category" href="category.html?category=smartwatch" data-category="smartwatch" style="--accent:#0891b2;">
+    <div class="category" data-category="electronics" style="--accent:#0891b2;">
         <span class="cat-badge"><img src="images/icon-smartwatch.png" alt="" onerror="this.classList.add('broken')"><i class="fa-solid fa-clock"></i></span>
         <img src="images/pic 18.jpeg" loading="lazy">
         <span>Smart Watch</span>
-    </a>
+    </div>
 
-    <a class="category" href="category.html?category=audio" data-category="audio" style="--accent:#db2777;">
+    <div class="category" data-category="electronics" style="--accent:#db2777;">
         <span class="cat-badge"><img src="images/icon-audio.png" alt="" onerror="this.classList.add('broken')"><i class="fa-solid fa-headphones"></i></span>
         <img src="images/pic 19.jpeg" loading="lazy">
         <span>Audio</span>
-    </a>
+    </div>
 
 </div>
 
@@ -2082,7 +2064,7 @@
 
     </div>
 
-    <a href="category.html?category=deals" class="view-all">
+    <a href="#productsSection" class="view-all">
         View All Deals
     </a>
 
@@ -5959,7 +5941,7 @@
         Home
     </a>
 
-    <a class="mbn-item" href="category.html?category=all">
+    <a class="mbn-item" href="#categoryNav">
         <i class="fa-solid fa-list"></i>
         Category
     </a>
@@ -6163,53 +6145,136 @@
 </script>
 
 <script>
-    // Keep the top-right cart badge synced with the existing cart counter.
+    // Loads seller-submitted products (approved by admin) from the
+    // marketplace API and injects them as normal .product cards —
+    // matching the exact markup script.js already knows how to read,
+    // so Add to Cart / Buy Now / search / category filters all work
+    // on them with zero changes to script.js.
     (function () {
-        var source = document.getElementById('cart-count');
-        var badge = document.getElementById('topCartBadge');
-        if (!source || !badge) return;
 
-        function syncTopCart() {
-            var n = parseInt((source.textContent || '').replace(/\D/g, ''), 10);
-            if (isNaN(n)) n = 0;
-            badge.textContent = n;
-            badge.style.display = n > 0 ? 'flex' : 'none';
+        function money(value) {
+            return 'KSh ' + Number(value || 0).toLocaleString('en-KE');
         }
 
-        syncTopCart();
-        new MutationObserver(syncTopCart).observe(source, {
-            childList: true,
-            characterData: true,
-            subtree: true
+        function escapeHtml(text) {
+            var div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+
+        function buildCard(product) {
+
+            var card = document.createElement('div');
+            card.className = 'product';
+            card.dataset.productId = 'seller-' + product.id;
+            card.dataset.category = product.category || '';
+            card.dataset.description = product.description || '';
+            card.dataset.specifications = product.specifications || '';
+
+            var oldPriceHtml = product.oldPrice
+                ? '<span class="old-price">' + money(product.oldPrice) + '</span>'
+                : '';
+
+            var sponsoredHtml = product.sponsored
+                ? '<span class="sponsored-tag">Sponsored</span>'
+                : '';
+
+            var sellerHtml = product.sellerName
+                ? '<div class="seller-tag">Sold by ' + escapeHtml(product.sellerName) + '</div>'
+                : '';
+
+            card.innerHTML =
+                sponsoredHtml +
+                '<div class="product-image">' +
+                    '<img src="' + escapeHtml(product.image || '') + '" alt="' + escapeHtml(product.name) + '" loading="lazy" onerror="this.style.opacity=0">' +
+                '</div>' +
+                '<div class="product-info">' +
+                    '<div class="product-name">' + escapeHtml(product.name) + '</div>' +
+                    sellerHtml +
+                    '<div class="rating">Marketplace listing</div>' +
+                    '<div class="price">' + money(product.price) + oldPriceHtml + '</div>' +
+                    '<div class="stock-status">In stock</div>' +
+                    '<div class="product-actions">' +
+                        '<button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>' +
+                        '<button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>' +
+                    '</div>' +
+                '</div>';
+
+            return card;
+        }
+
+        async function loadSellerProducts() {
+
+            try {
+
+                var response = await fetch('/api/products');
+
+                if (!response.ok) return;
+
+                var data = await response.json();
+                var products = data.products || [];
+
+                if (products.length === 0) return;
+
+                // Drop new listings into the Flash Deals grid so they
+                // flow through the site's existing category filter,
+                // search and "New Arrivals" logic automatically.
+                var grid = document.querySelector('.products:not(#newArrivalsGrid):not(#sponsoredGrid)');
+
+                if (!grid) return;
+
+                products.forEach(function (product) {
+                    grid.appendChild(buildCard(product));
+                });
+
+                if (typeof window.updateCartCount === 'function') {
+                    window.updateCartCount();
+                }
+
+            } catch (error) {
+                console.error('PHYNEX: could not load marketplace products.', error);
+            }
+        }
+
+        async function loadSponsoredProducts() {
+
+            try {
+
+                var response = await fetch('/api/products?sponsored=1');
+
+                if (!response.ok) return;
+
+                var data = await response.json();
+                var products = data.products || [];
+
+                if (products.length === 0) return;
+
+                var section = document.getElementById('sponsoredSection');
+                var grid = document.getElementById('sponsoredGrid');
+
+                if (!section || !grid) return;
+
+                products.forEach(function (product) {
+                    grid.appendChild(buildCard(product));
+                });
+
+                section.style.display = '';
+                grid.style.display = '';
+
+            } catch (error) {
+                console.error('PHYNEX: could not load sponsored products.', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            loadSponsoredProducts();
+            loadSellerProducts();
         });
+
     })();
 </script>
 
 <script src="script.js"></script>
-
-<script>
-    // If a category/product page sends a customer back to the homepage
-    // with ?product=..., automatically open that product's existing detail view.
-    document.addEventListener('DOMContentLoaded', function () {
-        var params = new URLSearchParams(window.location.search);
-        var wanted = params.get('product');
-        if (!wanted) return;
-        var target = wanted.trim().toLowerCase();
-        var cards = Array.from(document.querySelectorAll('.product'));
-        var match = cards.find(function (card) {
-            var name = card.querySelector('.product-name');
-            return name && name.textContent.trim().toLowerCase() === target;
-        });
-        if (match) {
-            setTimeout(function () {
-                match.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                match.click();
-                var img = match.querySelector('.product-image img');
-                if (img) img.click();
-            }, 250);
-        }
-    });
-</script>
 
 </body>
 </html>

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log In — PHYNEX</title>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f5f6f8;
+            color: #172033;
+            line-height: 1.6;
+        }
+
+        .top {
+            background: #071a49;
+            color: #fff;
+            padding: 16px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .top a { color: #fff; text-decoration: none; font-size: 14px; }
+        .top a:hover { text-decoration: underline; }
+
+        .wrap {
+            width: 90%;
+            max-width: 420px;
+            margin: 50px auto 70px;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #e1e4e8;
+            border-radius: 12px;
+            padding: 32px 30px;
+        }
+
+        .card h1 { font-size: 24px; margin-bottom: 6px; }
+
+        .card p.sub {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 22px;
+        }
+
+        .redirect-note {
+            background: #eef4ff;
+            color: #0875e1;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 13px;
+            margin-bottom: 18px;
+            display: none;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            margin-top: 16px;
+        }
+
+        input {
+            width: 100%;
+            padding: 11px 13px;
+            border: 1px solid #d9dde5;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        input:focus { outline: none; border-color: #0875e1; }
+
+        button.submit {
+            width: 100%;
+            margin-top: 24px;
+            padding: 13px;
+            background: #0875e1;
+            color: white;
+            border: none;
+            border-radius: 7px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        button.submit:hover { background: #075fc0; }
+        button.submit:disabled { opacity: .6; cursor: default; }
+
+        .switch {
+            margin-top: 18px;
+            font-size: 13px;
+            text-align: center;
+            color: #555;
+        }
+
+        .switch a { color: #0875e1; font-weight: 700; }
+
+        .msg {
+            margin-top: 16px;
+            padding: 10px 12px;
+            border-radius: 5px;
+            font-size: 13px;
+            display: none;
+        }
+
+        .msg.error { display: block; background: #fdeaea; color: #b42318; }
+    </style>
+</head>
+<body>
+
+    <header class="top">
+        <strong>PHYNEX</strong>
+        <a href="index.html">← Continue Shopping</a>
+    </header>
+
+    <main class="wrap">
+        <div class="card">
+            <h1>Log In</h1>
+            <p class="sub">Log in to your PHYNEX account to place your order.</p>
+
+            <div class="redirect-note" id="redirectNote">
+                Log in to finish checking out.
+            </div>
+
+            <form id="loginForm">
+
+                <label for="email">Email</label>
+                <input type="email" id="email" required>
+
+                <label for="password">Password</label>
+                <input type="password" id="password" required>
+
+                <div id="formMsg" class="msg"></div>
+
+                <button type="submit" class="submit" id="submitBtn">Log In</button>
+            </form>
+
+            <p class="switch">New to PHYNEX? <a href="#" id="registerLink">Create an account</a></p>
+        </div>
+    </main>
+
+    <script>
+        var params = new URLSearchParams(window.location.search);
+        var redirect = params.get('redirect') || '';
+
+        if (redirect) {
+            document.getElementById('redirectNote').style.display = 'block';
+        }
+
+        document.getElementById('registerLink').href =
+            'customer-register.html' + (redirect ? '?redirect=' + encodeURIComponent(redirect) : '');
+
+        document.getElementById('loginForm').addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            var msg = document.getElementById('formMsg');
+            var btn = document.getElementById('submitBtn');
+
+            msg.className = 'msg';
+            msg.textContent = '';
+            btn.disabled = true;
+            btn.textContent = 'Logging in...';
+
+            try {
+                var response = await fetch('/api/customers/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: document.getElementById('email').value.trim(),
+                        password: document.getElementById('password').value
+                    })
+                });
+
+                var data = await response.json();
+
+                if (!response.ok) {
+                    msg.className = 'msg error';
+                    msg.textContent = data.message || 'Could not log you in.';
+                    btn.disabled = false;
+                    btn.textContent = 'Log In';
+                    return;
+                }
+
+                localStorage.setItem('phynexCustomerToken', data.token);
+                localStorage.setItem('phynexCustomerName', data.customer.name);
+
+                window.location.href = redirect || 'index.html';
+
+            } catch (error) {
+                msg.className = 'msg error';
+                msg.textContent = 'Network error. Please try again.';
+                btn.disabled = false;
+                btn.textContent = 'Log In';
+            }
+        });
+    </script>
+
+</body>
+</html>
