@@ -40,6 +40,8 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
 .modal{display:none;position:fixed;inset:0;background:rgba(7,26,73,.45);z-index:100;padding:25px;overflow:auto;align-items:center;justify-content:center}.modal.show{display:flex}.modal-card{background:#fff;width:min(560px,100%);border-radius:14px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.2)}.modal-card.large{width:min(780px,100%)}.modal-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:12px}.modal-head h2{font-size:19px;color:var(--navy)}.modal-head p{font-size:12px;color:var(--muted)}.modal-close{border:0;background:#f1f3f6;width:32px;height:32px;border-radius:50%;font-size:20px;color:#4c5668}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 15px}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;border-top:1px solid var(--border);padding-top:15px}
 .toast{position:fixed;right:20px;bottom:20px;z-index:200;background:#18202f;color:#fff;padding:11px 15px;border-radius:9px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.18);transform:translateY(20px);opacity:0;pointer-events:none;transition:.2s}.toast.show{transform:none;opacity:1}.toast.error{background:var(--red)}
 
+
+.image-upload{border:2px dashed #cfd6e4;border-radius:12px;padding:16px;background:#f8fafc;margin-top:6px}.image-upload:hover{border-color:#073bce}.image-upload input[type=file]{border:0;padding:0;background:transparent}.image-preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:10px;margin-top:12px}.image-preview-grid img{width:100%;height:90px;object-fit:cover;border-radius:8px;border:1px solid #e1e5ec;background:#fff}.upload-help{font-size:11px;color:#687083;margin-top:5px}.category-select{min-height:44px}.form-section-title{grid-column:1/-1;font-size:13px;color:#071a49;border-bottom:1px solid #e8ebf1;padding-bottom:7px;margin-top:8px}.category-chip-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}.category-chip{background:#eef4ff;color:#073bce;border:1px solid #d8e4ff;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:700};
 @media(max-width:900px){.sidebar{width:205px}.main{padding:22px}.stat-grid{grid-template-columns:1fr 1fr}.two-col,.settings-grid{grid-template-columns:1fr}.category-grid,.promo-admin-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:680px){
  .topbar{height:58px;padding:0 15px}.brand{font-size:19px}.store-link{display:none}.admin-app{display:block}.sidebar{position:fixed;left:-270px;top:58px;height:calc(100vh - 58px);z-index:80;width:260px;transition:.2s;box-shadow:8px 0 25px rgba(0,0,0,.15)}.sidebar.open{left:0}.mobile-close{display:block;border:0;background:none;font-size:23px}.main{padding:15px}.mobile-bar{height:42px;display:flex;align-items:center;gap:10px;margin-bottom:12px}.mobile-bar button{border:0;background:#fff;border:1px solid var(--border);border-radius:7px;padding:6px 10px}.page-head{align-items:center}.page-head h1{font-size:21px}.page-head p{font-size:12px}.stat-grid{gap:9px}.stat-card{padding:13px}.stat-card strong{font-size:22px}.stat-grid.compact{grid-template-columns:1fr 1fr}.product-row{align-items:flex-start;flex-wrap:wrap}.product-row>img{width:70px;height:70px}.product-info{width:calc(100% - 85px)}.row-actions{width:100%;justify-content:flex-start}.toolbar{display:grid;grid-template-columns:1fr 1fr}.toolbar input{grid-column:1/-1;min-width:0}.toolbar select{width:100%;min-width:0}.category-grid,.promo-admin-grid,.form-grid{grid-template-columns:1fr}.modal{padding:10px}.modal-card{padding:17px}.top-actions{gap:10px}
@@ -126,7 +128,7 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
       <div class="toolbar">
         <input id="productSearch" placeholder="Search products, sellers or categories…">
         <select id="productStatus"><option value="">All status</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select>
-        <select id="productCategory"><option value="">All categories</option><option>Phones & Tablets</option><option>Computers</option><option>Gaming</option><option>Accessories</option><option>TV & Audio</option></select>
+        <select id="productCategory"><option value="">All categories</option></select>
         <button class="secondary" id="refreshProducts">Refresh</button>
       </div>
       <div id="productsList" class="list"></div>
@@ -197,20 +199,41 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
 <div class="modal" id="productModal" aria-hidden="true">
   <div class="modal-card large">
     <div class="modal-head"><div><h2 id="productModalTitle">Add product</h2><p>Complete the product information below.</p></div><button class="modal-close" data-close="productModal">×</button></div>
-    <form id="productForm">
+    <form id="productForm" enctype="multipart/form-data">
       <input type="hidden" name="id">
       <div class="form-grid">
-        <label>Product name*<input name="name" required></label>
-        <label>Category*<select name="category" required><option value="">Select category</option><option>Phones & Tablets</option><option>Computers</option><option>Gaming</option><option>Accessories</option><option>TV & Audio</option></select></label>
+        <div class="form-section-title">Basic product information</div>
+        <label>Product name*<input name="name" required placeholder="e.g. PlayStation 5 Slim"></label>
+        <label>Brand<input name="brand" placeholder="Sony, Samsung, HP…"></label>
+        <label>Category*<select name="category" id="productCategorySelect" class="category-select" required><option value="">Select category</option></select></label>
+        <label>Subcategory<input name="subcategory" placeholder="e.g. Consoles, Smartphones, Laptops"></label>
         <label>Price (KSh)*<input name="price" type="number" min="0" required></label>
         <label>Old price<input name="oldPrice" type="number" min="0"></label>
         <label>Stock quantity<input name="stock" type="number" min="0" value="0"></label>
         <label>SKU<input name="sku" placeholder="Optional SKU"></label>
-        <label>Image URL<input name="image" placeholder="images/product.jpg"></label>
-        <label>Tags<input name="tags" placeholder="new gaming featured"></label>
+        <label>Condition<select name="condition"><option>New</option><option>Refurbished</option><option>Used - Excellent</option><option>Used - Good</option></select></label>
+        <label>Warranty<select name="warranty"><option>No warranty</option><option>3 months</option><option>6 months</option><option>12 months</option><option>24 months</option></select></label>
+        <div class="form-section-title">Product images</div>
+        <label style="grid-column:1/-1">Main product image*
+          <div class="image-upload">
+            <input id="productImageFile" name="imageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif" required>
+            <div class="upload-help">Choose an image from the device — no image URL is required. JPG, PNG, WEBP or GIF.</div>
+            <div id="productImagePreview" class="image-preview-grid"></div>
+          </div>
+        </label>
+        <label style="grid-column:1/-1">Additional product images
+          <div class="image-upload">
+            <input id="productGalleryFiles" name="galleryFiles" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple>
+            <div class="upload-help">Add multiple photos to show the product from different angles.</div>
+            <div id="productGalleryPreview" class="image-preview-grid"></div>
+          </div>
+        </label>
+        <div class="form-section-title">Selling & discovery</div>
+        <label>Tags<input name="tags" placeholder="gaming, console, ps5, new"></label>
+        <label>Featured<select name="featured"><option value="false">No</option><option value="true">Yes</option></select></label>
       </div>
-      <label>Description<textarea name="description" rows="4"></textarea></label>
-      <label>Specifications<textarea name="specifications" rows="3" placeholder="Brand, model, condition, warranty…"></textarea></label>
+      <label>Description<textarea name="description" rows="4" placeholder="Describe the product, what is included and its condition."></textarea></label>
+      <label>Specifications<textarea name="specifications" rows="4" placeholder="Model, storage, RAM, colour, dimensions, warranty…"></textarea></label>
       <div class="modal-actions"><button type="button" class="secondary" data-close="productModal">Cancel</button><button class="primary small" type="submit">Save product</button></div>
     </form>
   </div>
@@ -234,7 +257,8 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
   const toast = (message, type='success') => { const t=$('toast'); t.textContent=message; t.className='toast '+type+' show'; clearTimeout(window.__toast); window.__toast=setTimeout(()=>t.classList.remove('show'),2600); };
 
   async function api(url, options={}) {
-    options.headers = Object.assign({'Content-Type':'application/json'}, options.headers||{}, token ? {'Authorization':'Bearer '+token} : {});
+    const isForm = options.body instanceof FormData;
+    options.headers = Object.assign({}, isForm ? {} : {'Content-Type':'application/json'}, options.headers||{}, token ? {'Authorization':'Bearer '+token} : {});
     const r = await fetch(url, options);
     if (r.status === 401) { localStorage.removeItem(TOKEN_KEY); token=null; showLogin(); throw new Error('Session expired'); }
     let data={}; try { data=await r.json(); } catch {}
@@ -319,16 +343,54 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
     } catch(e){toast(e.message,'error');}
   };
 
+  const PRODUCT_CATEGORIES = [
+    'Phones & Tablets','Laptops & Computers','Computer Accessories','Gaming Consoles','Gaming Accessories','Gaming Chairs','PC Gaming','Monitors','TVs & Home Theater','Audio & Headphones','Cameras & Photography','Smartwatches & Wearables','Printers & Scanners','Networking & Wi-Fi','Storage & Memory','Power & Charging','Office Equipment','Home Appliances','Smart Home','Drones & RC','Car Electronics','Security & CCTV','Cables & Adapters','Software & Digital','Other Electronics'
+  ];
+  function fillFilterCategories(){ const sel=$('productCategory'); if(!sel)return; const current=sel.value; sel.innerHTML='<option value="">All categories</option>'+PRODUCT_CATEGORIES.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join(''); if(current)sel.value=current; }
+  function fillCategorySelect(selected=''){
+    const sel=$('productCategorySelect'); if(!sel)return;
+    sel.innerHTML='<option value="">Select category</option>'+PRODUCT_CATEGORIES.map(c=>`<option value="${esc(c)}" ${c===selected?'selected':''}>${esc(c)}</option>`).join('');
+  }
+  function previewFiles(input, target){
+    const el=$(target); el.innerHTML='';
+    [...(input.files||[])].forEach(file=>{
+      if(!file.type.startsWith('image/'))return;
+      const img=document.createElement('img'); img.alt=file.name;
+      const reader=new FileReader(); reader.onload=e=>img.src=e.target.result; reader.readAsDataURL(file);
+      el.appendChild(img);
+    });
+  }
+  $('productImageFile').addEventListener('change',e=>previewFiles(e.target,'productImagePreview'));
+  $('productGalleryFiles').addEventListener('change',e=>previewFiles(e.target,'productGalleryPreview'));
+
   function openProductModal(p=null){
     $('productModalTitle').textContent=p?'Edit product':'Add product'; const f=$('productForm');
-    [...f.elements].forEach(el=>{if(el.name)el.value=p?.[el.name] ?? (el.name==='stock'?0:'');});
+    [...f.elements].forEach(el=>{if(el.name && el.type!=='file')el.value=p?.[el.name] ?? (el.name==='stock'?0:'');});
+    fillCategorySelect(p?.category||'');
+    $('productImageFile').required=!p;
+    $('productImagePreview').innerHTML=p?.image?`<img src="${esc(p.image)}" alt="Current product image">`:'';
+    $('productGalleryPreview').innerHTML='';
+    $('productGalleryFiles').value='';
     $('productModal').classList.add('show'); $('productModal').setAttribute('aria-hidden','false');
   }
   $('addProductBtn').onclick=()=>openProductModal();
   $('productForm').onsubmit=async e=>{
-    e.preventDefault(); const data=Object.fromEntries(new FormData(e.target).entries()); data.price=Number(data.price); data.oldPrice=Number(data.oldPrice||0); data.stock=Number(data.stock||0);
-    try { const id=data.id; delete data.id; const d=await api(id?`/api/admin/products/${id}`:'/api/admin/products',{method:id?'PUT':'POST',body:JSON.stringify(data)}); closeModal('productModal');toast(d.message||'Product saved');loadProducts(); }
-    catch(e){toast(e.message,'error');}
+    e.preventDefault();
+    const f=e.target, fd=new FormData();
+    const id=f.elements.id.value;
+    [...f.elements].forEach(el=>{
+      if(!el.name || el.name==='id' || el.type==='file')return;
+      fd.append(el.name,el.value);
+    });
+    if(f.elements.imageFile.files[0]) fd.append('image',f.elements.imageFile.files[0]);
+    [...f.elements.galleryFiles.files].forEach(file=>fd.append('gallery',file));
+    fd.append('price',String(Number(f.elements.price.value||0)));
+    fd.append('oldPrice',String(Number(f.elements.oldPrice.value||0)));
+    fd.append('stock',String(Number(f.elements.stock.value||0)));
+    try {
+      const d=await api(id?`/api/admin/products/${id}`:'/api/admin/products',{method:id?'PUT':'POST',body:fd});
+      closeModal('productModal');toast(d.message||'Product saved');loadProducts();
+    } catch(e){toast(e.message,'error');}
   };
 
   async function loadOrders(){
@@ -348,7 +410,16 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
   async function loadCustomers(){const el=$('customersList');try{const d=await api('/api/admin/customers');customers=d.customers||[];el.innerHTML=genericPeople(customers,'customer');}catch(e){el.innerHTML=empty('Customer API not available.');}}
   function genericPeople(list,type){return list.length?`<table><thead><tr><th>Name</th><th>Email / Phone</th><th>Status</th><th>Orders</th><th>Action</th></tr></thead><tbody>${list.map(x=>`<tr><td><strong>${esc(x.name||x.fullName||'—')}</strong></td><td>${esc(x.email||'—')}<small>${esc(x.phone||'')}</small></td><td><span class="pill ${esc(x.status||'approved')}">${esc(x.status||'approved')}</span></td><td>${esc(x.orderCount??0)}</td><td><button data-person="${esc(x.id)}" data-person-type="${type}">${type==='seller'?'Manage':'View'}</button></td></tr>`).join('')}</tbody></table>`:empty('No records found.');}
 
-  async function loadCategories(){try{const d=await api('/api/admin/categories');categories=d.categories||[];$('categoriesList').innerHTML=categories.length?categories.map(c=>`<div class="category-card"><div class="cat-icon">◈</div><div><h3>${esc(c.name)}</h3><p>${esc(c.productCount??0)} products</p></div><button data-cat-edit="${esc(c.id)}">Edit</button></div>`).join(''):empty('No categories yet.');}catch(e){$('categoriesList').innerHTML=empty('Category API not available.');}}
+  async function loadCategories(){
+    try{
+      const d=await api('/api/admin/categories'); categories=d.categories||[];
+      const names=[...new Set([...PRODUCT_CATEGORIES,...categories.map(c=>c.name).filter(Boolean)])];
+      $('categoriesList').innerHTML=names.map(name=>{const c=categories.find(x=>x.name===name);return `<div class="category-card"><div class="cat-icon">◈</div><div><h3>${esc(name)}</h3><p>${esc(c?.productCount??0)} products</p></div>${c?`<button data-cat-edit="${esc(c.id)}">Edit</button>`:'<span class="category-chip">Ready</span>'}</div>`}).join('');
+    }catch(e){
+      $('categoriesList').innerHTML=PRODUCT_CATEGORIES.map(name=>`<div class="category-card"><div class="cat-icon">◈</div><div><h3>${esc(name)}</h3><p>Available category</p></div><span class="category-chip">Built-in</span></div>`).join('');
+    }
+    fillCategorySelect(); fillFilterCategories();
+  }
   async function loadPromotions(){try{const d=await api('/api/admin/promotions');promotions=d.promotions||[];$('promotionsList').innerHTML=promotions.length?promotions.map(p=>`<div class="promo-admin"><span class="pill ${p.active?'approved':'pending'}">${p.active?'active':'inactive'}</span><h3>${esc(p.name)}</h3><p>${esc(p.type||'Promotion')} · ${esc(p.value||'')}</p><button data-promo="${esc(p.id)}">Manage</button></div>`).join(''):empty('No promotions created.');}catch(e){$('promotionsList').innerHTML=empty('Promotion API not available.');}}
   async function loadReviews(){try{const q=$('reviewStatus').value?('?status='+encodeURIComponent($('reviewStatus').value)):'';const d=await api('/api/admin/reviews'+q);reviews=d.reviews||[];$('reviewsList').innerHTML=reviews.length?reviews.map(r=>`<article class="review-row"><div class="stars">${'★'.repeat(Number(r.rating||0))}${'☆'.repeat(5-Number(r.rating||0))}</div><strong>${esc(r.productName||'Product')}</strong><p>${esc(r.comment||r.text||'')}</p><small>${esc(r.customerName||'Customer')} · ${esc(r.status||'pending')}</small><div class="row-actions"><button data-review="${esc(r.id)}" data-review-action="approve">Approve</button><button class="danger" data-review="${esc(r.id)}" data-review-action="delete">Delete</button></div></article>`).join(''):empty('No reviews found.');}catch(e){$('reviewsList').innerHTML=empty('Review API not available.');}}
   async function loadActivity(){try{const d=await api('/api/admin/activity');activity=d.activity||[];$('activityList').innerHTML=activity.length?activity.map(a=>`<div class="activity-row"><span class="activity-dot"></span><div><strong>${esc(a.action||'Activity')}</strong><p>${esc(a.description||'')}</p><small>${esc(a.createdAt||a.time||'')}</small></div></div>`).join(''):empty('No activity yet.');}catch(e){$('activityList').innerHTML=empty('Activity API not available.');}}
@@ -359,7 +430,7 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
   document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeModal(b.dataset.close));
   document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeModal(m.id);}));
 
-  $('addCategoryBtn').onclick=()=>openSimple('Add category',[['name','Category name','text']]);
+  $('addCategoryBtn').onclick=()=>openSimple('Add category',[['name','Category name','text'],['slug','Slug','text'],['description','Description','text']]);
   $('addPromotionBtn').onclick=()=>openSimple('New promotion',[['name','Promotion name','text'],['type','Type (banner, discount, sponsored)','text'],['value','Value','text']]);
   function openSimple(title,fields){$('simpleModalTitle').textContent=title;$('simpleFields').innerHTML=fields.map(f=>`<label>${esc(f[1])}<input name="${esc(f[0])}" type="${esc(f[2])}" required></label>`).join('');$('simpleModal').classList.add('show');}
   $('simpleForm').onsubmit=async e=>{e.preventDefault();const data=Object.fromEntries(new FormData(e.target).entries());try{const endpoint=$('simpleModalTitle').textContent.includes('category')?'/api/admin/categories':'/api/admin/promotions';await api(endpoint,{method:'POST',body:JSON.stringify(data)});closeModal('simpleModal');toast('Saved successfully');currentSection==='categories'?loadCategories():loadPromotions();}catch(x){toast(x.message,'error');}};
