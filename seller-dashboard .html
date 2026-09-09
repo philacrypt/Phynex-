@@ -96,23 +96,37 @@
         .price-row { display: flex; gap: 10px; }
         .price-row > div { flex: 1; }
 
+        /* ---- Categories (single-select) ---- */
+
         .categories {
             display: flex;
-            flex-wrap: wrap;
-            gap: 8px 14px;
+            flex-direction: column;
+            gap: 2px;
             margin-top: 6px;
+            max-height: 220px;
+            overflow-y: auto;
+            border: 1px solid #e2e4e8;
+            border-radius: 5px;
+            padding: 8px 12px;
         }
 
         .categories label {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             font-weight: 400;
             font-size: 13px;
             margin: 0;
+            padding: 6px 0;
+            cursor: pointer;
         }
 
-        .categories input { width: auto; }
+        .categories input[type="radio"] { width: auto; margin: 0; }
+
+        #categoryOtherInput {
+            display: none;
+            margin-top: 8px;
+        }
 
         /* ---- Media upload (images + short videos) ---- */
 
@@ -361,15 +375,31 @@
                 <label for="specifications">Specifications</label>
                 <textarea id="specifications" placeholder="e.g. Intel Core i5 | 8GB RAM | 256GB SSD"></textarea>
 
-                <label>Categories</label>
-                <div class="categories">
-                    <label><input type="checkbox" value="phones"> Phones & Tablets</label>
-                    <label><input type="checkbox" value="computers"> Computers</label>
-                    <label><input type="checkbox" value="electronics"> Electronics</label>
-                    <label><input type="checkbox" value="gaming"> Gaming</label>
-                    <label><input type="checkbox" value="accessories"> Accessories</label>
-                    <label><input type="checkbox" value="home-office"> Home & Office</label>
+                <label>Category</label>
+                <div class="categories" id="categoryList">
+                    <label><input type="radio" name="category" value="Phones & Tablets"> Phones & Tablets</label>
+                    <label><input type="radio" name="category" value="Computers"> Computers</label>
+                    <label><input type="radio" name="category" value="Electronics"> Electronics</label>
+                    <label><input type="radio" name="category" value="Gaming"> Gaming</label>
+                    <label><input type="radio" name="category" value="Accessories"> Accessories</label>
+                    <label><input type="radio" name="category" value="Home & Office"> Home & Office</label>
+                    <label><input type="radio" name="category" value="Fashion & Clothing"> Fashion & Clothing</label>
+                    <label><input type="radio" name="category" value="Beauty & Personal Care"> Beauty & Personal Care</label>
+                    <label><input type="radio" name="category" value="Health & Wellness"> Health & Wellness</label>
+                    <label><input type="radio" name="category" value="Groceries & Food"> Groceries & Food</label>
+                    <label><input type="radio" name="category" value="Baby & Kids"> Baby & Kids</label>
+                    <label><input type="radio" name="category" value="Toys & Games"> Toys & Games</label>
+                    <label><input type="radio" name="category" value="Sports & Outdoors"> Sports & Outdoors</label>
+                    <label><input type="radio" name="category" value="Automotive"> Automotive</label>
+                    <label><input type="radio" name="category" value="Books & Stationery"> Books & Stationery</label>
+                    <label><input type="radio" name="category" value="Furniture"> Furniture</label>
+                    <label><input type="radio" name="category" value="Pet Supplies"> Pet Supplies</label>
+                    <label><input type="radio" name="category" value="Music & Instruments"> Music & Instruments</label>
+                    <label><input type="radio" name="category" value="Art & Crafts"> Art & Crafts</label>
+                    <label><input type="radio" name="category" value="Jewelry & Watches"> Jewelry & Watches</label>
+                    <label><input type="radio" name="category" value="Other" id="categoryOther"> Other</label>
                 </div>
+                <input type="text" id="categoryOtherInput" placeholder="Type your category">
 
                 <div id="formMsg" class="msg"></div>
 
@@ -410,6 +440,20 @@
             div.textContent = text || '';
             return div.innerHTML;
         }
+
+        /* ---- Category select: show/hide the "Other" text box ---- */
+
+        var categoryOtherRadio = document.getElementById('categoryOther');
+        var categoryOtherInput = document.getElementById('categoryOtherInput');
+
+        document.querySelectorAll('input[name="category"]').forEach(function (radio) {
+            radio.addEventListener('change', function () {
+                categoryOtherInput.style.display = categoryOtherRadio.checked ? 'block' : 'none';
+                if (!categoryOtherRadio.checked) {
+                    categoryOtherInput.value = '';
+                }
+            });
+        });
 
         /* ---- Media upload handling ---- */
 
@@ -578,9 +622,18 @@
             var msg = document.getElementById('formMsg');
             var btn = document.getElementById('submitBtn');
 
-            var categories = Array.from(document.querySelectorAll('.categories input:checked'))
-                .map(function (box) { return box.value; })
-                .join(' ');
+            var selectedRadio = document.querySelector('input[name="category"]:checked');
+            var category = selectedRadio ? selectedRadio.value : '';
+
+            if (category === 'Other') {
+                category = categoryOtherInput.value.trim();
+            }
+
+            if (!category) {
+                msg.className = 'msg error';
+                msg.textContent = 'Please choose a category.';
+                return;
+            }
 
             msg.className = 'msg';
             btn.disabled = true;
@@ -596,7 +649,7 @@
                 formData.append('oldPrice', document.getElementById('oldPrice').value);
                 formData.append('description', document.getElementById('description').value.trim());
                 formData.append('specifications', document.getElementById('specifications').value.trim());
-                formData.append('category', categories);
+                formData.append('category', category);
 
                 selectedFiles.forEach(function (file) {
                     formData.append('media', file);
@@ -625,6 +678,7 @@
                 msg.className = 'msg success';
                 msg.textContent = 'Submitted! Your product is pending review.';
                 document.getElementById('productForm').reset();
+                categoryOtherInput.style.display = 'none';
                 selectedFiles = [];
                 renderPreviews();
                 btn.disabled = false;
