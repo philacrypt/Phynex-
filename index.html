@@ -997,13 +997,13 @@
         }
 
         .promo {
-            height: 185px;
+            min-height: 220px;
             border-radius: 12px;
             overflow: hidden;
             position: relative;
             background: #071a49;
             color: white;
-            padding: 30px;
+            padding: 28px 30px;
             box-shadow: 0 8px 22px rgba(7,26,73,.12);
         }
 
@@ -1013,8 +1013,12 @@
         }
 
         .promo h2 {
+            position: relative;
+            z-index: 2;
+            width: 50%;
             font-size: 21px;
-            margin-bottom: 8px;
+            line-height: 1.15;
+            margin-bottom: 10px;
         }
 
         .promo h2 span {
@@ -1022,19 +1026,60 @@
         }
 
         .promo p {
-            width: 45%;
+            position: relative;
+            z-index: 2;
+            width: 48%;
             font-size: 12px;
             line-height: 1.5;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
+        }
+
+        .promo .shop-btn {
+            position: relative;
+            z-index: 3;
+            max-width: 48%;
         }
 
         .promo img {
             position: absolute;
-            right: 4%;
+            right: 2%;
             bottom: 0;
-            width: 45%;
+            width: 46%;
             height: 100%;
             object-fit: contain;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Prevent promo text/buttons from being clipped on phones. */
+        @media (max-width: 640px) {
+            .promo {
+                min-height: 300px;
+                padding: 24px 20px 20px;
+            }
+
+            .promo h2 {
+                width: 56%;
+                font-size: 20px;
+            }
+
+            .promo p {
+                width: 55%;
+                font-size: 12px;
+            }
+
+            .promo .shop-btn {
+                width: 54%;
+                max-width: none;
+                padding: 12px 10px;
+                font-size: 13px;
+            }
+
+            .promo img {
+                right: 0;
+                width: 48%;
+                height: 82%;
+            }
         }
 
         .benefits {
@@ -2818,6 +2863,41 @@
         });
 
     })();
+</script>
+
+<script>
+    // Promo buttons use the store's real category/filter controls.
+    // Clicking Explore Gaming selects Gaming in the existing product store
+    // and brings the matching products into view instead of doing nothing.
+    document.addEventListener('DOMContentLoaded', function () {
+        var gamingButton = document.getElementById('gamingButton');
+        var gamingNav = document.querySelector('.nav-item[data-category="gaming"]');
+
+        if (gamingButton) {
+            gamingButton.addEventListener('click', function () {
+                if (gamingNav) {
+                    gamingNav.click();
+                }
+
+                var productsSection = document.getElementById('productsSection');
+                if (productsSection) {
+                    setTimeout(function () {
+                        productsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 80);
+                }
+            });
+        }
+
+        var newArrivalsButton = document.getElementById('newArrivalsButton');
+        if (newArrivalsButton) {
+            newArrivalsButton.addEventListener('click', function () {
+                var newArrivals = document.getElementById('newArrivalsSection');
+                if (newArrivals) {
+                    newArrivals.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        }
+    });
 </script>
 
 <script src="script.js"></script>
