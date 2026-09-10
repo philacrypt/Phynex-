@@ -70,12 +70,37 @@ if (!hasMediaColumn) {
     db.exec("ALTER TABLE products ADD COLUMN media TEXT");
 }
 
+// Migration: older databases won't have the "tracking_code" column
+// yet (a 4-digit code given to sellers so they and customers can
+// look up a product's status in "Track my product"). Add it if
+// missing, without touching existing rows.
+const hasTrackingColumn = productColumns.some(function (col) { return col.name === "tracking_code"; });
+
+if (!hasTrackingColumn) {
+    db.exec("ALTER TABLE products ADD COLUMN tracking_code TEXT");
+}
+
 /* =========================
    SMALL HELPERS
 ========================= */
 
 function newToken() {
     return crypto.randomBytes(24).toString("hex");
+}
+
+function generateTrackingCode() {
+    let code;
+    let attempts = 0;
+
+    do {
+        code = String(Math.floor(1000 + Math.random() * 9000)); // 1000-9999
+        attempts++;
+    } while (
+        attempts < 20 &&
+        db.prepare("SELECT id FROM products WHERE tracking_code = ?").get(code)
+    );
+
+    return code;
 }
 
 function publicSeller(seller) {
@@ -130,6 +155,7 @@ function publicProduct(product) {
         status: product.status,
         sponsored: Boolean(product.sponsored),
         rejectionReason: product.rejection_reason || null,
+        trackingCode: product.tracking_code || null,
         createdAt: product.created_at
     };
 }
@@ -426,7 +452,10 @@ const uploadMedia = multer({
 /* =========================
    SELLER — SUBMIT / VIEW OWN PRODUCTS
    New submissions always start as "pending" and need
-   admin approval before they appear on the store.
+   admin approval before they appear on the store. Each
+   submission is also given a random 4-digit tracking code
+   so the seller (and their customers) can look the product
+   up later in "Track my product".
 ========================= */
 
 app.post("/api/products", requireSeller, function (request, response, next) {
@@ -469,12 +498,13 @@ app.post("/api/products", requireSeller, function (request, response, next) {
 
     const mediaJson = JSON.stringify(media);
     const firstImage = (media.find(function (m) { return m.type === "image"; }) || media[0] || {}).url || "";
+    const trackingCode = generateTrackingCode();
 
     const result = db
         .prepare(
             `INSERT INTO products
-                (seller_id, name, description, specifications, price, old_price, category, image, media, status, sponsored, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, ?)`
+                (seller_id, name, description, specifications, price, old_price, category, image, media, status, sponsored, tracking_code, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, ?, ?)`
         )
         .run(
             request.seller.id,
@@ -486,6 +516,7 @@ app.post("/api/products", requireSeller, function (request, response, next) {
             category,
             firstImage,
             mediaJson,
+            trackingCode,
             Date.now()
         );
 
@@ -543,6 +574,35 @@ app.get("/api/products", function (request, response) {
         ).all();
 
     response.json({ products: rows.map(publicProduct) });
+});
+
+/* =========================
+   PUBLIC — TRACK MY PRODUCT
+   Anyone (seller or customer) can look up a product's current
+   review/approval status using its 4-digit tracking code.
+========================= */
+
+app.get("/api/track/:code", function (request, response) {
+
+    const code = String(request.params.code || "").trim();
+
+    if (!/^\d{4}$/.test(code)) {
+        return response.status(400).json({ message: "Enter the 4-digit tracking number." });
+    }
+
+    const product = db
+        .prepare(
+            `SELECT products.*, sellers.business_name FROM products
+             JOIN sellers ON sellers.id = products.seller_id
+             WHERE products.tracking_code = ?`
+        )
+        .get(code);
+
+    if (!product) {
+        return response.status(404).json({ message: "No product found with that tracking number." });
+    }
+
+    response.json({ product: publicProduct(product) });
 });
 
 /* =========================
@@ -626,6 +686,8 @@ app.delete("/api/admin/products/:id", requireAdmin, function (request, response)
 /* =========================
    M-PESA CONFIGURATION
 ========================= */
+
+const DELIVERY_FEE = 300; // must match DELIVERY_FEE in script.js
 
 function mpesaConfigured() {
     return Boolean(
@@ -757,7 +819,9 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
         });
     }
 
-    if (amount !== Math.round(calculatedAmount)) {
+    // The total sent by the client includes the flat delivery fee on
+    // top of the item subtotal, so the verified amount must too.
+    if (amount !== Math.round(calculatedAmount) + DELIVERY_FEE) {
         return response.status(400).json({
             message: "The order total could not be verified."
         });
