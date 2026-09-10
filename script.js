@@ -41,6 +41,100 @@
         return div.innerHTML;
     }
 
+    /* =====================================================
+       LIVE MARKETPLACE PRODUCTS
+       Pulls real, admin-approved seller listings from the
+       backend and injects them into the storefront (Sponsored,
+       New Arrivals and the main Flash Deals grid), using the
+       same ".product" card markup so cart / buy-now / the
+       details popup all keep working exactly as before.
+       ===================================================== */
+
+    function buildProductCard(product) {
+
+        const card = document.createElement('div');
+
+        card.className = 'product';
+        card.dataset.productId = product.id;
+        card.dataset.description = product.description || '';
+        card.dataset.specifications = product.specifications || '';
+        card.dataset.trackingCode = product.trackingCode || '';
+        card.dataset.sellerId = product.sellerId || '';
+        card.dataset.sellerName = product.sellerName || '';
+        card.dataset.sellerPhone = product.sellerPhone || '';
+        card.dataset.sellerWhatsapp = product.sellerWhatsapp || '';
+        card.dataset.category = (product.category || '') + ' ' + (product.subcategory || '');
+
+        const priceHtml = money(product.price) +
+            (product.oldPrice
+                ? ' <span class="old-price">' + money(product.oldPrice) + '</span>'
+                : '');
+
+        card.innerHTML =
+            '<div class="product-image">' +
+                '<img src="' + escapeHtml(product.image || '') + '" alt="' + escapeHtml(product.name) + '" loading="lazy">' +
+            '</div>' +
+            '<div class="product-info">' +
+                '<div class="product-name">' + escapeHtml(product.name) + '</div>' +
+                '<div class="rating">' + (product.sellerName ? 'Sold by ' + escapeHtml(product.sellerName) : '') + '</div>' +
+                '<div class="price">' + priceHtml + '</div>' +
+                '<div class="stock-status">' +
+                    (Number(product.stock) > 0 ? 'In stock' : 'Available to order') +
+                '</div>' +
+                '<div class="product-actions">' +
+                    '<button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>' +
+                    '<button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>' +
+                '</div>' +
+            '</div>';
+
+        return card;
+    }
+
+    async function loadMarketplaceProducts() {
+
+        const flashGrid = document.getElementById('flashDealsGrid');
+        const newGrid = document.getElementById('newArrivalsGrid');
+        const sponsoredGrid = document.getElementById('sponsoredGrid');
+        const sponsoredSection = document.getElementById('sponsoredSection');
+
+        // Only run this on pages that actually have the marketplace grids.
+        if (!flashGrid && !newGrid && !sponsoredGrid) return;
+
+        try {
+
+            const response = await fetch('/api/products');
+            const data = await response.json();
+            const products = Array.isArray(data.products) ? data.products : [];
+
+            if (newGrid) {
+                newGrid.innerHTML = '';
+                products.slice(0, 8).forEach(function (product) {
+                    newGrid.appendChild(buildProductCard(product));
+                });
+            }
+
+            const sponsored = products.filter(function (product) { return product.sponsored; });
+
+            if (sponsoredGrid && sponsored.length) {
+                sponsoredGrid.innerHTML = '';
+                sponsored.forEach(function (product) {
+                    sponsoredGrid.appendChild(buildProductCard(product));
+                });
+                sponsoredGrid.style.display = '';
+                if (sponsoredSection) sponsoredSection.style.display = '';
+            }
+
+            if (flashGrid) {
+                products.forEach(function (product) {
+                    flashGrid.appendChild(buildProductCard(product));
+                });
+            }
+
+        } catch (error) {
+            console.error('PHYNEX: Could not load live marketplace products.', error);
+        }
+    }
+
     function getCart() {
         try {
             const cart = JSON.parse(
@@ -378,7 +472,22 @@
                 card.dataset.description || '',
 
             specifications:
-                card.dataset.specifications || ''
+                card.dataset.specifications || '',
+
+            trackingCode:
+                card.dataset.trackingCode || '',
+
+            sellerId:
+                card.dataset.sellerId || '',
+
+            sellerName:
+                card.dataset.sellerName || '',
+
+            sellerPhone:
+                card.dataset.sellerPhone || '',
+
+            sellerWhatsapp:
+                card.dataset.sellerWhatsapp || ''
         };
     }
 
@@ -438,7 +547,7 @@
                     product.discount || '',
 
                 image:
-                    product.image || 'images/no-image.svg',
+                    product.image || '',
 
                 rating:
                     product.rating || '',
@@ -584,11 +693,7 @@
 
         if (image) {
             image.src =
-                product.image || 'images/no-image.svg';
-            image.onerror = function () {
-                image.onerror = null;
-                image.src = 'images/no-image.svg';
-            };
+                product.image || '';
         }
 
         if (price) {
@@ -630,6 +735,101 @@
 
         if (quantity) {
             quantity.textContent = '1';
+        }
+
+        /* ---------------------------------------------
+           TRACKING CODE
+           --------------------------------------------- */
+
+        const trackingRow =
+            document.getElementById('modalTrackingRow');
+
+        const trackingCode =
+            document.getElementById('modalTrackingCode');
+
+        if (trackingRow && trackingCode) {
+            if (product.trackingCode) {
+                trackingCode.textContent = product.trackingCode;
+                trackingRow.style.display = '';
+            } else {
+                trackingRow.style.display = 'none';
+            }
+        }
+
+        /* ---------------------------------------------
+           CONTACT SELLER (WhatsApp + phone call)
+           --------------------------------------------- */
+
+        const sellerName =
+            document.getElementById('modalSellerName');
+
+        const sellerLogo =
+            document.getElementById('modalSellerLogo');
+
+        const sellerWhatsapp =
+            document.getElementById('modalSellerWhatsapp');
+
+        const sellerWhatsappBottom =
+            document.getElementById('modalSellerWhatsappBottom');
+
+        const sellerCall =
+            document.getElementById('modalSellerCall');
+
+        const displayName =
+            product.sellerName || 'PHYNEX';
+
+        if (sellerName) {
+            sellerName.textContent = displayName;
+        }
+
+        if (sellerLogo) {
+            sellerLogo.textContent =
+                displayName
+                    .trim()
+                    .split(/\s+/)
+                    .slice(0, 2)
+                    .map(function (word) { return word.charAt(0).toUpperCase(); })
+                    .join('') || 'PX';
+        }
+
+        const whatsappDigits =
+            String(product.sellerWhatsapp || '')
+                .replace(/\D/g, '');
+
+        const normalizedWhatsapp =
+            whatsappDigits.replace(/^0/, '254');
+
+        const whatsappUrl =
+            normalizedWhatsapp
+                ? 'https://wa.me/' + normalizedWhatsapp +
+                  '?text=' + encodeURIComponent('Hi, I\'m interested in "' + product.name + '" on PHYNEX.')
+                : '';
+
+        [sellerWhatsapp, sellerWhatsappBottom].forEach(function (link) {
+
+            if (!link) return;
+
+            if (whatsappUrl) {
+                link.href = whatsappUrl;
+                link.style.display = '';
+            } else {
+                link.removeAttribute('href');
+                link.style.display = 'none';
+            }
+        });
+
+        if (sellerCall) {
+            const phoneDigits =
+                String(product.sellerPhone || '')
+                    .replace(/\D/g, '');
+
+            if (phoneDigits) {
+                sellerCall.href = 'tel:' + phoneDigits;
+                sellerCall.style.display = '';
+            } else {
+                sellerCall.removeAttribute('href');
+                sellerCall.style.display = 'none';
+            }
         }
 
         if (popup) {
@@ -807,15 +1007,63 @@
 
     /* =====================================================
        FLASH DEAL TIMER
-       Removed: the countdown used to be a fake 3-hour loop
-       that reset itself forever. There is no real per-deal
-       deadline stored anywhere yet (no column on `products`
-       for it), so rather than keep lying to customers we
-       dropped the timer. To bring it back for real: add a
-       `flash_deal_ends_at` column to the products table, let
-       admins set it per product, expose it via /api/products,
-       and count down to the soonest one here instead.
        ===================================================== */
+
+    function startFlashTimer() {
+
+        const timer =
+            document.getElementById(
+                'flashDealsTimer'
+            );
+
+        if (!timer) return;
+
+        let seconds =
+            3 * 60 * 60;
+
+        function pad(number) {
+            return String(number)
+                .padStart(2, '0');
+        }
+
+        function tick() {
+
+            if (seconds <= 0) {
+                seconds =
+                    3 * 60 * 60;
+            }
+
+            const hours =
+                Math.floor(
+                    seconds / 3600
+                );
+
+            const minutes =
+                Math.floor(
+                    (seconds % 3600) / 60
+                );
+
+            const secs =
+                seconds % 60;
+
+            timer.textContent =
+                'Ends in: ' +
+                pad(hours) +
+                ' : ' +
+                pad(minutes) +
+                ' : ' +
+                pad(secs);
+
+            seconds--;
+        }
+
+        tick();
+
+        setInterval(
+            tick,
+            1000
+        );
+    }
 
     /* =====================================================
        ADVERTISEMENT CAROUSEL
@@ -1327,84 +1575,6 @@
     }
 
     /* =====================================================
-       NEWSLETTER SIGNUP
-       ===================================================== */
-
-    const newsletterForm =
-        document.getElementById('newsletterForm');
-
-    if (newsletterForm) {
-
-        newsletterForm.addEventListener(
-            'submit',
-            async function (event) {
-
-                event.preventDefault();
-
-                const emailInput =
-                    document.getElementById('newsletterEmail');
-
-                const messageEl =
-                    document.getElementById('newsletterMessage');
-
-                const submitBtn =
-                    newsletterForm.querySelector('button[type="submit"]');
-
-                const email = emailInput
-                    ? emailInput.value.trim()
-                    : '';
-
-                if (messageEl) {
-                    messageEl.textContent = '';
-                    messageEl.className = '';
-                }
-
-                if (submitBtn) {
-                    submitBtn.disabled = true;
-                    submitBtn.textContent = 'Subscribing...';
-                }
-
-                try {
-
-                    const response = await fetch('/api/newsletter', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: email })
-                    });
-
-                    const data = await response.json().catch(function () { return {}; });
-
-                    if (messageEl) {
-                        messageEl.textContent =
-                            data.message ||
-                            (response.ok
-                                ? "You're subscribed!"
-                                : 'Could not subscribe. Please try again.');
-                        messageEl.className = response.ok ? 'success' : 'error';
-                    }
-
-                    if (response.ok && emailInput) {
-                        emailInput.value = '';
-                    }
-
-                } catch (error) {
-
-                    if (messageEl) {
-                        messageEl.textContent =
-                            'Network error — please try again.';
-                        messageEl.className = 'error';
-                    }
-                }
-
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Subscribe';
-                }
-            }
-        );
-    }
-
-    /* =====================================================
        PAGE LOAD
        ===================================================== */
 
@@ -1414,7 +1584,11 @@
 
             updateCartCount();
 
+            loadMarketplaceProducts();
+
             renderCheckoutPage();
+
+            startFlashTimer();
 
             startAdCarousel();
 
@@ -1497,40 +1671,6 @@
                 );
 
             /* ---------------------------------------------
-               TOP CATEGORY NAV BAR
-               (Phones & Tablets / Computers / Electronics /
-               Gaming / Accessories / Home & Office / Deals /
-               All Categories)
-               --------------------------------------------- */
-
-            document
-                .querySelectorAll(
-                    '.nav-item[data-category]'
-                )
-                .forEach(
-                    function (navItem) {
-
-                        navItem.addEventListener(
-                            'click',
-                            function () {
-
-                                const category =
-                                    navItem.dataset.category;
-
-                                if (category === 'all') {
-                                    showAllProducts();
-                                    scrollToProducts();
-                                } else {
-                                    filterCategory(category);
-                                }
-
-                            }
-                        );
-
-                    }
-                );
-
-            /* ---------------------------------------------
                SEARCH
                --------------------------------------------- */
 
@@ -1571,37 +1711,31 @@
 
             /* ---------------------------------------------
                PRODUCT IMAGE / NAME POPUP
+               Delegated on the document so this also works for
+               product cards injected later (real listings loaded
+               from the marketplace API), not just the ones present
+               when the page first loaded.
                --------------------------------------------- */
 
-            getProducts().forEach(
-                function (card) {
+            document.addEventListener(
+                'click',
+                function (event) {
 
-                    const triggers =
-                        card.querySelectorAll(
+                    const trigger =
+                        event.target.closest(
                             '.product-image img,' +
                             '.product-name'
                         );
 
-                    triggers.forEach(
-                        function (element) {
+                    if (!trigger) return;
 
-                            element.style.cursor =
-                                'pointer';
+                    const card =
+                        trigger.closest('.product');
 
-                            element.addEventListener(
-                                'click',
-                                function () {
+                    if (!card) return;
 
-                                    openProductPopup(
-                                        getProductFromCard(
-                                            card
-                                        )
-                                    );
-
-                                }
-                            );
-
-                        }
+                    openProductPopup(
+                        getProductFromCard(card)
                     );
 
                 }

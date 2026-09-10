@@ -94,6 +94,7 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
       <button class="nav-item" data-section="reviews"><i>★</i> Reviews</button>
       <button class="nav-item" data-section="settings"><i>⚙</i> Settings</button>
       <button class="nav-item" data-section="activity"><i>◷</i> Activity log</button>
+      <button class="nav-item" data-section="loginlog"><i>◎</i> Login Activity</button>
     </nav>
     <div class="sidebar-foot">
       <span class="status-dot"></span> Admin session active
@@ -192,6 +193,13 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
       <div class="page-head"><div><h1>Activity log</h1><p>Administrative actions and important store events.</p></div></div>
       <div id="activityList" class="activity-list"></div>
     </section>
+
+    <section class="section" id="section-loginlog">
+      <div class="page-head"><div><h1>Login Activity</h1><p>Every customer and seller login/logout, most recent first.</p></div></div>
+      <div class="toolbar"><select id="loginLogFilter"><option value="">All users</option><option value="customer">Customers only</option><option value="seller">Sellers only</option></select><button class="secondary" id="refreshLoginLog">Refresh</button></div>
+      <div class="panel" style="margin-bottom:16px;"><h2>Currently online</h2><div id="onlineUsersList"></div></div>
+      <div id="loginLogList" class="table-wrap"></div>
+    </section>
   </main>
 </div>
 
@@ -285,7 +293,7 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
     document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active',s.id==='section-'+section));
     $('mobileTitle').textContent=section[0].toUpperCase()+section.slice(1);
     $('sidebar').classList.remove('open');
-    const loaders={overview:loadOverview,products:loadProducts,orders:loadOrders,inventory:loadInventory,sellers:loadSellers,customers:loadCustomers,categories:loadCategories,promotions:loadPromotions,reviews:loadReviews,settings:loadSettings,activity:loadActivity};
+    const loaders={overview:loadOverview,products:loadProducts,orders:loadOrders,inventory:loadInventory,sellers:loadSellers,customers:loadCustomers,categories:loadCategories,promotions:loadPromotions,reviews:loadReviews,settings:loadSettings,activity:loadActivity,loginlog:()=>{loadLoginLog();loadOnlineUsers();}};
     (loaders[section]||(()=>{}))();
     if(opts.filter && section==='products') $('productStatus').value=opts.filter;
     if(opts.openProduct) openProductModal();
@@ -411,7 +419,7 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
 
   async function loadSellers(){const el=$('sellersList');try{const q=new URLSearchParams();if($('sellerStatus').value)q.set('status',$('sellerStatus').value);const d=await api('/api/admin/sellers'+(q.toString()?'?'+q:''));sellers=d.sellers||[];el.innerHTML=genericPeople(sellers,'seller');}catch(e){el.innerHTML=empty(e.message||'Seller API not available.');}}
   async function loadCustomers(){const el=$('customersList');try{const d=await api('/api/admin/customers');customers=d.customers||[];el.innerHTML=genericPeople(customers,'customer');}catch(e){el.innerHTML=empty(e.message||'Customer API not available.');}}
-  function genericPeople(list,type){return list.length?`<table><thead><tr><th>Name</th><th>Email / Phone</th><th>Status</th><th>Orders</th><th>Action</th></tr></thead><tbody>${list.map(x=>`<tr><td><strong>${esc(x.name||x.fullName||'—')}</strong></td><td>${esc(x.email||'—')}<small>${esc(x.phone||'')}</small></td><td><span class="pill ${esc(x.status||'approved')}">${esc(x.status||'approved')}</span></td><td>${esc(x.orderCount??0)}</td><td><button data-person="${esc(x.id)}" data-person-type="${type}">${type==='seller'?'Manage':'View'}</button></td></tr>`).join('')}</tbody></table>`:empty('No records found.');}
+  function genericPeople(list,type){return list.length?`<table><thead><tr><th>Name</th><th>Email / Phone</th>${type==='seller'?'<th>WhatsApp</th>':''}<th>Status</th><th>Orders</th><th>Action</th></tr></thead><tbody>${list.map(x=>`<tr><td><strong>${esc(x.name||x.fullName||'—')}</strong>${x.loggedIn?' <span class="pill approved" style="font-size:10px;">online</span>':''}</td><td>${esc(x.email||'—')}<small>${esc(x.phone||'')}</small></td>${type==='seller'?`<td>${esc(x.whatsapp||'—')}</td>`:''}<td><span class="pill ${esc(x.status||'approved')}">${esc(x.status||'approved')}</span></td><td>${esc(x.orderCount??0)}</td><td><button data-person="${esc(x.id)}" data-person-type="${type}">${type==='seller'?'Manage':'View'}</button></td></tr>`).join('')}</tbody></table>`:empty('No records found.');}
 
   // Sellers: "Manage" prompts for a new status (pending/approved/suspended).
   // Customers: "View" just shows their details — customers aren't suspendable here.
@@ -460,6 +468,28 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
   };
 
   async function loadActivity(){try{const d=await api('/api/admin/activity');activity=d.activity||[];$('activityList').innerHTML=activity.length?activity.map(a=>`<div class="activity-row"><span class="activity-dot"></span><div><strong>${esc(a.action||'Activity')}</strong><p>${esc(a.description||'')}</p><small>${esc(a.createdAt||a.time||'')}</small></div></div>`).join(''):empty('No activity yet.');}catch(e){$('activityList').innerHTML=empty(e.message||'Activity API not available.');}}
+
+  async function loadLoginLog(){
+    const el=$('loginLogList');
+    try{
+      const q=$('loginLogFilter').value?('?userType='+encodeURIComponent($('loginLogFilter').value)):'';
+      const d=await api('/api/admin/login-log'+q);
+      const entries=d.entries||[];
+      el.innerHTML=entries.length?`<table><thead><tr><th>User</th><th>Type</th><th>Action</th><th>When</th></tr></thead><tbody>${entries.map(e=>`<tr><td><strong>${esc(e.name||'—')}</strong><small>${esc(e.email||'')}</small></td><td><span class="pill ${e.userType==='seller'?'approved':'pending'}">${esc(e.userType)}</span></td><td>${esc(e.action)}</td><td>${esc(e.createdAt)}</td></tr>`).join('')}</tbody></table>`:empty('No login activity yet.');
+    }catch(e){ el.innerHTML=empty(e.message||'Login log API not available.'); }
+  }
+
+  async function loadOnlineUsers(){
+    const el=$('onlineUsersList');
+    try{
+      const d=await api('/api/admin/online-users');
+      const online=d.online||[];
+      el.innerHTML=online.length?`<table><thead><tr><th>Name</th><th>Type</th><th>Email</th><th>Phone</th></tr></thead><tbody>${online.map(u=>`<tr><td><strong>${esc(u.name||u.business_name||'—')}</strong></td><td><span class="pill ${u.userType==='seller'?'approved':'pending'}">${esc(u.userType)}</span></td><td>${esc(u.email||'')}</td><td>${esc(u.phone||'')}</td></tr>`).join('')}</tbody></table>`:empty('No one is currently logged in.');
+    }catch(e){ el.innerHTML=empty(e.message||'Online users API not available.'); }
+  }
+
+  $('refreshLoginLog').onclick=()=>{loadLoginLog();loadOnlineUsers();};
+  $('loginLogFilter').onchange=loadLoginLog;
   async function loadSettings(){try{const d=await api('/api/admin/settings');if(d.settings){Object.entries(d.settings).forEach(([k,v])=>{const el=$(`[name="${k}"]`);if(!el)return;if(el.type==='checkbox')el.checked=!!v;else el.value=v;});}}catch{}}
 
   // Simple modal helpers

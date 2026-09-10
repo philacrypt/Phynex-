@@ -49,12 +49,6 @@ db.exec(`
         FOREIGN KEY (seller_id) REFERENCES sellers(id)
     );
 
-    CREATE TABLE IF NOT EXISTS newsletter_subscribers (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        email TEXT NOT NULL UNIQUE,
-        created_at INTEGER NOT NULL
-    );
-
     CREATE TABLE IF NOT EXISTS customers (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
@@ -137,6 +131,16 @@ db.exec(`
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS login_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_type TEXT NOT NULL,
+        user_id INTEGER,
+        name TEXT,
+        email TEXT,
+        action TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+    );
 `);
 
 /* =========================
@@ -165,6 +169,7 @@ ensureColumn("products", "tags", "TEXT");
 ensureColumn("products", "featured", "INTEGER DEFAULT 0");
 
 ensureColumn("sellers", "status", "TEXT DEFAULT 'approved'");
+ensureColumn("sellers", "whatsapp", "TEXT");
 
 /* =========================
    SMALL HELPERS
@@ -201,6 +206,27 @@ function logActivity(action, description) {
     } catch (error) {
         // Activity logging must never break the request that triggered it.
         console.error("Activity log failed:", error.message);
+    }
+}
+
+// Records every login/logout so the admin can see who has been
+// coming and going, and when. Never allowed to break the request
+// that triggered it.
+function logLogin(userType, user, action) {
+    try {
+        db.prepare(
+            `INSERT INTO login_log (user_type, user_id, name, email, action, created_at)
+             VALUES (?, ?, ?, ?, ?, ?)`
+        ).run(
+            userType,
+            user ? user.id : null,
+            user ? (user.business_name || user.name || "") : "",
+            user ? user.email : "",
+            action,
+            Date.now()
+        );
+    } catch (error) {
+        console.error("Login log failed:", error.message);
     }
 }
 
@@ -271,6 +297,7 @@ function publicSeller(seller) {
         businessName: seller.business_name,
         email: seller.email,
         phone: seller.phone,
+        whatsapp: seller.whatsapp || seller.phone || "",
         status: seller.status || "approved"
     };
 }
@@ -306,6 +333,8 @@ function publicProduct(product) {
         id: product.id,
         sellerId: product.seller_id,
         sellerName: product.business_name || undefined,
+        sellerPhone: product.seller_phone || undefined,
+        sellerWhatsapp: product.seller_whatsapp || product.seller_phone || undefined,
         name: product.name,
         description: product.description || "",
         specifications: product.specifications || "",
@@ -502,6 +531,8 @@ app.post("/api/customers/register", async function (request, response) {
 
     const customer = db.prepare("SELECT * FROM customers WHERE id = ?").get(result.lastInsertRowid);
 
+    logLogin("customer", customer, "register");
+
     response.json({ token: token, customer: publicCustomer(customer) });
 });
 
@@ -528,11 +559,19 @@ app.post("/api/customers/login", async function (request, response) {
 
     db.prepare("UPDATE customers SET token = ? WHERE id = ?").run(token, customer.id);
 
+    logLogin("customer", customer, "login");
+
     response.json({ token: token, customer: publicCustomer(customer) });
 });
 
 app.get("/api/customers/me", requireCustomer, function (request, response) {
     response.json({ customer: publicCustomer(request.customer) });
+});
+
+app.post("/api/customers/logout", requireCustomer, function (request, response) {
+    db.prepare("UPDATE customers SET token = NULL WHERE id = ?").run(request.customer.id);
+    logLogin("customer", request.customer, "logout");
+    response.json({ ok: true });
 });
 
 /* =========================
@@ -546,10 +585,19 @@ app.post("/api/sellers/register", async function (request, response) {
     const businessName = String(body.businessName || "").trim();
     const email = String(body.email || "").trim().toLowerCase();
     const phone = String(body.phone || "").trim();
+    const whatsapp = String(body.whatsapp || "").trim();
     const password = String(body.password || "");
 
     if (!businessName || !email || !password) {
         return response.status(400).json({ message: "Business name, email and password are required." });
+    }
+
+    if (!phone) {
+        return response.status(400).json({ message: "A phone number is required so buyers can reach you." });
+    }
+
+    if (!whatsapp) {
+        return response.status(400).json({ message: "A WhatsApp number is required so buyers can reach you." });
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -571,14 +619,15 @@ app.post("/api/sellers/register", async function (request, response) {
 
     const result = db
         .prepare(
-            `INSERT INTO sellers (business_name, email, phone, password_hash, token, status, created_at)
-             VALUES (?, ?, ?, ?, ?, 'approved', ?)`
+            `INSERT INTO sellers (business_name, email, phone, whatsapp, password_hash, token, status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, 'approved', ?)`
         )
-        .run(businessName, email, phone, passwordHash, token, Date.now());
+        .run(businessName, email, phone, whatsapp, passwordHash, token, Date.now());
 
     const seller = db.prepare("SELECT * FROM sellers WHERE id = ?").get(result.lastInsertRowid);
 
     logActivity("seller_registered", businessName + " created a seller account.");
+    logLogin("seller", seller, "register");
 
     response.json({ token: token, seller: publicSeller(seller) });
 });
@@ -610,11 +659,36 @@ app.post("/api/sellers/login", async function (request, response) {
 
     db.prepare("UPDATE sellers SET token = ? WHERE id = ?").run(token, seller.id);
 
+    logLogin("seller", seller, "login");
+
     response.json({ token: token, seller: publicSeller(seller) });
 });
 
 app.get("/api/sellers/me", requireSeller, function (request, response) {
     response.json({ seller: publicSeller(request.seller) });
+});
+
+app.post("/api/sellers/logout", requireSeller, function (request, response) {
+    db.prepare("UPDATE sellers SET token = NULL WHERE id = ?").run(request.seller.id);
+    logLogin("seller", request.seller, "logout");
+    response.json({ ok: true });
+});
+
+app.put("/api/sellers/me", requireSeller, function (request, response) {
+
+    const body = request.body || {};
+    const phone = body.phone != null ? String(body.phone).trim() : request.seller.phone;
+    const whatsapp = body.whatsapp != null ? String(body.whatsapp).trim() : request.seller.whatsapp;
+
+    if (!phone || !whatsapp) {
+        return response.status(400).json({ message: "Phone and WhatsApp numbers cannot be empty." });
+    }
+
+    db.prepare("UPDATE sellers SET phone = ?, whatsapp = ? WHERE id = ?").run(phone, whatsapp, request.seller.id);
+
+    const seller = db.prepare("SELECT * FROM sellers WHERE id = ?").get(request.seller.id);
+
+    response.json({ seller: publicSeller(seller) });
 });
 
 /* =========================
@@ -716,20 +790,12 @@ app.post("/api/products", requireSeller, function (request, response, next) {
 
     const files = request.files || [];
 
-    if (files.length === 0) {
-        return response.status(400).json({ message: "Please upload at least one product photo before submitting." });
-    }
-
     const media = files.map(function (file) {
         return {
             url: "/uploads/" + file.filename,
             type: file.mimetype.indexOf("video/") === 0 ? "video" : "image"
         };
     });
-
-    if (!media.some(function (m) { return m.type === "image"; })) {
-        return response.status(400).json({ message: "At least one uploaded file must be an image (not just video)." });
-    }
 
     const mediaJson = JSON.stringify(media);
     const firstImage = (media.find(function (m) { return m.type === "image"; }) || media[0] || {}).url || "";
@@ -787,19 +853,42 @@ app.get("/api/products", function (request, response) {
 
     const rows = sponsoredOnly
         ? db.prepare(
-            `SELECT products.*, sellers.business_name FROM products
+            `SELECT products.*, sellers.business_name, sellers.phone AS seller_phone, sellers.whatsapp AS seller_whatsapp FROM products
              JOIN sellers ON sellers.id = products.seller_id
              WHERE products.status = 'approved' AND products.sponsored = 1
              ORDER BY products.created_at DESC`
         ).all()
         : db.prepare(
-            `SELECT products.*, sellers.business_name FROM products
+            `SELECT products.*, sellers.business_name, sellers.phone AS seller_phone, sellers.whatsapp AS seller_whatsapp FROM products
              JOIN sellers ON sellers.id = products.seller_id
              WHERE products.status = 'approved'
              ORDER BY products.created_at DESC`
         ).all();
 
     response.json({ products: rows.map(publicProduct) });
+});
+
+/* =========================
+   PUBLIC — SINGLE PRODUCT DETAIL
+   Used when a buyer taps a product image/name to see full details.
+========================= */
+
+app.get("/api/products/:id", function (request, response) {
+
+    const product = db
+        .prepare(
+            `SELECT products.*, sellers.business_name, sellers.phone AS seller_phone, sellers.whatsapp AS seller_whatsapp
+             FROM products
+             JOIN sellers ON sellers.id = products.seller_id
+             WHERE products.id = ? AND products.status = 'approved'`
+        )
+        .get(request.params.id);
+
+    if (!product) {
+        return response.status(404).json({ message: "Product not found." });
+    }
+
+    response.json({ product: publicProduct(product) });
 });
 
 /* =========================
@@ -816,7 +905,7 @@ app.get("/api/track/:code", function (request, response) {
 
     const product = db
         .prepare(
-            `SELECT products.*, sellers.business_name FROM products
+            `SELECT products.*, sellers.business_name, sellers.phone AS seller_phone, sellers.whatsapp AS seller_whatsapp FROM products
              JOIN sellers ON sellers.id = products.seller_id
              WHERE products.tracking_code = ?`
         )
@@ -847,7 +936,7 @@ app.get("/api/admin/dashboard", requireAdmin, function (request, response) {
 
     const pendingProductsList = db
         .prepare(
-            `SELECT products.*, sellers.business_name FROM products
+            `SELECT products.*, sellers.business_name, sellers.phone AS seller_phone, sellers.whatsapp AS seller_whatsapp FROM products
              JOIN sellers ON sellers.id = products.seller_id
              WHERE products.status = 'pending'
              ORDER BY products.created_at DESC LIMIT 6`
@@ -875,13 +964,13 @@ app.get("/api/admin/products", requireAdmin, function (request, response) {
 
     const rows = status
         ? db.prepare(
-            `SELECT products.*, sellers.business_name, sellers.email FROM products
+            `SELECT products.*, sellers.business_name, sellers.email, sellers.phone AS seller_phone, sellers.whatsapp AS seller_whatsapp FROM products
              JOIN sellers ON sellers.id = products.seller_id
              WHERE products.status = ?
              ORDER BY products.created_at DESC`
         ).all(status)
         : db.prepare(
-            `SELECT products.*, sellers.business_name, sellers.email FROM products
+            `SELECT products.*, sellers.business_name, sellers.email, sellers.phone AS seller_phone, sellers.whatsapp AS seller_whatsapp FROM products
              JOIN sellers ON sellers.id = products.seller_id
              ORDER BY products.created_at DESC`
         ).all();
@@ -992,14 +1081,10 @@ app.post("/api/admin/products", requireAdmin, handleAdminUpload, function (reque
         return response.status(400).json({ message: "Product name and a valid price are required." });
     }
 
+    const systemSeller = ensureSystemSeller();
+
     const mainImageFile = (files.image && files.image[0]) || null;
     const galleryFiles = files.gallery || [];
-
-    if (!mainImageFile) {
-        return response.status(400).json({ message: "A main product image is required." });
-    }
-
-    const systemSeller = ensureSystemSeller();
 
     const media = [];
 
@@ -1241,6 +1326,8 @@ app.get("/api/admin/sellers", requireAdmin, function (request, response) {
                 name: seller.business_name,
                 email: seller.email,
                 phone: seller.phone,
+                whatsapp: seller.whatsapp || seller.phone || "",
+                loggedIn: Boolean(seller.token),
                 status: seller.status || "approved",
                 orderCount: orderCountStmt.get(seller.id).c
             };
@@ -1286,6 +1373,7 @@ app.get("/api/admin/customers", requireAdmin, function (request, response) {
                 name: customer.name,
                 email: customer.email,
                 phone: customer.phone,
+                loggedIn: Boolean(customer.token),
                 status: "approved",
                 orderCount: orderCountStmt.get(customer.id).c
             };
@@ -1478,6 +1566,49 @@ app.get("/api/admin/activity", requireAdmin, function (request, response) {
             };
         })
     });
+});
+
+/* =========================
+   ADMIN — USER LOGIN / LOGOUT ACTIVITY
+========================= */
+
+app.get("/api/admin/login-log", requireAdmin, function (request, response) {
+
+    const userType = String(request.query.userType || "").trim();
+
+    const rows = userType
+        ? db.prepare("SELECT * FROM login_log WHERE user_type = ? ORDER BY created_at DESC LIMIT 200").all(userType)
+        : db.prepare("SELECT * FROM login_log ORDER BY created_at DESC LIMIT 200").all();
+
+    response.json({
+        entries: rows.map(function (row) {
+            return {
+                userType: row.user_type,
+                userId: row.user_id,
+                name: row.name,
+                email: row.email,
+                action: row.action,
+                createdAt: new Date(row.created_at).toLocaleString("en-KE")
+            };
+        })
+    });
+});
+
+// Who is currently logged in right now (has an active token), for both
+// customers and sellers, so the admin can see who's online at a glance.
+app.get("/api/admin/online-users", requireAdmin, function (request, response) {
+
+    const sellers = db
+        .prepare("SELECT id, business_name AS name, email, phone, whatsapp FROM sellers WHERE token IS NOT NULL AND email != 'admin@phynex.internal'")
+        .all()
+        .map(function (row) { return Object.assign({ userType: "seller" }, row); });
+
+    const customers = db
+        .prepare("SELECT id, name, email, phone FROM customers WHERE token IS NOT NULL")
+        .all()
+        .map(function (row) { return Object.assign({ userType: "customer" }, row); });
+
+    response.json({ online: sellers.concat(customers) });
 });
 
 /* =========================
@@ -1844,34 +1975,6 @@ app.post("/api/contact", async function (request, response) {
         console.error("Contact form email failed:", error.message);
         return response.status(502).json({ message: "Could not send message. Please try again later." });
     }
-});
-
-/* =========================
-   PUBLIC — NEWSLETTER SIGNUP
-========================= */
-
-app.post("/api/newsletter", function (request, response) {
-
-    const email = String((request.body || {}).email || "").trim().toLowerCase();
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!emailPattern.test(email)) {
-        return response.status(400).json({ message: "Please enter a valid email address." });
-    }
-
-    try {
-        db.prepare(
-            "INSERT INTO newsletter_subscribers (email, created_at) VALUES (?, ?)"
-        ).run(email, Date.now());
-    } catch (error) {
-        // UNIQUE constraint = already subscribed; treat as success either way.
-        if (!String(error.message).includes("UNIQUE")) {
-            console.error("PHYNEX: newsletter signup failed.", error);
-            return response.status(500).json({ message: "Could not subscribe right now. Please try again later." });
-        }
-    }
-
-    response.json({ message: "You're subscribed! Watch your inbox for PHYNEX deals." });
 });
 
 /* =========================

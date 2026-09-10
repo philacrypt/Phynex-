@@ -529,8 +529,15 @@
         }
 
         $('logoutBtn').addEventListener('click', function () {
+            var currentToken = localStorage.getItem(TOKEN_KEY);
             localStorage.removeItem(TOKEN_KEY);
             localStorage.removeItem(NAME_KEY);
+            if (currentToken) {
+                fetch('/api/sellers/logout', {
+                    method: 'POST',
+                    headers: { Authorization: 'Bearer ' + currentToken }
+                }).catch(function () {});
+            }
             window.location.href = 'seller-login.html';
         });
 

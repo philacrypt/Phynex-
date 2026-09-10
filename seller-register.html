@@ -67,6 +67,11 @@
             margin-top: 16px;
         }
 
+        label .hint {
+            font-weight: 400;
+            color: #888;
+        }
+
         input {
             width: 100%;
             padding: 11px 13px;
@@ -78,6 +83,31 @@
         input:focus {
             outline: none;
             border-color: #073bce;
+        }
+
+        .field-note {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .checkbox-row {
+            margin-top: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .checkbox-row input {
+            width: auto;
+            margin-top: 3px;
+        }
+
+        .checkbox-row label {
+            margin: 0;
+            font-weight: 400;
+            font-size: 13px;
+            color: #444;
         }
 
         button.submit {
@@ -136,7 +166,7 @@
     <main class="wrap">
         <div class="card">
             <h1>Become a Seller</h1>
-            <p class="sub">Create your seller account and start submitting products to PHYNEX.</p>
+            <p class="sub">Create your seller account and start submitting products to PHYNEX. Buyers will be able to reach you directly on WhatsApp or by phone from your product listings.</p>
 
             <form id="registerForm">
 
@@ -146,8 +176,18 @@
                 <label for="email">Email</label>
                 <input type="email" id="email" required>
 
-                <label for="phone">Phone number</label>
-                <input type="tel" id="phone" placeholder="07XXXXXXXX">
+                <label for="phone">Phone number <span class="hint">(required)</span></label>
+                <input type="tel" id="phone" placeholder="07XXXXXXXX" required>
+                <p class="field-note">Buyers can call this number to ask about your products.</p>
+
+                <label for="whatsapp">WhatsApp number <span class="hint">(required)</span></label>
+                <input type="tel" id="whatsapp" placeholder="07XXXXXXXX" required>
+                <p class="field-note">Shown on your listings as a "Chat on WhatsApp" button.</p>
+
+                <div class="checkbox-row">
+                    <input type="checkbox" id="sameAsPhone">
+                    <label for="sameAsPhone">My WhatsApp number is the same as my phone number</label>
+                </div>
 
                 <label for="password">Password</label>
                 <input type="password" id="password" minlength="6" required>
@@ -162,6 +202,25 @@
     </main>
 
     <script>
+        var phoneInput = document.getElementById('phone');
+        var whatsappInput = document.getElementById('whatsapp');
+        var sameAsPhone = document.getElementById('sameAsPhone');
+
+        sameAsPhone.addEventListener('change', function () {
+            if (sameAsPhone.checked) {
+                whatsappInput.value = phoneInput.value;
+                whatsappInput.readOnly = true;
+            } else {
+                whatsappInput.readOnly = false;
+            }
+        });
+
+        phoneInput.addEventListener('input', function () {
+            if (sameAsPhone.checked) {
+                whatsappInput.value = phoneInput.value;
+            }
+        });
+
         document.getElementById('registerForm').addEventListener('submit', async function (event) {
             event.preventDefault();
 
@@ -170,6 +229,22 @@
 
             msg.className = 'msg';
             msg.textContent = '';
+
+            var phone = phoneInput.value.trim();
+            var whatsapp = whatsappInput.value.trim();
+
+            if (!phone) {
+                msg.className = 'msg error';
+                msg.textContent = 'A phone number is required so buyers can reach you.';
+                return;
+            }
+
+            if (!whatsapp) {
+                msg.className = 'msg error';
+                msg.textContent = 'A WhatsApp number is required so buyers can reach you.';
+                return;
+            }
+
             btn.disabled = true;
             btn.textContent = 'Creating account...';
 
@@ -180,7 +255,8 @@
                     body: JSON.stringify({
                         businessName: document.getElementById('businessName').value.trim(),
                         email: document.getElementById('email').value.trim(),
-                        phone: document.getElementById('phone').value.trim(),
+                        phone: phone,
+                        whatsapp: whatsapp,
                         password: document.getElementById('password').value
                     })
                 });

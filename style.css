@@ -1608,3 +1608,8 @@ a {
     align-items: center;
     justify-content: center;
 }
+/* Product image / name are clickable — opens full product details */
+.product-image img,
+.product-name {
+    cursor: pointer;
+}
