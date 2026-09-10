@@ -130,12 +130,6 @@
 
     /* =====================================================
        CHECKOUT PAGE RENDERING
-       Fills in #checkoutItems / #checkoutSubtotal /
-       #checkoutDeliveryFee / #checkoutTotal on checkout.html
-       from whatever is in the cart (or from a Buy Now item).
-       Safely no-ops on any page that doesn't have these
-       elements, so it's safe to call on every page load and
-       every saveCart().
        ===================================================== */
 
     function renderCheckoutPage() {
@@ -500,7 +494,6 @@
 
     /* =====================================================
        CARD — BUY NOW
-       (goes straight to checkout, so it's gated on login)
        ===================================================== */
 
     window.buyNowFromCard = function (button) {
@@ -1055,10 +1048,11 @@
     /* =====================================================
        CHECKOUT PAYMENT (M-PESA)
        Wires up the "Pay with M-PESA" button and the checkout
-       form on checkout.html: sends the STK Push request,
-       polls for the payment result, and shows the order
-       confirmation once payment succeeds. Safely no-ops on
-       any page that doesn't have these elements.
+       form on checkout.html: sends the full order (customer
+       info, delivery address, and item details) so the server
+       can create a real order record, sends the STK Push
+       request, polls for the payment result, and shows the
+       order confirmation once payment succeeds.
        ===================================================== */
 
     function initCheckoutPayment() {
@@ -1264,6 +1258,17 @@
 
             setMessage('Sending the M-PESA payment request...');
 
+            const customerToken =
+                localStorage.getItem(CUSTOMER_TOKEN_KEY);
+
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+
+            if (customerToken) {
+                headers['Authorization'] = 'Bearer ' + customerToken;
+            }
+
             try {
 
                 const response =
@@ -1271,9 +1276,7 @@
 
                         method: 'POST',
 
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
+                        headers: headers,
 
                         body: JSON.stringify({
 
@@ -1283,10 +1286,29 @@
                             total:
                                 getCurrentTotal(),
 
+                            customer: {
+                                name: document.getElementById('customerName').value.trim(),
+                                email: document.getElementById('customerEmail').value.trim(),
+                                phone: document.getElementById('customerPhone').value.trim()
+                            },
+
+                            delivery: {
+                                county: document.getElementById('deliveryCounty').value.trim(),
+                                location: document.getElementById('deliveryLocation').value.trim(),
+                                address: document.getElementById('deliveryAddress').value.trim(),
+                                instructions: document.getElementById('deliveryInstructions').value.trim()
+                            },
+
                             items:
                                 cart.map(function (item) {
 
                                     return {
+
+                                        id: item.id,
+
+                                        name: item.name,
+
+                                        image: item.image,
 
                                         price:
                                             Number(item.price) || 0,
@@ -1656,7 +1678,6 @@
 
             /* ---------------------------------------------
                POPUP ORDER NOW
-               (goes straight to checkout, so it's gated on login)
                --------------------------------------------- */
 
             const modalBuy =

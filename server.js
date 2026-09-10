@@ -15,7 +15,7 @@ app.use(express.json({ limit: "100kb" }));
 app.use(express.static(__dirname));
 
 /* =========================
-   DATABASE (sellers + products)
+   DATABASE
 ========================= */
 
 const db = new Database(path.join(__dirname, "phynex.db"));
@@ -58,27 +58,107 @@ db.exec(`
         token TEXT,
         created_at INTEGER NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS orders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        order_number TEXT NOT NULL UNIQUE,
+        customer_id INTEGER,
+        customer_name TEXT,
+        customer_email TEXT,
+        customer_phone TEXT,
+        county TEXT,
+        location TEXT,
+        address TEXT,
+        instructions TEXT,
+        subtotal INTEGER NOT NULL DEFAULT 0,
+        delivery_fee INTEGER NOT NULL DEFAULT 0,
+        total INTEGER NOT NULL DEFAULT 0,
+        payment_method TEXT NOT NULL DEFAULT 'mpesa',
+        payment_status TEXT NOT NULL DEFAULT 'pending',
+        status TEXT NOT NULL DEFAULT 'pending',
+        checkout_request_id TEXT,
+        created_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS order_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        order_id INTEGER NOT NULL,
+        product_id INTEGER,
+        seller_id INTEGER,
+        name TEXT,
+        image TEXT,
+        price INTEGER NOT NULL DEFAULT 0,
+        quantity INTEGER NOT NULL DEFAULT 1,
+        FOREIGN KEY (order_id) REFERENCES orders(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        slug TEXT,
+        description TEXT,
+        created_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS promotions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        type TEXT,
+        value TEXT,
+        active INTEGER NOT NULL DEFAULT 1,
+        created_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS reviews (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_id INTEGER,
+        product_name TEXT,
+        customer_name TEXT,
+        rating INTEGER,
+        comment TEXT,
+        status TEXT NOT NULL DEFAULT 'pending',
+        created_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS activity_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        action TEXT NOT NULL,
+        description TEXT,
+        created_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+    );
 `);
 
-// Migration: older databases won't have the "media" column yet
-// (it stores a JSON array of {url, type} for multi-image/video
-// listings). Add it if missing, without touching existing rows.
-const productColumns = db.prepare("PRAGMA table_info(products)").all();
-const hasMediaColumn = productColumns.some(function (col) { return col.name === "media"; });
+/* =========================
+   MIGRATIONS (safe to re-run)
+========================= */
 
-if (!hasMediaColumn) {
-    db.exec("ALTER TABLE products ADD COLUMN media TEXT");
+function ensureColumn(table, column, definition) {
+    const columns = db.prepare("PRAGMA table_info(" + table + ")").all();
+    const hasColumn = columns.some(function (col) { return col.name === column; });
+
+    if (!hasColumn) {
+        db.exec("ALTER TABLE " + table + " ADD COLUMN " + column + " " + definition);
+    }
 }
 
-// Migration: older databases won't have the "tracking_code" column
-// yet (a 4-digit code given to sellers so they and customers can
-// look up a product's status in "Track my product"). Add it if
-// missing, without touching existing rows.
-const hasTrackingColumn = productColumns.some(function (col) { return col.name === "tracking_code"; });
+ensureColumn("products", "media", "TEXT");
+ensureColumn("products", "tracking_code", "TEXT");
+ensureColumn("products", "stock", "INTEGER DEFAULT 0");
+ensureColumn("products", "low_stock_threshold", "INTEGER DEFAULT 5");
+ensureColumn("products", "sku", "TEXT");
+ensureColumn("products", "brand", "TEXT");
+ensureColumn("products", "subcategory", "TEXT");
+ensureColumn("products", "condition_label", "TEXT");
+ensureColumn("products", "warranty", "TEXT");
+ensureColumn("products", "tags", "TEXT");
+ensureColumn("products", "featured", "INTEGER DEFAULT 0");
 
-if (!hasTrackingColumn) {
-    db.exec("ALTER TABLE products ADD COLUMN tracking_code TEXT");
-}
+ensureColumn("sellers", "status", "TEXT DEFAULT 'approved'");
 
 /* =========================
    SMALL HELPERS
@@ -103,12 +183,89 @@ function generateTrackingCode() {
     return code;
 }
 
+function generateOrderNumber() {
+    return "PHX-" + crypto.randomBytes(4).toString("hex").toUpperCase();
+}
+
+function logActivity(action, description) {
+    try {
+        db.prepare(
+            "INSERT INTO activity_log (action, description, created_at) VALUES (?, ?, ?)"
+        ).run(action, description || "", Date.now());
+    } catch (error) {
+        // Activity logging must never break the request that triggered it.
+        console.error("Activity log failed:", error.message);
+    }
+}
+
+// Admin-added products still need a seller_id (the column is NOT NULL),
+// so we lazily create one internal "PHYNEX" system seller account and
+// attach every admin-created product to it.
+function ensureSystemSeller() {
+    const existing = db
+        .prepare("SELECT * FROM sellers WHERE email = ?")
+        .get("admin@phynex.internal");
+
+    if (existing) return existing;
+
+    const passwordHash = crypto.randomBytes(24).toString("hex"); // unusable login, admin never logs in as this account
+
+    const result = db
+        .prepare(
+            `INSERT INTO sellers (business_name, email, phone, password_hash, token, status, created_at)
+             VALUES (?, ?, ?, ?, NULL, 'approved', ?)`
+        )
+        .run("PHYNEX", "admin@phynex.internal", "", passwordHash, Date.now());
+
+    return db.prepare("SELECT * FROM sellers WHERE id = ?").get(result.lastInsertRowid);
+}
+
+const DEFAULT_SETTINGS = {
+    storeName: "PHYNEX",
+    supportEmail: "",
+    supportPhone: "",
+    description: "",
+    currency: "KES (KSh)",
+    deliveryFee: 300,
+    lowStockThreshold: 5,
+    sellerListings: true,
+    requireApproval: true,
+    showGaming: true,
+    showNew: true,
+    showSponsored: true,
+    announcement: ""
+};
+
+function getSettings() {
+    const row = db.prepare("SELECT value FROM settings WHERE key = 'store'").get();
+
+    if (!row) return Object.assign({}, DEFAULT_SETTINGS);
+
+    try {
+        return Object.assign({}, DEFAULT_SETTINGS, JSON.parse(row.value));
+    } catch (error) {
+        return Object.assign({}, DEFAULT_SETTINGS);
+    }
+}
+
+function saveSettings(partial) {
+    const merged = Object.assign({}, getSettings(), partial);
+
+    db.prepare(
+        `INSERT INTO settings (key, value) VALUES ('store', ?)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+    ).run(JSON.stringify(merged));
+
+    return merged;
+}
+
 function publicSeller(seller) {
     return {
         id: seller.id,
         businessName: seller.business_name,
         email: seller.email,
-        phone: seller.phone
+        phone: seller.phone,
+        status: seller.status || "approved"
     };
 }
 
@@ -149,6 +306,15 @@ function publicProduct(product) {
         price: product.price,
         oldPrice: product.old_price || null,
         category: product.category || "",
+        brand: product.brand || "",
+        subcategory: product.subcategory || "",
+        condition: product.condition_label || "",
+        warranty: product.warranty || "",
+        tags: product.tags || "",
+        featured: Boolean(product.featured),
+        sku: product.sku || "",
+        stock: product.stock != null ? product.stock : 0,
+        lowStockThreshold: product.low_stock_threshold != null ? product.low_stock_threshold : 5,
         image: (media[0] && media[0].url) || product.image || "",
         images: media.filter(function (m) { return m.type === "image"; }).map(function (m) { return m.url; }),
         media: media,
@@ -157,6 +323,28 @@ function publicProduct(product) {
         rejectionReason: product.rejection_reason || null,
         trackingCode: product.tracking_code || null,
         createdAt: product.created_at
+    };
+}
+
+function publicOrder(order) {
+    return {
+        id: order.id,
+        orderNumber: order.order_number,
+        customerId: order.customer_id,
+        customerName: order.customer_name,
+        customerEmail: order.customer_email,
+        customerPhone: order.customer_phone,
+        county: order.county,
+        location: order.location,
+        address: order.address,
+        instructions: order.instructions,
+        subtotal: order.subtotal,
+        deliveryFee: order.delivery_fee,
+        total: order.total,
+        paymentMethod: order.payment_method,
+        paymentStatus: order.payment_status,
+        status: order.status,
+        createdAt: order.created_at
     };
 }
 
@@ -181,8 +369,25 @@ function requireSeller(request, response, next) {
         return response.status(401).json({ message: "Your session has expired. Please log in again." });
     }
 
+    if (seller.status === "suspended") {
+        return response.status(403).json({ message: "Your seller account has been suspended. Contact PHYNEX support." });
+    }
+
     request.seller = seller;
     next();
+}
+
+// Best-effort customer lookup — does NOT block the request if there's
+// no token or an invalid one. Used by checkout/payment so guest-style
+// requests still work, but a logged-in customer's order gets linked
+// to their account when possible.
+function optionalCustomer(request) {
+    const header = request.headers.authorization || "";
+    const token = header.startsWith("Bearer ") ? header.slice(7) : "";
+
+    if (!token) return null;
+
+    return db.prepare("SELECT * FROM customers WHERE token = ?").get(token) || null;
 }
 
 /* =========================
@@ -225,8 +430,6 @@ app.post("/api/admin/login", function (request, response) {
 
 /* =========================
    CUSTOMER AUTH MIDDLEWARE
-   Used to gate checkout — browsing, cart and search stay open to
-   everyone; only placing an order requires a logged-in customer.
 ========================= */
 
 function requireCustomer(request, response, next) {
@@ -362,12 +565,14 @@ app.post("/api/sellers/register", async function (request, response) {
 
     const result = db
         .prepare(
-            `INSERT INTO sellers (business_name, email, phone, password_hash, token, created_at)
-             VALUES (?, ?, ?, ?, ?, ?)`
+            `INSERT INTO sellers (business_name, email, phone, password_hash, token, status, created_at)
+             VALUES (?, ?, ?, ?, ?, 'approved', ?)`
         )
         .run(businessName, email, phone, passwordHash, token, Date.now());
 
     const seller = db.prepare("SELECT * FROM sellers WHERE id = ?").get(result.lastInsertRowid);
+
+    logActivity("seller_registered", businessName + " created a seller account.");
 
     response.json({ token: token, seller: publicSeller(seller) });
 });
@@ -391,6 +596,10 @@ app.post("/api/sellers/login", async function (request, response) {
         return response.status(401).json({ message: "Incorrect email or password." });
     }
 
+    if (seller.status === "suspended") {
+        return response.status(403).json({ message: "Your seller account has been suspended. Contact PHYNEX support." });
+    }
+
     const token = newToken();
 
     db.prepare("UPDATE sellers SET token = ? WHERE id = ?").run(token, seller.id);
@@ -404,12 +613,6 @@ app.get("/api/sellers/me", requireSeller, function (request, response) {
 
 /* =========================
    MEDIA UPLOAD (images + short videos)
-   Files are saved to /uploads on disk and served statically.
-   NOTE: on most hosts (including Render's free web service tier)
-   local disk is EPHEMERAL — files can be wiped on redeploy or
-   restart. For production, swap the multer diskStorage below for
-   an upload to Cloudinary/S3/Supabase Storage instead, and store
-   the returned URL the same way.
 ========================= */
 
 const fs = require("fs");
@@ -434,28 +637,45 @@ const mediaStorage = multer.diskStorage({
     }
 });
 
+const mediaFileFilter = function (request, file, callback) {
+    if (/^image\/|^video\//.test(file.mimetype)) {
+        callback(null, true);
+    } else {
+        callback(new Error("Only image and video files are allowed."));
+    }
+};
+
 const uploadMedia = multer({
     storage: mediaStorage,
-    limits: {
-        fileSize: 25 * 1024 * 1024, // 25MB per file
-        files: 6
-    },
-    fileFilter: function (request, file, callback) {
-        if (/^image\/|^video\//.test(file.mimetype)) {
-            callback(null, true);
-        } else {
-            callback(new Error("Only image and video files are allowed."));
-        }
-    }
+    limits: { fileSize: 25 * 1024 * 1024, files: 6 },
+    fileFilter: mediaFileFilter
 });
+
+// Separate upload handler for the admin's own "add/edit product" form,
+// which uses distinct field names: a single "image" plus a "gallery" array.
+const uploadAdminProductFiles = multer({
+    storage: mediaStorage,
+    limits: { fileSize: 25 * 1024 * 1024, files: 7 },
+    fileFilter: mediaFileFilter
+}).fields([
+    { name: "image", maxCount: 1 },
+    { name: "gallery", maxCount: 6 }
+]);
+
+function handleAdminUpload(request, response, next) {
+    uploadAdminProductFiles(request, response, function (error) {
+        if (error) {
+            const message = error instanceof multer.MulterError
+                ? (error.code === "LIMIT_FILE_SIZE" ? "Each file must be under 25MB." : error.message)
+                : error.message;
+            return response.status(400).json({ message: message || "Could not upload files." });
+        }
+        next();
+    });
+}
 
 /* =========================
    SELLER — SUBMIT / VIEW OWN PRODUCTS
-   New submissions always start as "pending" and need
-   admin approval before they appear on the store. Each
-   submission is also given a random 4-digit tracking code
-   so the seller (and their customers) can look the product
-   up later in "Track my product".
 ========================= */
 
 app.post("/api/products", requireSeller, function (request, response, next) {
@@ -482,6 +702,7 @@ app.post("/api/products", requireSeller, function (request, response, next) {
     const price = Math.round(Number(body.price));
     const oldPrice = body.oldPrice ? Math.round(Number(body.oldPrice)) : null;
     const category = String(body.category || "").trim();
+    const stock = body.stock != null && body.stock !== "" ? Math.max(0, Math.round(Number(body.stock))) : 0;
 
     if (!name || !Number.isFinite(price) || price < 1) {
         return response.status(400).json({ message: "Product name and a valid price are required." });
@@ -503,24 +724,17 @@ app.post("/api/products", requireSeller, function (request, response, next) {
     const result = db
         .prepare(
             `INSERT INTO products
-                (seller_id, name, description, specifications, price, old_price, category, image, media, status, sponsored, tracking_code, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, ?, ?)`
+                (seller_id, name, description, specifications, price, old_price, category, image, media, status, sponsored, tracking_code, stock, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, ?, ?, ?)`
         )
         .run(
-            request.seller.id,
-            name,
-            description,
-            specifications,
-            price,
-            oldPrice,
-            category,
-            firstImage,
-            mediaJson,
-            trackingCode,
-            Date.now()
+            request.seller.id, name, description, specifications, price,
+            oldPrice, category, firstImage, mediaJson, trackingCode, stock, Date.now()
         );
 
     const product = db.prepare("SELECT * FROM products WHERE id = ?").get(result.lastInsertRowid);
+
+    logActivity("product_submitted", request.seller.business_name + " submitted \"" + name + "\" for review.");
 
     response.json({ product: publicProduct(product) });
 });
@@ -551,8 +765,6 @@ app.delete("/api/seller/products/:id", requireSeller, function (request, respons
 
 /* =========================
    PUBLIC — APPROVED PRODUCTS
-   Used by the storefront to load seller products
-   (and the sponsored-products rail) into the page.
 ========================= */
 
 app.get("/api/products", function (request, response) {
@@ -578,8 +790,6 @@ app.get("/api/products", function (request, response) {
 
 /* =========================
    PUBLIC — TRACK MY PRODUCT
-   Anyone (seller or customer) can look up a product's current
-   review/approval status using its 4-digit tracking code.
 ========================= */
 
 app.get("/api/track/:code", function (request, response) {
@@ -603,6 +813,42 @@ app.get("/api/track/:code", function (request, response) {
     }
 
     response.json({ product: publicProduct(product) });
+});
+
+/* =========================
+   ADMIN — DASHBOARD
+========================= */
+
+app.get("/api/admin/dashboard", requireAdmin, function (request, response) {
+
+    const totalProducts = db.prepare("SELECT COUNT(*) AS c FROM products").get().c;
+    const pendingProducts = db.prepare("SELECT COUNT(*) AS c FROM products WHERE status = 'pending'").get().c;
+    const totalOrders = db.prepare("SELECT COUNT(*) AS c FROM orders").get().c;
+    const revenue = db.prepare("SELECT COALESCE(SUM(total), 0) AS s FROM orders WHERE payment_status = 'paid'").get().s;
+
+    const recentOrders = db
+        .prepare("SELECT * FROM orders ORDER BY created_at DESC LIMIT 6")
+        .all()
+        .map(publicOrder);
+
+    const pendingProductsList = db
+        .prepare(
+            `SELECT products.*, sellers.business_name FROM products
+             JOIN sellers ON sellers.id = products.seller_id
+             WHERE products.status = 'pending'
+             ORDER BY products.created_at DESC LIMIT 6`
+        )
+        .all()
+        .map(publicProduct);
+
+    response.json({
+        totalProducts: totalProducts,
+        pendingProducts: pendingProducts,
+        totalOrders: totalOrders,
+        revenue: revenue,
+        recentOrders: recentOrders,
+        pendingProductsList: pendingProductsList
+    });
 });
 
 /* =========================
@@ -643,6 +889,9 @@ app.post("/api/admin/products/:id/approve", requireAdmin, function (request, res
         return response.status(404).json({ message: "Product not found." });
     }
 
+    const product = db.prepare("SELECT * FROM products WHERE id = ?").get(request.params.id);
+    logActivity("product_approved", "Approved \"" + (product ? product.name : request.params.id) + "\".");
+
     response.json({ ok: true });
 });
 
@@ -657,6 +906,9 @@ app.post("/api/admin/products/:id/reject", requireAdmin, function (request, resp
     if (result.changes === 0) {
         return response.status(404).json({ message: "Product not found." });
     }
+
+    const product = db.prepare("SELECT * FROM products WHERE id = ?").get(request.params.id);
+    logActivity("product_rejected", "Rejected \"" + (product ? product.name : request.params.id) + "\" (" + (reason || "no reason given") + ").");
 
     response.json({ ok: true });
 });
@@ -673,14 +925,541 @@ app.post("/api/admin/products/:id/sponsor", requireAdmin, function (request, res
         return response.status(404).json({ message: "Product not found." });
     }
 
+    const product = db.prepare("SELECT * FROM products WHERE id = ?").get(request.params.id);
+    logActivity(sponsored ? "product_sponsored" : "product_unsponsored", (sponsored ? "Sponsored " : "Unsponsored ") + "\"" + (product ? product.name : request.params.id) + "\".");
+
+    response.json({ ok: true });
+});
+
+app.post("/api/admin/products/:id/stock", requireAdmin, function (request, response) {
+
+    const stock = Math.max(0, Math.round(Number((request.body || {}).stock)));
+
+    if (!Number.isFinite(stock)) {
+        return response.status(400).json({ message: "Enter a valid stock quantity." });
+    }
+
+    const result = db.prepare("UPDATE products SET stock = ? WHERE id = ?").run(stock, request.params.id);
+
+    if (result.changes === 0) {
+        return response.status(404).json({ message: "Product not found." });
+    }
+
+    const product = db.prepare("SELECT * FROM products WHERE id = ?").get(request.params.id);
+    logActivity("stock_updated", "Set stock for \"" + (product ? product.name : request.params.id) + "\" to " + stock + ".");
+
     response.json({ ok: true });
 });
 
 app.delete("/api/admin/products/:id", requireAdmin, function (request, response) {
 
+    const product = db.prepare("SELECT * FROM products WHERE id = ?").get(request.params.id);
+
     db.prepare("DELETE FROM products WHERE id = ?").run(request.params.id);
 
+    if (product) {
+        logActivity("product_deleted", "Deleted \"" + product.name + "\".");
+    }
+
     response.json({ ok: true });
+});
+
+// Admin creating a product directly (not via a seller submission).
+// Goes straight to "approved" since an admin is creating it themselves.
+app.post("/api/admin/products", requireAdmin, handleAdminUpload, function (request, response) {
+
+    const body = request.body || {};
+    const files = request.files || {};
+
+    const name = String(body.name || "").trim();
+    const price = Math.round(Number(body.price));
+
+    if (!name || !Number.isFinite(price) || price < 1) {
+        return response.status(400).json({ message: "Product name and a valid price are required." });
+    }
+
+    const systemSeller = ensureSystemSeller();
+
+    const mainImageFile = (files.image && files.image[0]) || null;
+    const galleryFiles = files.gallery || [];
+
+    const media = [];
+
+    if (mainImageFile) {
+        media.push({ url: "/uploads/" + mainImageFile.filename, type: "image" });
+    }
+
+    galleryFiles.forEach(function (file) {
+        media.push({
+            url: "/uploads/" + file.filename,
+            type: file.mimetype.indexOf("video/") === 0 ? "video" : "image"
+        });
+    });
+
+    const mediaJson = JSON.stringify(media);
+    const firstImage = (media[0] && media[0].url) || "";
+    const trackingCode = generateTrackingCode();
+
+    const result = db
+        .prepare(
+            `INSERT INTO products
+                (seller_id, name, description, specifications, price, old_price, category, image, media,
+                 status, sponsored, tracking_code, stock, low_stock_threshold, sku, brand, subcategory,
+                 condition_label, warranty, tags, featured, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        )
+        .run(
+            systemSeller.id,
+            name,
+            String(body.description || "").trim(),
+            String(body.specifications || "").trim(),
+            price,
+            body.oldPrice ? Math.round(Number(body.oldPrice)) : null,
+            String(body.category || "").trim(),
+            firstImage,
+            mediaJson,
+            trackingCode,
+            body.stock != null && body.stock !== "" ? Math.max(0, Math.round(Number(body.stock))) : 0,
+            5,
+            String(body.sku || "").trim(),
+            String(body.brand || "").trim(),
+            String(body.subcategory || "").trim(),
+            String(body.condition || "").trim(),
+            String(body.warranty || "").trim(),
+            String(body.tags || "").trim(),
+            body.featured === "true" ? 1 : 0,
+            Date.now()
+        );
+
+    const product = db.prepare("SELECT * FROM products WHERE id = ?").get(result.lastInsertRowid);
+
+    logActivity("product_created", "Admin added \"" + name + "\" directly.");
+
+    response.json({ message: "Product created.", product: publicProduct(product) });
+});
+
+app.put("/api/admin/products/:id", requireAdmin, handleAdminUpload, function (request, response) {
+
+    const existing = db.prepare("SELECT * FROM products WHERE id = ?").get(request.params.id);
+
+    if (!existing) {
+        return response.status(404).json({ message: "Product not found." });
+    }
+
+    const body = request.body || {};
+    const files = request.files || {};
+
+    const name = String(body.name || existing.name || "").trim();
+    const price = body.price != null && body.price !== "" ? Math.round(Number(body.price)) : existing.price;
+
+    if (!name || !Number.isFinite(price) || price < 1) {
+        return response.status(400).json({ message: "Product name and a valid price are required." });
+    }
+
+    let media = [];
+    try { media = JSON.parse(existing.media || "[]") || []; } catch (error) { media = []; }
+
+    const mainImageFile = (files.image && files.image[0]) || null;
+    const galleryFiles = files.gallery || [];
+
+    if (mainImageFile) {
+        const rest = media.filter(function (m, index) { return index !== 0; });
+        media = [{ url: "/uploads/" + mainImageFile.filename, type: "image" }].concat(rest);
+    }
+
+    if (galleryFiles.length) {
+        const mainOnly = media.length ? [media[0]] : [];
+        const newGallery = galleryFiles.map(function (file) {
+            return {
+                url: "/uploads/" + file.filename,
+                type: file.mimetype.indexOf("video/") === 0 ? "video" : "image"
+            };
+        });
+        media = mainOnly.concat(newGallery);
+    }
+
+    const mediaJson = JSON.stringify(media);
+    const firstImage = (media[0] && media[0].url) || existing.image || "";
+
+    db.prepare(
+        `UPDATE products SET
+            name = ?, description = ?, specifications = ?, price = ?, old_price = ?, category = ?,
+            image = ?, media = ?, stock = ?, sku = ?, brand = ?, subcategory = ?, condition_label = ?,
+            warranty = ?, tags = ?, featured = ?
+         WHERE id = ?`
+    ).run(
+        name,
+        body.description != null ? String(body.description).trim() : existing.description,
+        body.specifications != null ? String(body.specifications).trim() : existing.specifications,
+        price,
+        body.oldPrice ? Math.round(Number(body.oldPrice)) : existing.old_price,
+        body.category != null ? String(body.category).trim() : existing.category,
+        firstImage,
+        mediaJson,
+        body.stock != null && body.stock !== "" ? Math.max(0, Math.round(Number(body.stock))) : existing.stock,
+        body.sku != null ? String(body.sku).trim() : existing.sku,
+        body.brand != null ? String(body.brand).trim() : existing.brand,
+        body.subcategory != null ? String(body.subcategory).trim() : existing.subcategory,
+        body.condition != null ? String(body.condition).trim() : existing.condition_label,
+        body.warranty != null ? String(body.warranty).trim() : existing.warranty,
+        body.tags != null ? String(body.tags).trim() : existing.tags,
+        body.featured != null ? (body.featured === "true" ? 1 : 0) : existing.featured,
+        request.params.id
+    );
+
+    const product = db.prepare("SELECT * FROM products WHERE id = ?").get(request.params.id);
+
+    logActivity("product_edited", "Admin edited \"" + name + "\".");
+
+    response.json({ message: "Product updated.", product: publicProduct(product) });
+});
+
+/* =========================
+   ADMIN — INVENTORY
+========================= */
+
+app.get("/api/admin/inventory", requireAdmin, function (request, response) {
+
+    const rows = db.prepare("SELECT * FROM products ORDER BY stock ASC, name ASC").all();
+
+    response.json({
+        products: rows.map(function (row) {
+            return {
+                id: row.id,
+                name: row.name,
+                sku: row.sku || "",
+                stock: row.stock != null ? row.stock : 0,
+                lowStockThreshold: row.low_stock_threshold != null ? row.low_stock_threshold : 5
+            };
+        })
+    });
+});
+
+/* =========================
+   ADMIN — ORDERS
+========================= */
+
+app.get("/api/admin/orders", requireAdmin, function (request, response) {
+
+    const status = String(request.query.status || "").trim();
+
+    const rows = status
+        ? db.prepare("SELECT * FROM orders WHERE status = ? ORDER BY created_at DESC").all(status)
+        : db.prepare("SELECT * FROM orders ORDER BY created_at DESC").all();
+
+    response.json({ orders: rows.map(publicOrder) });
+});
+
+app.get("/api/admin/orders/:id", requireAdmin, function (request, response) {
+
+    const order = db.prepare("SELECT * FROM orders WHERE id = ?").get(request.params.id);
+
+    if (!order) {
+        return response.status(404).json({ message: "Order not found." });
+    }
+
+    const items = db.prepare("SELECT * FROM order_items WHERE order_id = ?").all(order.id);
+
+    response.json({
+        order: Object.assign(publicOrder(order), {
+            items: items.map(function (item) {
+                return {
+                    id: item.id,
+                    productId: item.product_id,
+                    sellerId: item.seller_id,
+                    name: item.name,
+                    image: item.image,
+                    price: item.price,
+                    quantity: item.quantity
+                };
+            })
+        })
+    });
+});
+
+app.post("/api/admin/orders/:id/status", requireAdmin, function (request, response) {
+
+    const status = String((request.body || {}).status || "").trim();
+    const allowed = ["pending", "paid", "processing", "shipped", "delivered", "cancelled"];
+
+    if (!allowed.includes(status)) {
+        return response.status(400).json({ message: "Invalid order status." });
+    }
+
+    const result = db.prepare("UPDATE orders SET status = ? WHERE id = ?").run(status, request.params.id);
+
+    if (result.changes === 0) {
+        return response.status(404).json({ message: "Order not found." });
+    }
+
+    const order = db.prepare("SELECT * FROM orders WHERE id = ?").get(request.params.id);
+    logActivity("order_status_updated", "Order " + order.order_number + " marked as " + status + ".");
+
+    response.json({ ok: true });
+});
+
+/* =========================
+   ADMIN — SELLERS
+========================= */
+
+app.get("/api/admin/sellers", requireAdmin, function (request, response) {
+
+    const status = String(request.query.status || "").trim();
+
+    const rows = status
+        ? db.prepare("SELECT * FROM sellers WHERE status = ? AND email != 'admin@phynex.internal' ORDER BY created_at DESC").all(status)
+        : db.prepare("SELECT * FROM sellers WHERE email != 'admin@phynex.internal' ORDER BY created_at DESC").all();
+
+    const orderCountStmt = db.prepare(
+        `SELECT COUNT(DISTINCT order_items.order_id) AS c
+         FROM order_items JOIN products ON products.id = order_items.product_id
+         WHERE products.seller_id = ?`
+    );
+
+    response.json({
+        sellers: rows.map(function (seller) {
+            return {
+                id: seller.id,
+                name: seller.business_name,
+                email: seller.email,
+                phone: seller.phone,
+                status: seller.status || "approved",
+                orderCount: orderCountStmt.get(seller.id).c
+            };
+        })
+    });
+});
+
+app.post("/api/admin/sellers/:id/status", requireAdmin, function (request, response) {
+
+    const status = String((request.body || {}).status || "").trim();
+    const allowed = ["pending", "approved", "suspended"];
+
+    if (!allowed.includes(status)) {
+        return response.status(400).json({ message: "Invalid seller status." });
+    }
+
+    const result = db.prepare("UPDATE sellers SET status = ? WHERE id = ?").run(status, request.params.id);
+
+    if (result.changes === 0) {
+        return response.status(404).json({ message: "Seller not found." });
+    }
+
+    const seller = db.prepare("SELECT * FROM sellers WHERE id = ?").get(request.params.id);
+    logActivity("seller_status_updated", seller.business_name + " marked as " + status + ".");
+
+    response.json({ ok: true });
+});
+
+/* =========================
+   ADMIN — CUSTOMERS
+========================= */
+
+app.get("/api/admin/customers", requireAdmin, function (request, response) {
+
+    const rows = db.prepare("SELECT * FROM customers ORDER BY created_at DESC").all();
+
+    const orderCountStmt = db.prepare("SELECT COUNT(*) AS c FROM orders WHERE customer_id = ?");
+
+    response.json({
+        customers: rows.map(function (customer) {
+            return {
+                id: customer.id,
+                name: customer.name,
+                email: customer.email,
+                phone: customer.phone,
+                status: "approved",
+                orderCount: orderCountStmt.get(customer.id).c
+            };
+        })
+    });
+});
+
+/* =========================
+   ADMIN — CATEGORIES
+========================= */
+
+app.get("/api/admin/categories", requireAdmin, function (request, response) {
+
+    const rows = db.prepare("SELECT * FROM categories ORDER BY name ASC").all();
+
+    const countStmt = db.prepare("SELECT COUNT(*) AS c FROM products WHERE category = ?");
+
+    response.json({
+        categories: rows.map(function (category) {
+            return {
+                id: category.id,
+                name: category.name,
+                slug: category.slug,
+                description: category.description,
+                productCount: countStmt.get(category.name).c
+            };
+        })
+    });
+});
+
+app.post("/api/admin/categories", requireAdmin, function (request, response) {
+
+    const body = request.body || {};
+    const name = String(body.name || "").trim();
+
+    if (!name) {
+        return response.status(400).json({ message: "Category name is required." });
+    }
+
+    const slug = String(body.slug || name).trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
+    try {
+        db.prepare(
+            "INSERT INTO categories (name, slug, description, created_at) VALUES (?, ?, ?, ?)"
+        ).run(name, slug, String(body.description || "").trim(), Date.now());
+    } catch (error) {
+        return response.status(409).json({ message: "A category with that name already exists." });
+    }
+
+    logActivity("category_added", "Added category \"" + name + "\".");
+
+    response.json({ ok: true });
+});
+
+/* =========================
+   ADMIN — PROMOTIONS
+========================= */
+
+app.get("/api/admin/promotions", requireAdmin, function (request, response) {
+
+    const rows = db.prepare("SELECT * FROM promotions ORDER BY created_at DESC").all();
+
+    response.json({
+        promotions: rows.map(function (promo) {
+            return {
+                id: promo.id,
+                name: promo.name,
+                type: promo.type,
+                value: promo.value,
+                active: Boolean(promo.active)
+            };
+        })
+    });
+});
+
+app.post("/api/admin/promotions", requireAdmin, function (request, response) {
+
+    const body = request.body || {};
+    const name = String(body.name || "").trim();
+
+    if (!name) {
+        return response.status(400).json({ message: "Promotion name is required." });
+    }
+
+    db.prepare(
+        "INSERT INTO promotions (name, type, value, active, created_at) VALUES (?, ?, ?, 1, ?)"
+    ).run(name, String(body.type || "").trim(), String(body.value || "").trim(), Date.now());
+
+    logActivity("promotion_added", "Added promotion \"" + name + "\".");
+
+    response.json({ ok: true });
+});
+
+app.post("/api/admin/promotions/:id/toggle", requireAdmin, function (request, response) {
+
+    const promo = db.prepare("SELECT * FROM promotions WHERE id = ?").get(request.params.id);
+
+    if (!promo) {
+        return response.status(404).json({ message: "Promotion not found." });
+    }
+
+    const active = promo.active ? 0 : 1;
+    db.prepare("UPDATE promotions SET active = ? WHERE id = ?").run(active, promo.id);
+
+    logActivity("promotion_toggled", (active ? "Activated " : "Deactivated ") + "\"" + promo.name + "\".");
+
+    response.json({ ok: true });
+});
+
+/* =========================
+   ADMIN — REVIEWS
+========================= */
+
+app.get("/api/admin/reviews", requireAdmin, function (request, response) {
+
+    const status = String(request.query.status || "").trim();
+
+    const rows = status
+        ? db.prepare("SELECT * FROM reviews WHERE status = ? ORDER BY created_at DESC").all(status)
+        : db.prepare("SELECT * FROM reviews ORDER BY created_at DESC").all();
+
+    response.json({
+        reviews: rows.map(function (review) {
+            return {
+                id: review.id,
+                productId: review.product_id,
+                productName: review.product_name,
+                customerName: review.customer_name,
+                rating: review.rating,
+                comment: review.comment,
+                status: review.status
+            };
+        })
+    });
+});
+
+app.post("/api/admin/reviews/:id/approve", requireAdmin, function (request, response) {
+
+    const result = db.prepare("UPDATE reviews SET status = 'approved' WHERE id = ?").run(request.params.id);
+
+    if (result.changes === 0) {
+        return response.status(404).json({ message: "Review not found." });
+    }
+
+    logActivity("review_approved", "Approved review #" + request.params.id + ".");
+
+    response.json({ ok: true });
+});
+
+app.delete("/api/admin/reviews/:id", requireAdmin, function (request, response) {
+
+    db.prepare("DELETE FROM reviews WHERE id = ?").run(request.params.id);
+
+    logActivity("review_deleted", "Deleted review #" + request.params.id + ".");
+
+    response.json({ ok: true });
+});
+
+/* =========================
+   ADMIN — SETTINGS
+========================= */
+
+app.get("/api/admin/settings", requireAdmin, function (request, response) {
+    response.json({ settings: getSettings() });
+});
+
+app.put("/api/admin/settings", requireAdmin, function (request, response) {
+
+    const saved = saveSettings(request.body || {});
+
+    logActivity("settings_saved", "Store settings updated.");
+
+    response.json({ ok: true, settings: saved });
+});
+
+/* =========================
+   ADMIN — ACTIVITY LOG
+========================= */
+
+app.get("/api/admin/activity", requireAdmin, function (request, response) {
+
+    const rows = db.prepare("SELECT * FROM activity_log ORDER BY created_at DESC LIMIT 50").all();
+
+    response.json({
+        activity: rows.map(function (row) {
+            return {
+                action: row.action,
+                description: row.description,
+                createdAt: new Date(row.created_at).toLocaleString("en-KE")
+            };
+        })
+    });
 });
 
 /* =========================
@@ -702,21 +1481,10 @@ function mpesaConfigured() {
 function normalizePhone(value) {
     const digits = String(value || "").replace(/\D/g, "");
 
-    if (/^07\d{8}$/.test(digits)) {
-        return "254" + digits.slice(1);
-    }
-
-    if (/^01\d{8}$/.test(digits)) {
-        return "254" + digits.slice(1);
-    }
-
-    if (/^2547\d{8}$/.test(digits)) {
-        return digits;
-    }
-
-    if (/^2541\d{8}$/.test(digits)) {
-        return digits;
-    }
+    if (/^07\d{8}$/.test(digits)) return "254" + digits.slice(1);
+    if (/^01\d{8}$/.test(digits)) return "254" + digits.slice(1);
+    if (/^2547\d{8}$/.test(digits)) return digits;
+    if (/^2541\d{8}$/.test(digits)) return digits;
 
     return null;
 }
@@ -740,34 +1508,20 @@ function timestamp() {
     ].join("");
 }
 
-/* =========================
-   GET M-PESA ACCESS TOKEN
-========================= */
-
 async function getAccessToken() {
     const credentials = Buffer.from(
-        process.env.MPESA_CONSUMER_KEY +
-        ":" +
-        process.env.MPESA_CONSUMER_SECRET
+        process.env.MPESA_CONSUMER_KEY + ":" + process.env.MPESA_CONSUMER_SECRET
     ).toString("base64");
 
     const response = await fetch(
-        darajaBaseUrl() +
-        "/oauth/v1/generate?grant_type=client_credentials",
-        {
-            headers: {
-                Authorization: "Basic " + credentials
-            }
-        }
+        darajaBaseUrl() + "/oauth/v1/generate?grant_type=client_credentials",
+        { headers: { Authorization: "Basic " + credentials } }
     );
 
     const body = await response.json();
 
     if (!response.ok || !body.access_token) {
-        throw new Error(
-            body.errorMessage ||
-            "Unable to authenticate with M-PESA."
-        );
+        throw new Error(body.errorMessage || "Unable to authenticate with M-PESA.");
     }
 
     return body.access_token;
@@ -775,171 +1529,163 @@ async function getAccessToken() {
 
 /* =========================
    M-PESA STK PUSH
-   NO CUSTOMER LOGIN REQUIRED
+   Creates a real "orders" row (status pending) plus one
+   "order_items" row per cart line, then attempts payment.
 ========================= */
 
 app.post("/api/mpesa/stkpush", async function (request, response) {
 
     if (!mpesaConfigured()) {
         return response.status(503).json({
-            message:
-                "M-PESA is not configured yet. Add your Daraja credentials to .env."
+            message: "M-PESA is not configured yet. Add your Daraja credentials to .env."
         });
     }
 
     const payload = request.body || {};
 
     const phone = normalizePhone(payload.mpesaPhone);
-
     const amount = Math.round(Number(payload.total));
 
     const calculatedAmount = Array.isArray(payload.items)
         ? payload.items.reduce(function (sum, item) {
-            return sum +
-                Number(item.price) *
-                Number(item.quantity);
+            return sum + Number(item.price) * Number(item.quantity);
         }, 0)
         : 0;
 
     if (!phone) {
-        return response.status(400).json({
-            message: "Enter a valid Kenyan M-PESA number."
-        });
+        return response.status(400).json({ message: "Enter a valid Kenyan M-PESA number." });
     }
 
     if (!Number.isFinite(amount) || amount < 1) {
-        return response.status(400).json({
-            message: "The order total must be at least KSh 1."
-        });
+        return response.status(400).json({ message: "The order total must be at least KSh 1." });
     }
 
     if (!Array.isArray(payload.items) || payload.items.length === 0) {
-        return response.status(400).json({
-            message: "Your cart is empty."
-        });
+        return response.status(400).json({ message: "Your cart is empty." });
     }
 
-    // The total sent by the client includes the flat delivery fee on
-    // top of the item subtotal, so the verified amount must too.
     if (amount !== Math.round(calculatedAmount) + DELIVERY_FEE) {
-        return response.status(400).json({
-            message: "The order total could not be verified."
-        });
+        return response.status(400).json({ message: "The order total could not be verified." });
     }
+
+    const customer = optionalCustomer(request);
+    const customerInfo = payload.customer || {};
+    const delivery = payload.delivery || {};
 
     try {
 
         const accessToken = await getAccessToken();
-
         const requestTimestamp = timestamp();
 
         const password = Buffer.from(
-            process.env.MPESA_SHORTCODE +
-            process.env.MPESA_PASSKEY +
-            requestTimestamp
+            process.env.MPESA_SHORTCODE + process.env.MPESA_PASSKEY + requestTimestamp
         ).toString("base64");
 
         const darajaResponse = await fetch(
-            darajaBaseUrl() +
-            "/mpesa/stkpush/v1/processrequest",
+            darajaBaseUrl() + "/mpesa/stkpush/v1/processrequest",
             {
                 method: "POST",
-
-                headers: {
-                    Authorization: "Bearer " + accessToken,
-                    "Content-Type": "application/json"
-                },
-
+                headers: { Authorization: "Bearer " + accessToken, "Content-Type": "application/json" },
                 body: JSON.stringify({
-
-                    BusinessShortCode:
-                        process.env.MPESA_SHORTCODE,
-
-                    Password:
-                        password,
-
-                    Timestamp:
-                        requestTimestamp,
-
-                    TransactionType:
-                        "CustomerPayBillOnline",
-
-                    Amount:
-                        amount,
-
-                    PartyA:
-                        phone,
-
-                    PartyB:
-                        process.env.MPESA_SHORTCODE,
-
-                    PhoneNumber:
-                        phone,
-
-                    CallBackURL:
-                        process.env.MPESA_CALLBACK_URL,
-
-                    AccountReference:
-                        "PHYNEX",
-
-                    TransactionDesc:
-                        "PHYNEX order payment"
+                    BusinessShortCode: process.env.MPESA_SHORTCODE,
+                    Password: password,
+                    Timestamp: requestTimestamp,
+                    TransactionType: "CustomerPayBillOnline",
+                    Amount: amount,
+                    PartyA: phone,
+                    PartyB: process.env.MPESA_SHORTCODE,
+                    PhoneNumber: phone,
+                    CallBackURL: process.env.MPESA_CALLBACK_URL,
+                    AccountReference: "PHYNEX",
+                    TransactionDesc: "PHYNEX order payment"
                 })
             }
         );
 
         const result = await darajaResponse.json();
 
-        if (
-            !darajaResponse.ok ||
-            !result.CheckoutRequestID
-        ) {
+        if (!darajaResponse.ok || !result.CheckoutRequestID) {
             return response.status(502).json({
-                message:
-                    result.errorMessage ||
-                    result.ResponseDescription ||
-                    "M-PESA rejected the STK Push request."
+                message: result.errorMessage || result.ResponseDescription || "M-PESA rejected the STK Push request."
             });
         }
 
-        const orderNumber =
-            "PHX-" +
-            crypto
-                .randomBytes(4)
-                .toString("hex")
-                .toUpperCase();
+        const orderNumber = generateOrderNumber();
+        const subtotal = Math.round(calculatedAmount);
 
-        payments.set(
-            result.CheckoutRequestID,
-            {
-                status: "pending",
-                orderNumber: orderNumber,
-                amount: amount,
-                phone: phone,
-                createdAt: Date.now()
-            }
+        const orderResult = db
+            .prepare(
+                `INSERT INTO orders
+                    (order_number, customer_id, customer_name, customer_email, customer_phone,
+                     county, location, address, instructions, subtotal, delivery_fee, total,
+                     payment_method, payment_status, status, checkout_request_id, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'mpesa', 'pending', 'pending', ?, ?)`
+            )
+            .run(
+                orderNumber,
+                customer ? customer.id : null,
+                String(customerInfo.name || (customer && customer.name) || "").trim(),
+                String(customerInfo.email || (customer && customer.email) || "").trim(),
+                String(customerInfo.phone || payload.mpesaPhone || "").trim(),
+                String(delivery.county || "").trim(),
+                String(delivery.location || "").trim(),
+                String(delivery.address || "").trim(),
+                String(delivery.instructions || "").trim(),
+                subtotal,
+                DELIVERY_FEE,
+                amount,
+                result.CheckoutRequestID,
+                Date.now()
+            );
+
+        const orderId = orderResult.lastInsertRowid;
+
+        const insertItem = db.prepare(
+            "INSERT INTO order_items (order_id, product_id, seller_id, name, image, price, quantity) VALUES (?, ?, ?, ?, ?, ?, ?)"
         );
 
+        payload.items.forEach(function (item) {
+
+            const numericId = Number(item.id);
+            const productId = Number.isFinite(numericId) ? numericId : null;
+
+            let sellerId = null;
+
+            if (productId) {
+                const productRow = db.prepare("SELECT seller_id FROM products WHERE id = ?").get(productId);
+                if (productRow) sellerId = productRow.seller_id;
+            }
+
+            insertItem.run(
+                orderId,
+                productId,
+                sellerId,
+                String(item.name || "").trim(),
+                String(item.image || "").trim(),
+                Math.round(Number(item.price) || 0),
+                Math.max(1, Math.round(Number(item.quantity) || 1))
+            );
+        });
+
+        payments.set(result.CheckoutRequestID, {
+            status: "pending",
+            orderNumber: orderNumber,
+            orderId: orderId,
+            amount: amount,
+            phone: phone,
+            createdAt: Date.now()
+        });
+
+        logActivity("order_created", "Order " + orderNumber + " created (awaiting payment).");
+
         return response.json({
-
-            checkoutRequestId:
-                result.CheckoutRequestID,
-
-            orderNumber:
-                orderNumber,
-
-            customerMessage:
-                result.CustomerMessage ||
-                "M-PESA payment request sent."
+            checkoutRequestId: result.CheckoutRequestID,
+            orderNumber: orderNumber,
+            customerMessage: result.CustomerMessage || "M-PESA payment request sent."
         });
 
     } catch (error) {
-
-        return response.status(502).json({
-            message:
-                error.message ||
-                "Unable to reach M-PESA."
-        });
+        return response.status(502).json({ message: error.message || "Unable to reach M-PESA." });
     }
 });
 
@@ -947,84 +1693,60 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
    M-PESA CALLBACK
 ========================= */
 
-app.post(
-    "/api/mpesa/callback",
-    function (request, response) {
+app.post("/api/mpesa/callback", function (request, response) {
 
-        const callback =
-            request.body &&
-            request.body.Body &&
-            request.body.Body.stkCallback;
+    const callback = request.body && request.body.Body && request.body.Body.stkCallback;
 
-        if (
-            callback &&
-            callback.CheckoutRequestID
-        ) {
+    if (callback && callback.CheckoutRequestID) {
 
-            const payment =
-                payments.get(
-                    callback.CheckoutRequestID
-                ) || {
-                    status: "pending",
-                    createdAt: Date.now()
-                };
+        const payment = payments.get(callback.CheckoutRequestID) || {
+            status: "pending",
+            createdAt: Date.now()
+        };
 
-            payment.status =
-                Number(callback.ResultCode) === 0
-                    ? "paid"
-                    : "failed";
+        const paid = Number(callback.ResultCode) === 0;
 
-            payment.message =
-                callback.ResultDesc ||
-                "M-PESA callback received.";
+        payment.status = paid ? "paid" : "failed";
+        payment.message = callback.ResultDesc || "M-PESA callback received.";
 
-            payments.set(
-                callback.CheckoutRequestID,
-                payment
+        payments.set(callback.CheckoutRequestID, payment);
+
+        if (payment.orderId) {
+            db.prepare(
+                "UPDATE orders SET payment_status = ?, status = ? WHERE id = ?"
+            ).run(paid ? "paid" : "failed", paid ? "paid" : "cancelled", payment.orderId);
+
+            logActivity(
+                paid ? "order_paid" : "order_payment_failed",
+                "Order " + (payment.orderNumber || payment.orderId) + (paid ? " was paid." : " payment failed.")
             );
         }
-
-        response.json({
-            ResultCode: 0,
-            ResultDesc: "Callback received"
-        });
     }
-);
+
+    response.json({ ResultCode: 0, ResultDesc: "Callback received" });
+});
 
 /* =========================
    CHECK PAYMENT STATUS
 ========================= */
 
-app.get(
-    "/api/mpesa/status/:checkoutRequestId",
-    function (request, response) {
+app.get("/api/mpesa/status/:checkoutRequestId", function (request, response) {
 
-        const payment =
-            payments.get(
-                request.params.checkoutRequestId
-            );
+    const payment = payments.get(request.params.checkoutRequestId);
 
-        if (!payment) {
-            return response.status(404).json({
-                status: "unknown",
-                message:
-                    "Payment request not found."
-            });
-        }
-
-        return response.json(payment);
+    if (!payment) {
+        return response.status(404).json({ status: "unknown", message: "Payment request not found." });
     }
-);
+
+    return response.json(payment);
+});
 
 /* =========================
    CONTACT FORM
 ========================= */
 
 function contactMailConfigured() {
-    return Boolean(
-        process.env.EMAIL_USER &&
-        process.env.EMAIL_PASSWORD
-    );
+    return Boolean(process.env.EMAIL_USER && process.env.EMAIL_PASSWORD);
 }
 
 const mailTransporter = contactMailConfigured()
@@ -1032,15 +1754,10 @@ const mailTransporter = contactMailConfigured()
         host: process.env.EMAIL_HOST || "smtp.gmail.com",
         port: Number(process.env.EMAIL_PORT) || 587,
         secure: Number(process.env.EMAIL_PORT) === 465,
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASSWORD
-        }
+        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASSWORD }
     })
     : null;
 
-// Simple in-memory rate limiter: max 5 contact submissions
-// per IP per 10 minutes.
 const contactRateLimit = new Map();
 const CONTACT_WINDOW_MS = 10 * 60 * 1000;
 const CONTACT_MAX_PER_WINDOW = 5;
@@ -1056,27 +1773,19 @@ function isRateLimited(ip) {
 
     entry.count += 1;
 
-    if (entry.count > CONTACT_MAX_PER_WINDOW) {
-        return true;
-    }
-
-    return false;
+    return entry.count > CONTACT_MAX_PER_WINDOW;
 }
 
 app.post("/api/contact", async function (request, response) {
 
     if (!contactMailConfigured()) {
         return response.status(503).json({
-            message:
-                "Contact form is not configured yet. Add EMAIL_USER and EMAIL_PASS to .env."
+            message: "Contact form is not configured yet. Add EMAIL_USER and EMAIL_PASS to .env."
         });
     }
 
     if (isRateLimited(request.ip)) {
-        return response.status(429).json({
-            message:
-                "Too many messages sent. Please try again later."
-        });
+        return response.status(429).json({ message: "Too many messages sent. Please try again later." });
     }
 
     const body = request.body || {};
@@ -1086,27 +1795,19 @@ app.post("/api/contact", async function (request, response) {
     const message = String(body.message || "").trim();
 
     if (!name || !email || !message) {
-        return response.status(400).json({
-            message: "Please fill in all fields."
-        });
+        return response.status(400).json({ message: "Please fill in all fields." });
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        return response.status(400).json({
-            message: "Enter a valid email address."
-        });
+        return response.status(400).json({ message: "Enter a valid email address." });
     }
 
     if (name.length > 200) {
-        return response.status(400).json({
-            message: "Name is too long."
-        });
+        return response.status(400).json({ message: "Name is too long." });
     }
 
     if (message.length > 5000) {
-        return response.status(400).json({
-            message: "Message is too long."
-        });
+        return response.status(400).json({ message: "Message is too long." });
     }
 
     try {
@@ -1122,13 +1823,8 @@ app.post("/api/contact", async function (request, response) {
         return response.json({ ok: true });
 
     } catch (error) {
-
         console.error("Contact form email failed:", error.message);
-
-        return response.status(502).json({
-            message:
-                "Could not send message. Please try again later."
-        });
+        return response.status(502).json({ message: "Could not send message. Please try again later." });
     }
 });
 
@@ -1136,34 +1832,19 @@ app.post("/api/contact", async function (request, response) {
    SERVER HEALTH
 ========================= */
 
-app.get(
-    "/api/health",
-    function (_request, response) {
-
-        response.json({
-            ok: true,
-            mpesaConfigured:
-                mpesaConfigured(),
-            contactMailConfigured:
-                contactMailConfigured(),
-            adminConfigured:
-                Boolean(process.env.ADMIN_PASSWORD)
-        });
-    }
-);
+app.get("/api/health", function (_request, response) {
+    response.json({
+        ok: true,
+        mpesaConfigured: mpesaConfigured(),
+        contactMailConfigured: contactMailConfigured(),
+        adminConfigured: Boolean(process.env.ADMIN_PASSWORD)
+    });
+});
 
 /* =========================
    START SERVER
 ========================= */
 
-app.listen(
-    port,
-    function () {
-
-        console.log(
-            "PHYNEX server running at http://localhost:" +
-            port
-        );
-
-    }
-);
+app.listen(port, function () {
+    console.log("PHYNEX server running at http://localhost:" + port);
+});
