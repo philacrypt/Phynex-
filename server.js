@@ -49,6 +49,12 @@ db.exec(`
         FOREIGN KEY (seller_id) REFERENCES sellers(id)
     );
 
+    CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL UNIQUE,
+        created_at INTEGER NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS customers (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
@@ -710,12 +716,20 @@ app.post("/api/products", requireSeller, function (request, response, next) {
 
     const files = request.files || [];
 
+    if (files.length === 0) {
+        return response.status(400).json({ message: "Please upload at least one product photo before submitting." });
+    }
+
     const media = files.map(function (file) {
         return {
             url: "/uploads/" + file.filename,
             type: file.mimetype.indexOf("video/") === 0 ? "video" : "image"
         };
     });
+
+    if (!media.some(function (m) { return m.type === "image"; })) {
+        return response.status(400).json({ message: "At least one uploaded file must be an image (not just video)." });
+    }
 
     const mediaJson = JSON.stringify(media);
     const firstImage = (media.find(function (m) { return m.type === "image"; }) || media[0] || {}).url || "";
@@ -978,10 +992,14 @@ app.post("/api/admin/products", requireAdmin, handleAdminUpload, function (reque
         return response.status(400).json({ message: "Product name and a valid price are required." });
     }
 
-    const systemSeller = ensureSystemSeller();
-
     const mainImageFile = (files.image && files.image[0]) || null;
     const galleryFiles = files.gallery || [];
+
+    if (!mainImageFile) {
+        return response.status(400).json({ message: "A main product image is required." });
+    }
+
+    const systemSeller = ensureSystemSeller();
 
     const media = [];
 
@@ -1826,6 +1844,34 @@ app.post("/api/contact", async function (request, response) {
         console.error("Contact form email failed:", error.message);
         return response.status(502).json({ message: "Could not send message. Please try again later." });
     }
+});
+
+/* =========================
+   PUBLIC — NEWSLETTER SIGNUP
+========================= */
+
+app.post("/api/newsletter", function (request, response) {
+
+    const email = String((request.body || {}).email || "").trim().toLowerCase();
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailPattern.test(email)) {
+        return response.status(400).json({ message: "Please enter a valid email address." });
+    }
+
+    try {
+        db.prepare(
+            "INSERT INTO newsletter_subscribers (email, created_at) VALUES (?, ?)"
+        ).run(email, Date.now());
+    } catch (error) {
+        // UNIQUE constraint = already subscribed; treat as success either way.
+        if (!String(error.message).includes("UNIQUE")) {
+            console.error("PHYNEX: newsletter signup failed.", error);
+            return response.status(500).json({ message: "Could not subscribe right now. Please try again later." });
+        }
+    }
+
+    response.json({ message: "You're subscribed! Watch your inbox for PHYNEX deals." });
 });
 
 /* =========================

@@ -1664,6 +1664,14 @@
             color: #a9bce0;
         }
 
+        #newsletterMessage.success {
+            color: #4ade80;
+        }
+
+        #newsletterMessage.error {
+            color: #f87171;
+        }
+
         .footer-bottom {
             border-top: 1px solid rgba(255,255,255,.12);
             padding: 18px 5%;
@@ -1914,21 +1922,21 @@
                 <i class="fa-regular fa-image"></i>
                 <span>Add ad image 1<small>Recommended ~1600×500px</small></span>
             </div>
-            <img src="images/1.jpeg" alt="Advertisement 1" onerror="this.classList.add('broken')">
+            <img src="images/ad-banner-1.jpg" alt="Advertisement 1" onerror="this.classList.add('broken')">
         </div>
         <div class="ad-slide">
             <div class="ad-slide-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add ad image 2<small>Recommended ~1600×500px</small></span>
             </div>
-            <img src="images/2.jpeg" alt="Advertisement 2" onerror="this.classList.add('broken')">
+            <img src="images/ad-banner-2.jpg" alt="Advertisement 2" onerror="this.classList.add('broken')">
         </div>
         <div class="ad-slide">
             <div class="ad-slide-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add ad image 3<small>Recommended ~1600×500px</small></span>
             </div>
-            <img src="images/3.jpeg" alt="Advertisement 3" onerror="this.classList.add('broken')">
+            <img src="images/ad-banner-3.jpg" alt="Advertisement 3" onerror="this.classList.add('broken')">
         </div>
     </div>
     <div class="ad-carousel-dots" id="adCarouselDots">
@@ -1964,48 +1972,48 @@
 <section class="showcase">
     <div class="showcase-grid">
 
-        <a class="showcase-tile" href="javascript:void(0)" data-category="phones">
+        <a class="showcase-tile" href="category.html?category=phones" data-category="phones">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
             </div>
-            <img src="images/12.jpeg" alt="Phones&Tablets" loading="lazy" onerror="this.classList.add('broken')">
+            <img src="images/tile-phones.jpg" alt="Phones&Tablets" loading="lazy" onerror="this.classList.add('broken')">
             <div class="showcase-tile-overlay">
                 <strong>Phones & Tablets</strong>
                 <span>Shop now</span>
             </div>
         </a>
 
-        <a class="showcase-tile" href="javascript:void(0)" data-category="computers">
+        <a class="showcase-tile" href="category.html?category=computers" data-category="computers">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
             </div>
-            <img src="images/11.jpeg" alt="Computers" loading="lazy" onerror="this.classList.add('broken')">
+            <img src="images/tile-computers.jpg" alt="Computers" loading="lazy" onerror="this.classList.add('broken')">
             <div class="showcase-tile-overlay">
                 <strong>Computers</strong>
                 <span>Shop now</span>
             </div>
         </a>
 
-        <a class="showcase-tile" href="javascript:void(0)" data-category="gaming">
+        <a class="showcase-tile" href="category.html?category=gaming" data-category="gaming">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
             </div>
-            <img src="images/5.jpeg" alt="Gaming" loading="lazy" onerror="this.classList.add('broken')">
+            <img src="images/tile-gaming.jpg" alt="Gaming" loading="lazy" onerror="this.classList.add('broken')">
             <div class="showcase-tile-overlay">
                 <strong>Gaming</strong>
                 <span>Shop now</span>
             </div>
         </a>
 
-        <a class="showcase-tile" href="javascript:void(0)" data-category="accessories">
+        <a class="showcase-tile" href="category.html?category=accessories" data-category="accessories">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
             </div>
-            <img src="images/pic 11.jpeg" alt="Accessories" loading="lazy" onerror="this.classList.add('broken')">
+            <img src="images/tile-accessories.jpg" alt="Accessories" loading="lazy" onerror="this.classList.add('broken')">
             <div class="showcase-tile-overlay">
                 <strong>Accessories</strong>
                 <span>Shop now</span>
@@ -2043,7 +2051,7 @@
 
     <h2><span class="heading-icon"><i class="fa-solid fa-grip"></i></span>Shop by Category</h2>
 
-    <a href="categories.html" class="view-all">
+    <a href="category.html" class="view-all">
         View All Categories
     </a>
 
@@ -2060,7 +2068,7 @@
 
     <div class="category" data-category="computers" style="--accent:#7c3aed;">
         <span class="cat-badge"><img src="images/icon-computers.png" alt="" onerror="this.classList.add('broken')"><i class="fa-solid fa-desktop"></i></span>
-        <img src="images\11.jpeg" loading="lazy">
+        <img src="images/11.jpeg" loading="lazy">
         <span>Computers</span>
     </div>
 
@@ -2103,10 +2111,6 @@
 
         <h2><span class="heading-icon"><i class="fa-solid fa-bolt"></i></span>Flash Deals</h2>
 
-        <span class="timer" id="flashDealsTimer">
-            <i class="fa-regular fa-clock"></i> Ends in: 03 : 00 : 00
-        </span>
-
     </div>
 
     <a href="#productsSection" class="view-all">
@@ -2132,9 +2136,7 @@
                 Dell Vostro 15 3500 i7 11th Gen 8GB 400GB SSD
             </div>
 
-            <div class="rating">
-                ★★★★★ (24)
-            </div>
+            <div class="rating rating-none">No ratings yet</div>
 
             <div class="price">
                 KSh 35,000
@@ -2170,9 +2172,7 @@
                 HP EliteDesk 830 G5 i5 8th Gen 8GB 256GB SSD
             </div>
 
-            <div class="rating">
-                ★★★★★ (18)
-            </div>
+            <div class="rating rating-none">No ratings yet</div>
 
             <div class="price">
                 KSh 32,500
@@ -2208,9 +2208,7 @@
                 BT Speaker HF226
             </div>
 
-            <div class="rating">
-                ★★★★★ (31)
-            </div>
+            <div class="rating rating-none">No ratings yet</div>
 
             <div class="price">
                 KSh 2,000
@@ -2246,9 +2244,7 @@
                 MacBook Air i5 2017 256GB SSD 8GB RAM
             </div>
 
-            <div class="rating">
-                ★★★★★ (15)
-            </div>
+            <div class="rating rating-none">No ratings yet</div>
 
             <div class="price">
                 KSh 20,500
@@ -2284,9 +2280,7 @@
              Lenovo Thinkpad T460 256GB SSD 8GB RAM   
             </div>
 
-            <div class="rating">
-                ★★★★★ (41)
-            </div>
+            <div class="rating rating-none">No ratings yet</div>
 
             <div class="price">
                 KSh 23,000
@@ -2561,8 +2555,10 @@
             <h2>PHYNEX</h2>
             <p>Your trusted online store for electronics, computers, gaming gear and more.</p>
             <div class="social-links">
-                <a href="https://www.facebook.com/" target="_blank" rel="noopener">Facebook</a>
-                <a href="https://www.instagram.com/" target="_blank" rel="noopener">Instagram</a>
+                <!-- TODO(PHYNEX): replace with your real Facebook Page URL -->
+                <a href="#" target="_blank" rel="noopener">Facebook</a>
+                <!-- TODO(PHYNEX): replace with your real Instagram profile URL -->
+                <a href="#" target="_blank" rel="noopener">Instagram</a>
                 <a href="https://wa.me/254793977389
         " target="_blank" rel="noopener">WhatsApp</a>
             </div>
@@ -2600,7 +2596,7 @@
     <div class="footer-bottom">
         <p>&copy; 2026 PHYNEX. All Rights Reserved.</p>
         <div class="payment-methods">
-            <span>VISA</span><span>•</span><span>M-PESA</span><span>•</span><span>PayPal</span>
+            <span>M-PESA</span><span>•</span><span>VISA &amp; PayPal (coming soon)</span>
         </div>
     </div>
 </footer>
@@ -2777,7 +2773,7 @@
             card.innerHTML =
                 sponsoredHtml +
                 '<div class="product-image">' +
-                    '<img src="' + escapeHtml(product.image || '') + '" alt="' + escapeHtml(product.name) + '" loading="lazy" onerror="this.style.opacity=0">' +
+                    '<img src="' + escapeHtml(product.image || 'images/no-image.svg') + '" alt="' + escapeHtml(product.name) + '" loading="lazy" onerror="this.src=\'images/no-image.svg\'">' +
                 '</div>' +
                 '<div class="product-info">' +
                     '<div class="product-name">' + escapeHtml(product.name) + '</div>' +

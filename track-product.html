@@ -282,7 +282,11 @@
 
                 var product = data.product;
 
-                document.getElementById('resultImage').src = product.image || '';
+                document.getElementById('resultImage').src = product.image || 'images/no-image.svg';
+                document.getElementById('resultImage').onerror = function () {
+                    this.onerror = null;
+                    this.src = 'images/no-image.svg';
+                };
                 document.getElementById('resultImage').alt = product.name || '';
                 document.getElementById('resultName').textContent = product.name || 'Product';
                 document.getElementById('resultSeller').textContent =

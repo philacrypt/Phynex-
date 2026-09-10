@@ -438,7 +438,7 @@
                     product.discount || '',
 
                 image:
-                    product.image || '',
+                    product.image || 'images/no-image.svg',
 
                 rating:
                     product.rating || '',
@@ -584,7 +584,11 @@
 
         if (image) {
             image.src =
-                product.image || '';
+                product.image || 'images/no-image.svg';
+            image.onerror = function () {
+                image.onerror = null;
+                image.src = 'images/no-image.svg';
+            };
         }
 
         if (price) {
@@ -803,63 +807,15 @@
 
     /* =====================================================
        FLASH DEAL TIMER
+       Removed: the countdown used to be a fake 3-hour loop
+       that reset itself forever. There is no real per-deal
+       deadline stored anywhere yet (no column on `products`
+       for it), so rather than keep lying to customers we
+       dropped the timer. To bring it back for real: add a
+       `flash_deal_ends_at` column to the products table, let
+       admins set it per product, expose it via /api/products,
+       and count down to the soonest one here instead.
        ===================================================== */
-
-    function startFlashTimer() {
-
-        const timer =
-            document.getElementById(
-                'flashDealsTimer'
-            );
-
-        if (!timer) return;
-
-        let seconds =
-            3 * 60 * 60;
-
-        function pad(number) {
-            return String(number)
-                .padStart(2, '0');
-        }
-
-        function tick() {
-
-            if (seconds <= 0) {
-                seconds =
-                    3 * 60 * 60;
-            }
-
-            const hours =
-                Math.floor(
-                    seconds / 3600
-                );
-
-            const minutes =
-                Math.floor(
-                    (seconds % 3600) / 60
-                );
-
-            const secs =
-                seconds % 60;
-
-            timer.textContent =
-                'Ends in: ' +
-                pad(hours) +
-                ' : ' +
-                pad(minutes) +
-                ' : ' +
-                pad(secs);
-
-            seconds--;
-        }
-
-        tick();
-
-        setInterval(
-            tick,
-            1000
-        );
-    }
 
     /* =====================================================
        ADVERTISEMENT CAROUSEL
@@ -1371,6 +1327,84 @@
     }
 
     /* =====================================================
+       NEWSLETTER SIGNUP
+       ===================================================== */
+
+    const newsletterForm =
+        document.getElementById('newsletterForm');
+
+    if (newsletterForm) {
+
+        newsletterForm.addEventListener(
+            'submit',
+            async function (event) {
+
+                event.preventDefault();
+
+                const emailInput =
+                    document.getElementById('newsletterEmail');
+
+                const messageEl =
+                    document.getElementById('newsletterMessage');
+
+                const submitBtn =
+                    newsletterForm.querySelector('button[type="submit"]');
+
+                const email = emailInput
+                    ? emailInput.value.trim()
+                    : '';
+
+                if (messageEl) {
+                    messageEl.textContent = '';
+                    messageEl.className = '';
+                }
+
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Subscribing...';
+                }
+
+                try {
+
+                    const response = await fetch('/api/newsletter', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: email })
+                    });
+
+                    const data = await response.json().catch(function () { return {}; });
+
+                    if (messageEl) {
+                        messageEl.textContent =
+                            data.message ||
+                            (response.ok
+                                ? "You're subscribed!"
+                                : 'Could not subscribe. Please try again.');
+                        messageEl.className = response.ok ? 'success' : 'error';
+                    }
+
+                    if (response.ok && emailInput) {
+                        emailInput.value = '';
+                    }
+
+                } catch (error) {
+
+                    if (messageEl) {
+                        messageEl.textContent =
+                            'Network error — please try again.';
+                        messageEl.className = 'error';
+                    }
+                }
+
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Subscribe';
+                }
+            }
+        );
+    }
+
+    /* =====================================================
        PAGE LOAD
        ===================================================== */
 
@@ -1381,8 +1415,6 @@
             updateCartCount();
 
             renderCheckoutPage();
-
-            startFlashTimer();
 
             startAdCarousel();
 
@@ -1457,6 +1489,40 @@
                                 filterCategory(
                                     tile.dataset.category
                                 );
+
+                            }
+                        );
+
+                    }
+                );
+
+            /* ---------------------------------------------
+               TOP CATEGORY NAV BAR
+               (Phones & Tablets / Computers / Electronics /
+               Gaming / Accessories / Home & Office / Deals /
+               All Categories)
+               --------------------------------------------- */
+
+            document
+                .querySelectorAll(
+                    '.nav-item[data-category]'
+                )
+                .forEach(
+                    function (navItem) {
+
+                        navItem.addEventListener(
+                            'click',
+                            function () {
+
+                                const category =
+                                    navItem.dataset.category;
+
+                                if (category === 'all') {
+                                    showAllProducts();
+                                    scrollToProducts();
+                                } else {
+                                    filterCategory(category);
+                                }
 
                             }
                         );
