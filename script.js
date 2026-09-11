@@ -70,6 +70,10 @@
                 ? ' <span class="old-price">' + money(product.oldPrice) + '</span>'
                 : '');
 
+        const inStock = Number(product.stock) > 0;
+
+        card.dataset.stock = product.stock;
+
         card.innerHTML =
             '<div class="product-image">' +
                 '<img src="' + escapeHtml(product.image || '') + '" alt="' + escapeHtml(product.name) + '" loading="lazy">' +
@@ -78,12 +82,15 @@
                 '<div class="product-name">' + escapeHtml(product.name) + '</div>' +
                 '<div class="rating">' + (product.sellerName ? 'Sold by ' + escapeHtml(product.sellerName) : '') + '</div>' +
                 '<div class="price">' + priceHtml + '</div>' +
-                '<div class="stock-status">' +
-                    (Number(product.stock) > 0 ? 'In stock' : 'Available to order') +
+                '<div class="stock-status' + (inStock ? '' : ' sold-out') + '">' +
+                    (inStock ? 'In stock' : 'Sold out') +
                 '</div>' +
                 '<div class="product-actions">' +
-                    '<button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>' +
-                    '<button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>' +
+                    (inStock
+                        ? '<button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>' +
+                          '<button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>'
+                        : '<button class="cart-btn" disabled>Sold out</button>')
+                +
                 '</div>' +
             '</div>';
 

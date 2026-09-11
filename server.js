@@ -4,6 +4,7 @@ const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
 const Database = require("better-sqlite3");
+const { OAuth2Client } = require("google-auth-library");
 require("dotenv").config();
 
 const app = express();
@@ -171,6 +172,12 @@ ensureColumn("products", "featured", "INTEGER DEFAULT 0");
 ensureColumn("sellers", "status", "TEXT DEFAULT 'approved'");
 ensureColumn("sellers", "whatsapp", "TEXT");
 
+ensureColumn("orders", "stock_deducted", "INTEGER DEFAULT 0");
+
+ensureColumn("customers", "google_id", "TEXT");
+ensureColumn("customers", "reset_token", "TEXT");
+ensureColumn("customers", "reset_token_expires", "INTEGER");
+
 /* =========================
    SMALL HELPERS
 ========================= */
@@ -307,9 +314,16 @@ function publicCustomer(customer) {
         id: customer.id,
         name: customer.name,
         email: customer.email,
-        phone: customer.phone
+        phone: customer.phone,
+        hasGoogle: Boolean(customer.google_id)
     };
 }
+
+function googleConfigured() {
+    return Boolean(process.env.GOOGLE_CLIENT_ID);
+}
+
+const googleClient = googleConfigured() ? new OAuth2Client(process.env.GOOGLE_CLIENT_ID) : null;
 
 function publicProduct(product) {
 
@@ -562,6 +576,153 @@ app.post("/api/customers/login", async function (request, response) {
     logLogin("customer", customer, "login");
 
     response.json({ token: token, customer: publicCustomer(customer) });
+});
+
+app.post("/api/customers/google", async function (request, response) {
+
+    if (!googleConfigured() || !googleClient) {
+        return response.status(503).json({ message: "Google sign-in is not configured yet. Add GOOGLE_CLIENT_ID to .env." });
+    }
+
+    const credential = String((request.body || {}).credential || "");
+
+    if (!credential) {
+        return response.status(400).json({ message: "Missing Google credential." });
+    }
+
+    let payload;
+
+    try {
+        const ticket = await googleClient.verifyIdToken({
+            idToken: credential,
+            audience: process.env.GOOGLE_CLIENT_ID
+        });
+        payload = ticket.getPayload();
+    } catch (error) {
+        return response.status(401).json({ message: "Could not verify that Google account." });
+    }
+
+    if (!payload || !payload.email || !payload.email_verified) {
+        return response.status(401).json({ message: "Only verified Google accounts can be used to sign in." });
+    }
+
+    const email = String(payload.email).trim().toLowerCase();
+    const name = String(payload.name || email.split("@")[0]).trim();
+    const googleId = String(payload.sub);
+
+    let customer = db.prepare("SELECT * FROM customers WHERE email = ?").get(email);
+
+    if (customer) {
+        if (!customer.google_id) {
+            db.prepare("UPDATE customers SET google_id = ? WHERE id = ?").run(googleId, customer.id);
+        }
+    } else {
+        const placeholderHash = await bcrypt.hash(crypto.randomBytes(24).toString("hex"), 10);
+
+        const result = db
+            .prepare(
+                `INSERT INTO customers (name, email, phone, password_hash, google_id, token, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`
+            )
+            .run(name, email, "", placeholderHash, googleId, "", Date.now());
+
+        customer = db.prepare("SELECT * FROM customers WHERE id = ?").get(result.lastInsertRowid);
+    }
+
+    const token = newToken();
+
+    db.prepare("UPDATE customers SET token = ? WHERE id = ?").run(token, customer.id);
+
+    customer = db.prepare("SELECT * FROM customers WHERE id = ?").get(customer.id);
+
+    logLogin("customer", customer, "google");
+
+    response.json({ token: token, customer: publicCustomer(customer) });
+});
+
+app.post("/api/customers/forgot-password", async function (request, response) {
+
+    const email = String((request.body || {}).email || "").trim().toLowerCase();
+
+    if (!email) {
+        return response.status(400).json({ message: "Enter your account email." });
+    }
+
+    const customer = db.prepare("SELECT * FROM customers WHERE email = ?").get(email);
+
+    // Always reply the same way whether or not the email exists,
+    // so this endpoint can't be used to check who has an account.
+    const genericReply = { ok: true, message: "If that email has an account, a reset link has been sent." };
+
+    if (!customer) {
+        return response.json(genericReply);
+    }
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const expires = Date.now() + 60 * 60 * 1000; // 1 hour
+
+    db.prepare("UPDATE customers SET reset_token = ?, reset_token_expires = ? WHERE id = ?")
+        .run(resetToken, expires, customer.id);
+
+    const resetUrl = (process.env.APP_URL || "").replace(/\/$/, "") +
+        "/customer-reset-password.html?token=" + resetToken;
+
+    if (mailTransporter) {
+        try {
+            await mailTransporter.sendMail({
+                from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+                to: customer.email,
+                subject: "Reset your PHYNEX password",
+                text: "Reset your password here: " + resetUrl + "\n\nThis link expires in 1 hour. If you didn't request this, ignore this email.",
+                html: "<p>Reset your PHYNEX password by clicking the link below:</p>" +
+                    "<p><a href=\"" + resetUrl + "\">" + resetUrl + "</a></p>" +
+                    "<p>This link expires in 1 hour. If you didn't request this, you can ignore this email.</p>"
+            });
+        } catch (error) {
+            // Don't leak email-sending failures to the client — log it server-side instead.
+            console.error("Password reset email failed:", error.message);
+        }
+    } else {
+        console.log("PHYNEX password reset link for " + customer.email + ": " + resetUrl);
+    }
+
+    response.json(genericReply);
+});
+
+app.post("/api/customers/reset-password", async function (request, response) {
+
+    const body = request.body || {};
+    const token = String(body.token || "").trim();
+    const password = String(body.password || "");
+
+    if (!token) {
+        return response.status(400).json({ message: "Missing or invalid reset link." });
+    }
+
+    if (password.length < 6) {
+        return response.status(400).json({ message: "Password must be at least 6 characters." });
+    }
+
+    const customer = db.prepare(
+        "SELECT * FROM customers WHERE reset_token = ? AND reset_token_expires > ?"
+    ).get(token, Date.now());
+
+    if (!customer) {
+        return response.status(400).json({ message: "This reset link is invalid or has expired." });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const sessionToken = newToken();
+
+    db.prepare(
+        "UPDATE customers SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL, token = ? WHERE id = ?"
+    ).run(passwordHash, sessionToken, customer.id);
+
+    const updated = db.prepare("SELECT * FROM customers WHERE id = ?").get(customer.id);
+
+    logLogin("customer", updated, "password_reset");
+
+    response.json({ token: sessionToken, customer: publicCustomer(updated) });
 });
 
 app.get("/api/customers/me", requireCustomer, function (request, response) {
@@ -1842,6 +2003,33 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
    M-PESA CALLBACK
 ========================= */
 
+/* =========================
+   STOCK — deduct once an order is actually paid
+========================= */
+
+function deductStockForOrder(orderId) {
+
+    const order = db.prepare("SELECT * FROM orders WHERE id = ?").get(orderId);
+
+    if (!order || order.stock_deducted) {
+        return; // already paid+deducted before, or order missing — never deduct twice
+    }
+
+    const items = db.prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?").all(orderId);
+
+    const updateStock = db.prepare(
+        "UPDATE products SET stock = MAX(0, stock - ?) WHERE id = ?"
+    );
+
+    items.forEach(function (item) {
+        if (item.product_id) {
+            updateStock.run(item.quantity, item.product_id);
+        }
+    });
+
+    db.prepare("UPDATE orders SET stock_deducted = 1 WHERE id = ?").run(orderId);
+}
+
 app.post("/api/mpesa/callback", function (request, response) {
 
     const callback = request.body && request.body.Body && request.body.Body.stkCallback;
@@ -1864,6 +2052,10 @@ app.post("/api/mpesa/callback", function (request, response) {
             db.prepare(
                 "UPDATE orders SET payment_status = ?, status = ? WHERE id = ?"
             ).run(paid ? "paid" : "failed", paid ? "paid" : "cancelled", payment.orderId);
+
+            if (paid) {
+                deductStockForOrder(payment.orderId);
+            }
 
             logActivity(
                 paid ? "order_paid" : "order_payment_failed",
@@ -1986,7 +2178,20 @@ app.get("/api/health", function (_request, response) {
         ok: true,
         mpesaConfigured: mpesaConfigured(),
         contactMailConfigured: contactMailConfigured(),
+        googleConfigured: googleConfigured(),
         adminConfigured: Boolean(process.env.ADMIN_PASSWORD)
+    });
+});
+
+/* =========================
+   PUBLIC CONFIG
+   Non-secret values the front-end needs (e.g. the Google Sign-In
+   client ID, which is public by design — never the client secret).
+========================= */
+
+app.get("/api/config", function (_request, response) {
+    response.json({
+        googleClientId: googleConfigured() ? process.env.GOOGLE_CLIENT_ID : null
     });
 });
 

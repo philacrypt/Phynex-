@@ -58,6 +58,30 @@
             display: none;
         }
 
+        #googleBtn {
+            margin-top: 4px;
+            display: flex;
+            justify-content: center;
+            min-height: 40px;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+            color: #8a90a0;
+            font-size: 12px;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e1e4e8;
+        }
+
         label {
             display: block;
             font-size: 13px;
@@ -65,6 +89,21 @@
             margin-bottom: 6px;
             margin-top: 16px;
         }
+
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .label-row a {
+            font-size: 12px;
+            font-weight: 700;
+            color: #0875e1;
+            text-decoration: none;
+        }
+
+        .label-row a:hover { text-decoration: underline; }
 
         input {
             width: 100%;
@@ -128,12 +167,18 @@
                 Log in to finish checking out.
             </div>
 
+            <div id="googleBtn"></div>
+            <div class="divider" id="googleDivider" style="display:none;">or log in with email</div>
+
             <form id="loginForm">
 
                 <label for="email">Email</label>
                 <input type="email" id="email" required>
 
-                <label for="password">Password</label>
+                <div class="label-row">
+                    <label for="password" style="margin-top:0;">Password</label>
+                    <a href="customer-forgot-password.html">Forgot password?</a>
+                </div>
                 <input type="password" id="password" required>
 
                 <div id="formMsg" class="msg"></div>
@@ -145,9 +190,15 @@
         </div>
     </main>
 
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script>
         var params = new URLSearchParams(window.location.search);
         var redirect = params.get('redirect') || '';
+
+        // Already logged in? Don't make them log in again — just continue on.
+        if (localStorage.getItem('phynexCustomerToken')) {
+            window.location.href = redirect || 'account.html';
+        }
 
         if (redirect) {
             document.getElementById('redirectNote').style.display = 'block';
@@ -155,6 +206,51 @@
 
         document.getElementById('registerLink').href =
             'customer-register.html' + (redirect ? '?redirect=' + encodeURIComponent(redirect) : '');
+
+        function completeLogin(data) {
+            localStorage.setItem('phynexCustomerToken', data.token);
+            localStorage.setItem('phynexCustomerName', data.customer.name);
+            window.location.href = redirect || 'account.html';
+        }
+
+        function showError(text) {
+            var msg = document.getElementById('formMsg');
+            msg.className = 'msg error';
+            msg.textContent = text;
+        }
+
+        // Sign in with Google — only shown once the server confirms
+        // a GOOGLE_CLIENT_ID is configured.
+        (function initGoogle() {
+            fetch('/api/config').then(function (r) { return r.json(); }).then(function (config) {
+                if (!config.googleClientId || typeof google === 'undefined') return;
+
+                google.accounts.id.initialize({
+                    client_id: config.googleClientId,
+                    callback: async function (response) {
+                        try {
+                            var res = await fetch('/api/customers/google', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ credential: response.credential })
+                            });
+                            var data = await res.json();
+                            if (!res.ok) { showError(data.message || 'Google sign-in failed.'); return; }
+                            completeLogin(data);
+                        } catch (error) {
+                            showError('Network error. Please try again.');
+                        }
+                    }
+                });
+
+                google.accounts.id.renderButton(
+                    document.getElementById('googleBtn'),
+                    { theme: 'outline', size: 'large', width: 340 }
+                );
+
+                document.getElementById('googleDivider').style.display = 'flex';
+            }).catch(function () {});
+        })();
 
         document.getElementById('loginForm').addEventListener('submit', async function (event) {
             event.preventDefault();
@@ -187,10 +283,7 @@
                     return;
                 }
 
-                localStorage.setItem('phynexCustomerToken', data.token);
-                localStorage.setItem('phynexCustomerName', data.customer.name);
-
-                window.location.href = redirect || 'index.html';
+                completeLogin(data);
 
             } catch (error) {
                 msg.className = 'msg error';

@@ -58,6 +58,30 @@
             display: none;
         }
 
+        #googleBtn {
+            margin-top: 4px;
+            display: flex;
+            justify-content: center;
+            min-height: 40px;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+            color: #8a90a0;
+            font-size: 12px;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e1e4e8;
+        }
+
         label {
             display: block;
             font-size: 13px;
@@ -129,6 +153,9 @@
                 Create an account to finish checking out.
             </div>
 
+            <div id="googleBtn"></div>
+            <div class="divider" id="googleDivider" style="display:none;">or sign up with email</div>
+
             <form id="registerForm">
 
                 <label for="name">Full name</label>
@@ -152,9 +179,16 @@
         </div>
     </main>
 
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script>
         var params = new URLSearchParams(window.location.search);
         var redirect = params.get('redirect') || '';
+
+        // Already have an account on this device? Skip straight past
+        // the sign-up form instead of asking them to register again.
+        if (localStorage.getItem('phynexCustomerToken')) {
+            window.location.href = redirect || 'account.html';
+        }
 
         if (redirect) {
             document.getElementById('redirectNote').style.display = 'block';
@@ -162,6 +196,49 @@
 
         document.getElementById('loginLink').href =
             'customer-login.html' + (redirect ? '?redirect=' + encodeURIComponent(redirect) : '');
+
+        function completeLogin(data) {
+            localStorage.setItem('phynexCustomerToken', data.token);
+            localStorage.setItem('phynexCustomerName', data.customer.name);
+            window.location.href = redirect || 'account.html';
+        }
+
+        function showError(text) {
+            var msg = document.getElementById('formMsg');
+            msg.className = 'msg error';
+            msg.textContent = text;
+        }
+
+        (function initGoogle() {
+            fetch('/api/config').then(function (r) { return r.json(); }).then(function (config) {
+                if (!config.googleClientId || typeof google === 'undefined') return;
+
+                google.accounts.id.initialize({
+                    client_id: config.googleClientId,
+                    callback: async function (response) {
+                        try {
+                            var res = await fetch('/api/customers/google', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ credential: response.credential })
+                            });
+                            var data = await res.json();
+                            if (!res.ok) { showError(data.message || 'Google sign-in failed.'); return; }
+                            completeLogin(data);
+                        } catch (error) {
+                            showError('Network error. Please try again.');
+                        }
+                    }
+                });
+
+                google.accounts.id.renderButton(
+                    document.getElementById('googleBtn'),
+                    { theme: 'outline', size: 'large', width: 340, text: 'signup_with' }
+                );
+
+                document.getElementById('googleDivider').style.display = 'flex';
+            }).catch(function () {});
+        })();
 
         document.getElementById('registerForm').addEventListener('submit', async function (event) {
             event.preventDefault();
@@ -203,7 +280,7 @@
                 msg.textContent = 'Account created!';
 
                 setTimeout(function () {
-                    window.location.href = redirect || 'index.html';
+                    window.location.href = redirect || 'account.html';
                 }, 500);
 
             } catch (error) {

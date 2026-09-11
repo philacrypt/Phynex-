@@ -908,6 +908,16 @@
             vertical-align: 1px;
         }
 
+        .stock-status.sold-out {
+            color: #b91c1c;
+        }
+
+        .product-actions button[disabled] {
+            background: #d7dbe0;
+            color: #7a8290;
+            cursor: not-allowed;
+        }
+
         /* Ribbon shown on seller listings flagged as sponsored by admin */
         .sponsored-tag {
             position: absolute;
@@ -2732,136 +2742,6 @@
 
         sync();
         new MutationObserver(sync).observe(source, { childList: true, characterData: true, subtree: true });
-    })();
-</script>
-
-<script>
-    // Loads seller-submitted products (approved by admin) from the
-    // marketplace API and injects them as normal .product cards —
-    // matching the exact markup script.js already knows how to read,
-    // so Add to Cart / Buy Now / search / category filters all work
-    // on them with zero changes to script.js.
-    (function () {
-
-        function money(value) {
-            return 'KSh ' + Number(value || 0).toLocaleString('en-KE');
-        }
-
-        function escapeHtml(text) {
-            var div = document.createElement('div');
-            div.textContent = text || '';
-            return div.innerHTML;
-        }
-
-        function buildCard(product) {
-
-            var card = document.createElement('div');
-            card.className = 'product';
-            card.dataset.productId = 'seller-' + product.id;
-            card.dataset.category = product.category || '';
-            card.dataset.description = product.description || '';
-            card.dataset.specifications = product.specifications || '';
-
-            var oldPriceHtml = product.oldPrice
-                ? '<span class="old-price">' + money(product.oldPrice) + '</span>'
-                : '';
-
-            var sponsoredHtml = product.sponsored
-                ? '<span class="sponsored-tag">Sponsored</span>'
-                : '';
-
-            var sellerHtml = product.sellerName
-                ? '<div class="seller-tag">Sold by ' + escapeHtml(product.sellerName) + '</div>'
-                : '';
-
-            card.innerHTML =
-                sponsoredHtml +
-                '<div class="product-image">' +
-                    '<img src="' + escapeHtml(product.image || '') + '" alt="' + escapeHtml(product.name) + '" loading="lazy" onerror="this.style.opacity=0">' +
-                '</div>' +
-                '<div class="product-info">' +
-                    '<div class="product-name">' + escapeHtml(product.name) + '</div>' +
-                    sellerHtml +
-                    '<div class="rating">Marketplace listing</div>' +
-                    '<div class="price">' + money(product.price) + oldPriceHtml + '</div>' +
-                    '<div class="stock-status">In stock</div>' +
-                    '<div class="product-actions">' +
-                        '<button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>' +
-                        '<button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>' +
-                    '</div>' +
-                '</div>';
-
-            return card;
-        }
-
-        async function loadSellerProducts() {
-
-            try {
-
-                var response = await fetch('/api/products');
-
-                if (!response.ok) return;
-
-                var data = await response.json();
-                var products = data.products || [];
-
-                if (products.length === 0) return;
-
-                // Drop new listings into the Flash Deals grid so they
-                // flow through the site's existing category filter,
-                // search and "New Arrivals" logic automatically.
-                var grid = document.querySelector('.products:not(#newArrivalsGrid):not(#sponsoredGrid)');
-
-                if (!grid) return;
-
-                products.forEach(function (product) {
-                    grid.appendChild(buildCard(product));
-                });
-
-                if (typeof window.updateCartCount === 'function') {
-                    window.updateCartCount();
-                }
-
-            } catch (error) {
-                console.error('PHYNEX: could not load marketplace products.', error);
-            }
-        }
-
-        async function loadSponsoredProducts() {
-
-            try {
-
-                var response = await fetch('/api/products?sponsored=1');
-
-                if (!response.ok) return;
-
-                var data = await response.json();
-                var products = data.products || [];
-
-                if (products.length === 0) return;
-
-                var section = document.getElementById('sponsoredSection');
-                var grid = document.getElementById('sponsoredGrid');
-
-                if (!section || !grid) return;
-
-                products.forEach(function (product) {
-                    grid.appendChild(buildCard(product));
-                });
-
-                section.style.display = '';
-                grid.style.display = '';
-
-            } catch (error) {
-                console.error('PHYNEX: could not load sponsored products.', error);
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', function () {
-            loadSponsoredProducts();
-            loadSellerProducts();
-        });
-
     })();
 </script>
 
