@@ -97,6 +97,41 @@
         return card;
     }
 
+    async function loadStoreCategories() {
+        const container = document.querySelector('.categories');
+        if (!container) return;
+
+        try {
+            const response = await fetch('/api/categories', { cache: 'no-store' });
+            if (!response.ok) throw new Error('Could not load categories');
+            const data = await response.json();
+            const categories = Array.isArray(data.categories) ? data.categories : [];
+
+            container.innerHTML = categories.map(function (category) {
+                return '<div class="category" data-category="' + escapeHtml(category.name) + '" role="button" tabindex="0">' +
+                    '<span class="cat-badge"><i class="fa-solid fa-layer-group"></i></span>' +
+                    '<span>' + escapeHtml(category.name) + '</span>' +
+                    '<small>' + Number(category.productCount || 0) + ' products</small>' +
+                '</div>';
+            }).join('');
+
+            container.querySelectorAll('.category').forEach(function (card) {
+                function openCategory() {
+                    window.location.href = 'category.html?category=' + encodeURIComponent(card.dataset.category);
+                }
+                card.addEventListener('click', openCategory);
+                card.addEventListener('keydown', function (event) {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        openCategory();
+                    }
+                });
+            });
+        } catch (error) {
+            console.error('PHYNEX: Could not load categories.', error);
+        }
+    }
+
     async function loadMarketplaceProducts() {
 
         const flashGrid = document.getElementById('flashDealsGrid');
@@ -115,7 +150,7 @@
 
             if (newGrid) {
                 newGrid.innerHTML = '';
-                products.slice(0, 8).forEach(function (product) {
+                products.forEach(function (product) {
                     newGrid.appendChild(buildProductCard(product));
                 });
             }
@@ -132,6 +167,7 @@
             }
 
             if (flashGrid) {
+                flashGrid.innerHTML = '';
                 products.forEach(function (product) {
                     flashGrid.appendChild(buildProductCard(product));
                 });
