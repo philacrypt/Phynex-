@@ -6,6 +6,7 @@ const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
 const Database = require("better-sqlite3");
 const { OAuth2Client } = require("google-auth-library");
+const { suggestCategory } = require("./lib/categorizer");
 require("dotenv").config();
 
 const app = express();
@@ -217,6 +218,69 @@ const seedCategory = db.prepare(
 );
 for (const category of DEFAULT_CATEGORIES) {
     seedCategory.run(category[0], category[1], category[2], Date.now());
+}
+
+/* =========================
+   AI AUTO-CATEGORIZATION
+   Suggests a category (and subcategory, where relevant) for a
+   product from its name/description/specifications so listings
+   land in the right place automatically - e.g. any laptop ends
+   up under "Computers & Laptops" even if the seller picked the
+   wrong category or left it blank. It only overrides a clear,
+   high-confidence match (like "laptop"); for everything else it
+   only fills in a category the seller left empty, so it never
+   fights a seller's deliberate choice for products that don't
+   have to live in a specific category.
+========================= */
+
+function getCategoryNames() {
+    return db.prepare("SELECT name FROM categories").all().map(function (row) { return row.name; });
+}
+
+function applyAutoCategory(input) {
+
+    const chosenCategory = String(input.category || "").trim();
+    const chosenSubcategory = String(input.subcategory || "").trim();
+
+    let suggestion = null;
+
+    try {
+        suggestion = suggestCategory(
+            {
+                name: input.name,
+                description: input.description,
+                specifications: input.specifications,
+                brand: input.brand,
+                tags: input.tags
+            },
+            getCategoryNames()
+        );
+    } catch (error) {
+        suggestion = null;
+    }
+
+    if (!suggestion) {
+        return { category: chosenCategory, subcategory: chosenSubcategory };
+    }
+
+    if (suggestion.confidence === "high") {
+        // Confident match (e.g. "laptop") - always route it correctly.
+        return {
+            category: suggestion.category,
+            subcategory: suggestion.subcategory || chosenSubcategory
+        };
+    }
+
+    // Lower-confidence match - only use it if the seller/admin didn't
+    // already choose a category themselves.
+    if (!chosenCategory) {
+        return {
+            category: suggestion.category,
+            subcategory: chosenSubcategory || suggestion.subcategory || ""
+        };
+    }
+
+    return { category: chosenCategory, subcategory: chosenSubcategory };
 }
 
 /* =========================
@@ -1009,12 +1073,21 @@ app.post("/api/products", requireSeller, function (request, response, next) {
     const specifications = String(body.specifications || "").trim();
     const price = Math.round(Number(body.price));
     const oldPrice = body.oldPrice ? Math.round(Number(body.oldPrice)) : null;
-    const category = String(body.category || "").trim();
     const stock = body.stock != null && body.stock !== "" ? Math.max(0, Math.round(Number(body.stock))) : 0;
 
     if (!name || !Number.isFinite(price) || price < 1) {
         return response.status(400).json({ message: "Product name and a valid price are required." });
     }
+
+    const autoCategory = applyAutoCategory({
+        name: name,
+        description: description,
+        specifications: specifications,
+        category: body.category,
+        subcategory: body.subcategory
+    });
+
+    const category = autoCategory.category;
 
     const files = request.files || [];
 
@@ -1032,12 +1105,12 @@ app.post("/api/products", requireSeller, function (request, response, next) {
     const result = db
         .prepare(
             `INSERT INTO products
-                (seller_id, name, description, specifications, price, old_price, category, image, media, status, sponsored, tracking_code, stock, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, ?, ?, ?)`
+                (seller_id, name, description, specifications, price, old_price, category, subcategory, image, media, status, sponsored, tracking_code, stock, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, ?, ?, ?)`
         )
         .run(
             request.seller.id, name, description, specifications, price,
-            oldPrice, category, firstImage, mediaJson, trackingCode, stock, Date.now()
+            oldPrice, category, autoCategory.subcategory || "", firstImage, mediaJson, trackingCode, stock, Date.now()
         );
 
     const product = db.prepare("SELECT * FROM products WHERE id = ?").get(result.lastInsertRowid);
@@ -1331,6 +1404,16 @@ app.post("/api/admin/products", requireAdmin, handleAdminUpload, function (reque
     const firstImage = (media[0] && media[0].url) || "";
     const trackingCode = generateTrackingCode();
 
+    const autoCategory = applyAutoCategory({
+        name: name,
+        description: String(body.description || "").trim(),
+        specifications: String(body.specifications || "").trim(),
+        brand: String(body.brand || "").trim(),
+        tags: String(body.tags || "").trim(),
+        category: body.category,
+        subcategory: body.subcategory
+    });
+
     const result = db
         .prepare(
             `INSERT INTO products
@@ -1346,7 +1429,7 @@ app.post("/api/admin/products", requireAdmin, handleAdminUpload, function (reque
             String(body.specifications || "").trim(),
             price,
             body.oldPrice ? Math.round(Number(body.oldPrice)) : null,
-            String(body.category || "").trim(),
+            autoCategory.category,
             firstImage,
             mediaJson,
             trackingCode,
@@ -1354,7 +1437,7 @@ app.post("/api/admin/products", requireAdmin, handleAdminUpload, function (reque
             5,
             String(body.sku || "").trim(),
             String(body.brand || "").trim(),
-            String(body.subcategory || "").trim(),
+            autoCategory.subcategory,
             String(body.condition || "").trim(),
             String(body.warranty || "").trim(),
             String(body.tags || "").trim(),
@@ -1412,6 +1495,21 @@ app.put("/api/admin/products/:id", requireAdmin, handleAdminUpload, function (re
     const mediaJson = JSON.stringify(media);
     const firstImage = (media[0] && media[0].url) || existing.image || "";
 
+    const finalDescription = body.description != null ? String(body.description).trim() : existing.description;
+    const finalSpecifications = body.specifications != null ? String(body.specifications).trim() : existing.specifications;
+    const finalBrand = body.brand != null ? String(body.brand).trim() : existing.brand;
+    const finalTags = body.tags != null ? String(body.tags).trim() : existing.tags;
+
+    const autoCategory = applyAutoCategory({
+        name: name,
+        description: finalDescription,
+        specifications: finalSpecifications,
+        brand: finalBrand,
+        tags: finalTags,
+        category: body.category != null ? String(body.category).trim() : existing.category,
+        subcategory: body.subcategory != null ? String(body.subcategory).trim() : existing.subcategory
+    });
+
     db.prepare(
         `UPDATE products SET
             name = ?, description = ?, specifications = ?, price = ?, old_price = ?, category = ?,
@@ -1420,20 +1518,20 @@ app.put("/api/admin/products/:id", requireAdmin, handleAdminUpload, function (re
          WHERE id = ?`
     ).run(
         name,
-        body.description != null ? String(body.description).trim() : existing.description,
-        body.specifications != null ? String(body.specifications).trim() : existing.specifications,
+        finalDescription,
+        finalSpecifications,
         price,
         body.oldPrice ? Math.round(Number(body.oldPrice)) : existing.old_price,
-        body.category != null ? String(body.category).trim() : existing.category,
+        autoCategory.category,
         firstImage,
         mediaJson,
         body.stock != null && body.stock !== "" ? Math.max(0, Math.round(Number(body.stock))) : existing.stock,
         body.sku != null ? String(body.sku).trim() : existing.sku,
-        body.brand != null ? String(body.brand).trim() : existing.brand,
-        body.subcategory != null ? String(body.subcategory).trim() : existing.subcategory,
+        finalBrand,
+        autoCategory.subcategory,
         body.condition != null ? String(body.condition).trim() : existing.condition_label,
         body.warranty != null ? String(body.warranty).trim() : existing.warranty,
-        body.tags != null ? String(body.tags).trim() : existing.tags,
+        finalTags,
         body.featured != null ? (body.featured === "true" ? 1 : 0) : existing.featured,
         request.params.id
     );
