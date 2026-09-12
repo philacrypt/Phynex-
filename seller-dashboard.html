@@ -356,6 +356,34 @@
             cursor: pointer;
         }
 
+        /* AI CATEGORY WIDGET */
+        .ai-category-box {
+            margin: 10px 0 4px;
+            padding: 12px 14px;
+            border-radius: 8px;
+            border: 1px solid #d8deea;
+            background: #f6f8fc;
+            font-size: 13px;
+            color: #27334a;
+        }
+        .ai-category-box.confident { border-color: #b7e4c7; background: #eefbf2; }
+        .ai-category-box.needs-confirm { border-color: #f6d9a0; background: #fff8ea; }
+        .ai-category-box.unavailable { border-color: #e3e7ef; background: #fafbfd; color: #5a6478; }
+        .ai-category-box .ai-label { font-weight: 700; display: block; margin-bottom: 4px; }
+        .ai-category-box .ai-confirm-row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+        .ai-category-box .ai-confirm-row button {
+            border: none; border-radius: 6px; padding: 7px 12px; font-size: 12.5px;
+            font-weight: 700; cursor: pointer;
+        }
+        .ai-btn-yes { background: #0f7a3d; color: #fff; }
+        .ai-btn-no { background: #fff; color: #27334a; border: 1px solid #d8deea !important; }
+        .ai-confidence-tag {
+            display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 700;
+            padding: 1px 7px; border-radius: 999px; background: rgba(0,0,0,0.06);
+        }
+        .category-field { display: none; }
+        .category-field.visible { display: block; }
+
         @media (max-width: 700px) {
             .topbar { padding: 0 5%; }
             .stats { grid-template-columns: 1fr 1fr; }
@@ -436,48 +464,36 @@
                     </div>
                 </div>
 
-                <label for="pCategory">Category</label>
-                <select id="pCategory" name="category">
-                    <option value="">Select category</option>
-                    <option>Phones & Tablets</option>
-                    <option>Laptops & Computers</option>
-                    <option>Computer Accessories</option>
-                    <option>Gaming Consoles</option>
-                    <option>Gaming Accessories</option>
-                    <option>Gaming Chairs</option>
-                    <option>PC Gaming</option>
-                    <option>Monitors</option>
-                    <option>TVs & Home Theater</option>
-                    <option>Audio & Headphones</option>
-                    <option>Cameras & Photography</option>
-                    <option>Smartwatches & Wearables</option>
-                    <option>Printers & Scanners</option>
-                    <option>Networking & Wi-Fi</option>
-                    <option>Storage & Memory</option>
-                    <option>Power & Charging</option>
-                    <option>Office Equipment</option>
-                    <option>Home Appliances</option>
-                    <option>Smart Home</option>
-                    <option>Drones & RC</option>
-                    <option>Car Electronics</option>
-                    <option>Security & CCTV</option>
-                    <option>Cables & Adapters</option>
-                    <option>Software & Digital</option>
-                    <option>Other Electronics</option>
-                </select>
+                <label class="full-field" for="pMedia">Photos / video (up to 6 files)</label>
+                <div class="upload-box">
+                    <input id="pMedia" name="media" type="file" accept="image/*,video/*" multiple>
+                    <div class="upload-help">JPG, PNG, WEBP, GIF or short video clips — 25MB max per file. Add a photo first — PHYNEX AI uses it to pick your category automatically.</div>
+                    <div id="mediaPreview" class="preview-grid"></div>
+                </div>
+
+                <!-- AI category detection status. Hidden until a photo is chosen. -->
+                <div id="aiCategoryBox" class="ai-category-box" style="display:none;"></div>
+
+                <!-- Manual category field. Hidden by default - only shown when the
+                     AI couldn't confidently categorize the photo (or hasn't run
+                     yet), so the seller always has a way to pick a category. -->
+                <div class="category-field" id="categoryField">
+                    <label for="pCategory">Category</label>
+                    <select id="pCategory" name="category">
+                        <option value="">Select category</option>
+                    </select>
+                </div>
+
+                <input type="hidden" id="pAiCategory" name="aiCategory" value="">
+                <input type="hidden" id="pAiSubcategory" name="aiSubcategory" value="">
+                <input type="hidden" id="pAiConfidence" name="aiConfidence" value="">
+                <input type="hidden" id="pAiConfirmed" name="aiConfirmed" value="">
 
                 <label for="pDescription">Description</label>
                 <textarea id="pDescription" name="description" placeholder="Describe the product, what's included, and its condition."></textarea>
 
                 <label for="pSpecs">Specifications</label>
                 <textarea id="pSpecs" name="specifications" placeholder="Model, storage, RAM, colour, dimensions, warranty…"></textarea>
-
-                <label class="full-field" for="pMedia">Photos / video (up to 6 files)</label>
-                <div class="upload-box">
-                    <input id="pMedia" name="media" type="file" accept="image/*,video/*" multiple>
-                    <div class="upload-help">JPG, PNG, WEBP, GIF or short video clips — 25MB max per file.</div>
-                    <div id="mediaPreview" class="preview-grid"></div>
-                </div>
 
                 <div id="modalMsg" class="modal-msg"></div>
 
@@ -669,6 +685,8 @@
             $('mediaPreview').innerHTML = '';
             $('modalMsg').className = 'modal-msg';
             $('modalMsg').textContent = '';
+            resetAiCategoryState();
+            loadCategoryOptions();
             $('productModal').classList.add('show');
             $('productModal').setAttribute('aria-hidden', 'false');
         }
@@ -695,9 +713,13 @@
             var preview = $('mediaPreview');
             preview.innerHTML = '';
 
+            var firstImageFile = null;
+
             Array.prototype.forEach.call(this.files || [], function (file) {
 
                 if (file.type.indexOf('image/') !== 0) return;
+
+                if (!firstImageFile) firstImageFile = file;
 
                 var img = document.createElement('img');
                 img.alt = file.name;
@@ -708,7 +730,143 @@
 
                 preview.appendChild(img);
             });
+
+            resetAiCategoryState();
+
+            if (firstImageFile) {
+                analyzeProductImage(firstImageFile);
+            }
         });
+
+        /* ===================================================
+           AI IMAGE CATEGORY DETECTION
+           =================================================== */
+
+        var categoriesLoaded = false;
+
+        async function loadCategoryOptions() {
+            if (categoriesLoaded) return;
+            try {
+                var response = await fetch('/api/categories');
+                var data = await response.json();
+                var select = $('pCategory');
+                (data.categories || []).forEach(function (category) {
+                    var option = document.createElement('option');
+                    option.value = category.name;
+                    option.textContent = category.name;
+                    select.appendChild(option);
+                });
+                categoriesLoaded = true;
+            } catch (error) {
+                // If this fails the seller can still submit - the server
+                // falls back to text-based categorization either way.
+            }
+        }
+
+        function resetAiCategoryState() {
+            $('aiCategoryBox').style.display = 'none';
+            $('aiCategoryBox').className = 'ai-category-box';
+            $('aiCategoryBox').innerHTML = '';
+            $('categoryField').classList.remove('visible');
+            $('pAiCategory').value = '';
+            $('pAiSubcategory').value = '';
+            $('pAiConfidence').value = '';
+            $('pAiConfirmed').value = '';
+        }
+
+        function showManualCategoryPicker(noticeText) {
+            var box = $('aiCategoryBox');
+            box.style.display = 'block';
+            box.className = 'ai-category-box unavailable';
+            box.innerHTML = '<span class="ai-label">' + esc(noticeText) + '</span>';
+            $('categoryField').classList.add('visible');
+        }
+
+        function confirmAiCategory(category, subcategory, confidence) {
+            $('pAiCategory').value = category;
+            $('pAiSubcategory').value = subcategory || '';
+            $('pAiConfidence').value = confidence;
+            $('pAiConfirmed').value = 'true';
+            $('categoryField').classList.remove('visible');
+
+            var box = $('aiCategoryBox');
+            box.className = 'ai-category-box confident';
+            box.innerHTML = '<span class="ai-label">✓ Category set to: ' + esc(category) + '</span>' +
+                '<a href="#" id="aiChangeLink" style="font-size:12px;">Not right? Choose a different category</a>';
+
+            $('aiChangeLink').addEventListener('click', function (event) {
+                event.preventDefault();
+                $('pAiCategory').value = '';
+                $('pAiConfirmed').value = '';
+                showManualCategoryPicker('Pick the category for this product:');
+            });
+        }
+
+        async function analyzeProductImage(file) {
+
+            var box = $('aiCategoryBox');
+            box.style.display = 'block';
+            box.className = 'ai-category-box';
+            box.innerHTML = '<span class="ai-label">Analyzing photo to detect category…</span>';
+
+            var formData = new FormData();
+            formData.append('image', file);
+            formData.append('name', $('pName').value || '');
+
+            var result;
+            try {
+                result = await api('/api/seller/categorize-image', {
+                    method: 'POST',
+                    body: formData
+                });
+            } catch (error) {
+                result = { available: false };
+            }
+
+            if (!result || !result.available) {
+                showManualCategoryPicker('Couldn\'t auto-detect a category from this photo — please choose one below.');
+                return;
+            }
+
+            if (result.needsConfirmation) {
+
+                var pct = Math.round((result.confidence || 0) * 100);
+                box.className = 'ai-category-box needs-confirm';
+                box.innerHTML =
+                    '<span class="ai-label">Is this ' + esc(result.category) + '?' +
+                    '<span class="ai-confidence-tag">' + pct + '% sure</span></span>' +
+                    '<div class="ai-confirm-row">' +
+                    '<button type="button" class="ai-btn-yes" id="aiYesBtn">Yes, that\'s right</button>' +
+                    '<button type="button" class="ai-btn-no" id="aiNoBtn">No, let me pick</button>' +
+                    '</div>';
+
+                $('aiYesBtn').addEventListener('click', function () {
+                    confirmAiCategory(result.category, result.subcategory, result.confidence);
+                });
+                $('aiNoBtn').addEventListener('click', function () {
+                    $('pAiCategory').value = '';
+                    $('pAiConfirmed').value = '';
+                    showManualCategoryPicker('Pick the correct category:');
+                });
+
+            } else {
+                // Confident match - auto-assign, but still let the seller override.
+                $('pAiCategory').value = result.category;
+                $('pAiSubcategory').value = result.subcategory || '';
+                $('pAiConfidence').value = result.confidence;
+                $('pAiConfirmed').value = '';
+
+                box.className = 'ai-category-box confident';
+                box.innerHTML = '<span class="ai-label">✓ Auto-detected category: ' + esc(result.category) + '</span>' +
+                    '<a href="#" id="aiChangeLink" style="font-size:12px;">Not right? Choose a different category</a>';
+
+                $('aiChangeLink').addEventListener('click', function (event) {
+                    event.preventDefault();
+                    $('pAiCategory').value = '';
+                    showManualCategoryPicker('Pick the category for this product:');
+                });
+            }
+        }
 
         $('productForm').addEventListener('submit', async function (event) {
 
@@ -733,6 +891,16 @@
             if (!formData.get('name') || !Number.isFinite(price) || price < 1) {
                 msg.className = 'modal-msg error';
                 msg.textContent = 'Enter a product name and a valid price.';
+                return;
+            }
+
+            // If the AI suggested a category but the seller hasn't confirmed
+            // it and hasn't picked one manually either, don't let a possibly
+            // wrong guess through silently - ask them to resolve it first.
+            var categoryFieldVisible = $('categoryField').classList.contains('visible');
+            if (categoryFieldVisible && !formData.get('category') && !formData.get('aiCategory')) {
+                msg.className = 'modal-msg error';
+                msg.textContent = 'Please confirm or choose a category for this product.';
                 return;
             }
 
@@ -765,40 +933,10 @@
         });
 
         /* ===================================================
-           CATEGORY OPTIONS (live from admin-managed categories)
-           Keeps the hardcoded list above as a fallback if this
-           fetch fails, so the form still works either way.
-           =================================================== */
-
-        async function loadCategoryOptions() {
-            const select = document.getElementById('pCategory');
-            if (!select) return;
-
-            try {
-                const response = await fetch('/api/categories');
-                const data = await response.json();
-                const categories = Array.isArray(data.categories) ? data.categories : [];
-
-                if (!categories.length) return;
-
-                const current = select.value;
-                select.innerHTML = '<option value="">Select category</option>' +
-                    categories.map(function (c) {
-                        return '<option>' + c.name.replace(/</g, '&lt;') + '</option>';
-                    }).join('');
-
-                if (current) select.value = current;
-            } catch (error) {
-                // Keep the built-in fallback options if this fails.
-            }
-        }
-
-        /* ===================================================
            INIT
            =================================================== */
 
         function init() {
-            loadCategoryOptions();
             loadProducts();
         }
 

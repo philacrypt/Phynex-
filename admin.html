@@ -275,7 +275,7 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
   }
 
   function showLogin() { $('loginScreen').hidden=false; $('adminApp').hidden=true; }
-  function showApp() { $('loginScreen').hidden=true; $('adminApp').hidden=false; loadOverview(); loadCategories(); }
+  function showApp() { $('loginScreen').hidden=true; $('adminApp').hidden=false; loadOverview(); }
 
   $('loginForm').addEventListener('submit', async e => {
     e.preventDefault(); const btn=$('loginBtn'), msg=$('loginMsg'); btn.disabled=true; btn.textContent='Signing in…'; msg.className='msg';
@@ -353,15 +353,10 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
   const PRODUCT_CATEGORIES = [
     'Phones & Tablets','Laptops & Computers','Computer Accessories','Gaming Consoles','Gaming Accessories','Gaming Chairs','PC Gaming','Monitors','TVs & Home Theater','Audio & Headphones','Cameras & Photography','Smartwatches & Wearables','Printers & Scanners','Networking & Wi-Fi','Storage & Memory','Power & Charging','Office Equipment','Home Appliances','Smart Home','Drones & RC','Car Electronics','Security & CCTV','Cables & Adapters','Software & Digital','Other Electronics'
   ];
-  // Combines the built-in starter list with whatever categories the
-  // admin has added/exist in the database, so newly added categories
-  // immediately become selectable/filterable — not just visible on
-  // the Categories tab.
-  function allCategoryNames(){ return [...new Set([...PRODUCT_CATEGORIES,...categories.map(c=>c.name).filter(Boolean)])]; }
-  function fillFilterCategories(){ const sel=$('productCategory'); if(!sel)return; const current=sel.value; sel.innerHTML='<option value="">All categories</option>'+allCategoryNames().map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join(''); if(current)sel.value=current; }
+  function fillFilterCategories(){ const sel=$('productCategory'); if(!sel)return; const current=sel.value; sel.innerHTML='<option value="">All categories</option>'+PRODUCT_CATEGORIES.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join(''); if(current)sel.value=current; }
   function fillCategorySelect(selected=''){
     const sel=$('productCategorySelect'); if(!sel)return;
-    sel.innerHTML='<option value="">Select category</option>'+allCategoryNames().map(c=>`<option value="${esc(c)}" ${c===selected?'selected':''}>${esc(c)}</option>`).join('');
+    sel.innerHTML='<option value="">Select category</option>'+PRODUCT_CATEGORIES.map(c=>`<option value="${esc(c)}" ${c===selected?'selected':''}>${esc(c)}</option>`).join('');
   }
   function previewFiles(input, target){
     const el=$(target); el.innerHTML='';

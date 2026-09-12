@@ -7,6 +7,7 @@ const bcrypt = require("bcryptjs");
 const Database = require("better-sqlite3");
 const { OAuth2Client } = require("google-auth-library");
 const { suggestCategory } = require("./lib/categorizer");
+const { classifyProductImage, HIGH_CONFIDENCE_THRESHOLD } = require("./lib/image-categorizer");
 require("dotenv").config();
 
 const app = express();
@@ -241,6 +242,31 @@ function applyAutoCategory(input) {
 
     const chosenCategory = String(input.category || "").trim();
     const chosenSubcategory = String(input.subcategory || "").trim();
+
+    // Image-based AI suggestion (from POST /api/seller/categorize-image),
+    // sent back by the seller's browser once it's either high-confidence
+    // or the seller explicitly confirmed it. This takes priority over the
+    // text-only keyword match below, since it comes from actually looking
+    // at the product photo. Anything not in the current category list, or
+    // not confirmed/confident enough, is ignored and we fall through to
+    // the existing text-based logic exactly as before - so this is purely
+    // additive and never breaks a submission that doesn't use it.
+    const aiCategoryRaw = String(input.aiCategory || "").trim();
+    const aiConfidence = Number(input.aiConfidence);
+    const aiConfirmed = input.aiConfirmed === true || input.aiConfirmed === "true" || input.aiConfirmed === "1";
+
+    if (aiCategoryRaw && (aiConfirmed || (Number.isFinite(aiConfidence) && aiConfidence >= HIGH_CONFIDENCE_THRESHOLD))) {
+        const allowedNames = getCategoryNames();
+        const matched = allowedNames.find(function (name) {
+            return name.toLowerCase() === aiCategoryRaw.toLowerCase();
+        });
+        if (matched) {
+            return {
+                category: matched,
+                subcategory: String(input.aiSubcategory || "").trim() || chosenSubcategory
+            };
+        }
+    }
 
     let suggestion = null;
 
@@ -1047,6 +1073,53 @@ function handleAdminUpload(request, response, next) {
 }
 
 /* =========================
+   SELLER — AI IMAGE CATEGORY SUGGESTION
+   The seller's browser calls this as soon as a product photo is
+   chosen (before the full form is submitted) so it can show an
+   auto-detected category, or ask the seller to confirm it when
+   the AI isn't confident. Kept as its own lightweight endpoint
+   (memory storage, one file, never written to disk) so it can't
+   interfere with the real product-submission upload path below.
+========================= */
+
+const uploadImageForAnalysis = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 25 * 1024 * 1024, files: 1 },
+    fileFilter: mediaFileFilter
+}).single("image");
+
+app.post("/api/seller/categorize-image", requireSeller, function (request, response) {
+
+    uploadImageForAnalysis(request, response, async function (uploadError) {
+
+        if (uploadError) {
+            return response.status(400).json({ available: false, message: "Could not read the uploaded image." });
+        }
+
+        const file = request.file;
+
+        if (!file || file.mimetype.indexOf("image/") !== 0) {
+            return response.status(400).json({ available: false, message: "Please attach an image file." });
+        }
+
+        try {
+            const result = await classifyProductImage({
+                buffer: file.buffer,
+                mimeType: file.mimetype,
+                availableCategories: getCategoryNames(),
+                productName: String((request.body || {}).name || "").trim()
+            });
+
+            response.json(result);
+        } catch (error) {
+            // Never let a categorization hiccup block the seller - the
+            // front end simply falls back to manual category selection.
+            response.json({ available: false, message: "AI categorization is temporarily unavailable." });
+        }
+    });
+});
+
+/* =========================
    SELLER — SUBMIT / VIEW OWN PRODUCTS
 ========================= */
 
@@ -1084,7 +1157,11 @@ app.post("/api/products", requireSeller, function (request, response, next) {
         description: description,
         specifications: specifications,
         category: body.category,
-        subcategory: body.subcategory
+        subcategory: body.subcategory,
+        aiCategory: body.aiCategory,
+        aiSubcategory: body.aiSubcategory,
+        aiConfidence: body.aiConfidence,
+        aiConfirmed: body.aiConfirmed
     });
 
     const category = autoCategory.category;

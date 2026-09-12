@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Account — PHYNEX</title>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f5f6f8;
+            color: #172033;
+            line-height: 1.6;
+        }
+
+        .top {
+            background: #071a49;
+            color: #fff;
+            padding: 16px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .top a { color: #fff; text-decoration: none; font-size: 14px; }
+        .top a:hover { text-decoration: underline; }
+
+        .wrap {
+            width: 90%;
+            max-width: 480px;
+            margin: 50px auto 70px;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #e1e4e8;
+            border-radius: 12px;
+            padding: 32px 30px;
+        }
+
+        .avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #0875e1;
+            color: #fff;
+            font-size: 22px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .card h1 { font-size: 22px; margin-bottom: 4px; }
+        .card p.email { color: #666; font-size: 14px; margin-bottom: 24px; }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            padding: 13px 0;
+            border-top: 1px solid #eee;
+            font-size: 14px;
+        }
+
+        .row span:first-child { color: #666; }
+        .row span:last-child { font-weight: 700; }
+
+        .actions {
+            margin-top: 26px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .actions a, .actions button {
+            display: block;
+            width: 100%;
+            text-align: center;
+            padding: 12px;
+            border-radius: 7px;
+            font-size: 14px;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            border: 1px solid #d9dde5;
+            background: #fff;
+            color: #172033;
+        }
+
+        .actions .primary {
+            background: #0875e1;
+            border-color: #0875e1;
+            color: #fff;
+        }
+
+        .actions .danger {
+            border-color: #f3c8c8;
+            color: #b42318;
+        }
+
+        .loading { text-align: center; color: #888; padding: 40px 0; }
+    </style>
+</head>
+<body>
+
+    <header class="top">
+        <strong>PHYNEX</strong>
+        <a href="index.html">← Continue Shopping</a>
+    </header>
+
+    <main class="wrap">
+        <div class="card" id="card">
+            <div class="loading">Loading your account...</div>
+        </div>
+    </main>
+
+    <script>
+        var TOKEN_KEY = 'phynexCustomerToken';
+        var NAME_KEY = 'phynexCustomerName';
+        var token = localStorage.getItem(TOKEN_KEY);
+
+        if (!token) {
+            window.location.href = 'customer-login.html?redirect=' + encodeURIComponent('account.html');
+        } else {
+
+            fetch('/api/customers/me', {
+                headers: { Authorization: 'Bearer ' + token }
+            }).then(function (response) {
+
+                if (response.status === 401) {
+                    localStorage.removeItem(TOKEN_KEY);
+                    localStorage.removeItem(NAME_KEY);
+                    window.location.href = 'customer-login.html?redirect=' + encodeURIComponent('account.html');
+                    return null;
+                }
+
+                return response.json();
+
+            }).then(function (data) {
+
+                if (!data || !data.customer) return;
+
+                var c = data.customer;
+                var initial = (c.name || c.email || '?').trim().charAt(0).toUpperCase();
+
+                document.getElementById('card').innerHTML =
+                    '<div class="avatar">' + initial + '</div>' +
+                    '<h1>' + escapeHtml(c.name || 'PHYNEX customer') + '</h1>' +
+                    '<p class="email">' + escapeHtml(c.email || '') + '</p>' +
+                    '<div class="row"><span>Phone</span><span>' + escapeHtml(c.phone || 'Not set') + '</span></div>' +
+                    '<div class="row"><span>Signed in with</span><span>' + (c.hasGoogle ? 'Google' : 'Email &amp; password') + '</span></div>' +
+                    '<div class="actions">' +
+                        '<a class="primary" href="index.html">Continue shopping</a>' +
+                        '<a href="customer-forgot-password.html">Change password</a>' +
+                        '<button class="danger" id="logoutBtn">Log out</button>' +
+                    '</div>';
+
+                document.getElementById('logoutBtn').addEventListener('click', function () {
+                    fetch('/api/customers/logout', {
+                        method: 'POST',
+                        headers: { Authorization: 'Bearer ' + token }
+                    }).finally(function () {
+                        localStorage.removeItem(TOKEN_KEY);
+                        localStorage.removeItem(NAME_KEY);
+                        window.location.href = 'index.html';
+                    });
+                });
+
+            }).catch(function () {
+                document.getElementById('card').innerHTML = '<div class="loading">Could not load your account. Please refresh.</div>';
+            });
+        }
+
+        function escapeHtml(text) {
+            var div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+    </script>
+
+</body>
+</html>
