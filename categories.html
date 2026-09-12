@@ -3,41 +3,74 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PHYNEX — All Categories</title>
+<title>PHYNEX - All Categories</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f6fa;color:#172033}
-.header{background:#fff;border-bottom:1px solid #e5e7eb;padding:15px 5%;position:sticky;top:0;z-index:10}
-.top{max-width:1200px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:15px}.brand{font-size:26px;font-weight:800;color:#0875e1;text-decoration:none}
-.btn{background:#0875e1;color:#fff;text-decoration:none;padding:10px 15px;border-radius:8px;font-weight:700}
-.container{max-width:1200px;margin:auto;padding:30px 5% 80px}h1{margin:0 0 8px}.sub{color:#687083;margin:0 0 25px}
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.card{background:#fff;border:1px solid #e2e6ed;border-radius:14px;padding:22px;text-decoration:none;color:inherit;transition:.2s;display:flex;gap:14px;align-items:center}
-.card:hover{transform:translateY(-3px);box-shadow:0 8px 22px rgba(7,26,73,.1)}.icon{width:52px;height:52px;border-radius:12px;background:#eef4ff;color:#0875e1;display:grid;place-items:center;font-size:22px;flex:none}.name{font-weight:800}.count{font-size:12px;color:#687083;margin-top:5px}.empty{background:#fff;border-radius:12px;padding:30px;color:#687083}
-@media(max-width:900px){.grid{grid-template-columns:repeat(3,1fr)}}@media(max-width:650px){.grid{grid-template-columns:repeat(2,1fr);gap:10px}.card{padding:14px;display:block}.icon{margin-bottom:10px}.container{padding:22px 12px 60px}.brand{font-size:22px}}
+*{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:#f4f6fa;color:#172033}
+.header{background:#fff;position:sticky;top:0;z-index:20;border-bottom:1px solid #e7eaf0;padding:14px 5%}
+.top{display:flex;align-items:center;justify-content:space-between;gap:15px;max-width:1200px;margin:auto}
+.brand{font-size:25px;font-weight:800;color:#0875e1;text-decoration:none}
+.actions{display:flex;gap:10px} .btn{border:0;background:#0875e1;color:#fff;padding:10px 14px;border-radius:8px;text-decoration:none;font-weight:700;cursor:pointer}
+.container{max-width:1200px;margin:auto;padding:25px 5% 90px}
+.back{display:inline-flex;align-items:center;gap:7px;text-decoration:none;color:#0875e1;font-weight:700;margin-bottom:15px}
+h1{margin:5px 0 6px;font-size:28px} .sub{color:#687083;margin-top:0;margin-bottom:22px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.card{background:#fff;border-radius:14px;padding:22px 16px;border:1px solid #e4e7ed;cursor:pointer;text-decoration:none;color:inherit;transition:.2s;display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.card:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(7,26,73,.12);border-color:#0875e1}
+.icon{width:44px;height:44px;border-radius:10px;background:#eaf3ff;color:#0875e1;display:flex;align-items:center;justify-content:center;font-size:19px}
+.name{font-size:15px;font-weight:800}
+.desc{font-size:12.5px;color:#687083;line-height:1.4;min-height:34px}
+.count{font-size:12px;font-weight:700;color:#0875e1}
+.empty{background:#fff;border-radius:12px;padding:35px;text-align:center;color:#687083;grid-column:1/-1}
+@media(max-width:900px){.grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:650px){.container{padding:18px 12px 90px}.grid{grid-template-columns:repeat(2,1fr);gap:10px}h1{font-size:22px}.brand{font-size:21px}}
 </style>
 </head>
 <body>
-<header class="header"><div class="top"><a class="brand" href="index.html">PHYNEX</a><a class="btn" href="index.html">Home</a></div></header>
+<header class="header"><div class="top"><a class="brand" href="index.html">PHYNEX</a><div class="actions"><a class="btn" href="cart.html"><i class="fa-solid fa-cart-shopping"></i> Cart</a><a class="btn" href="index.html">Home</a></div></div></header>
 <main class="container">
-<h1>Shop by Category</h1><p class="sub">Explore everything available on PHYNEX. New categories added by the admin appear here automatically.</p>
-<div class="grid" id="categories"></div>
+<a class="back" href="index.html"><i class="fa-solid fa-arrow-left"></i> Back to PHYNEX</a>
+<h1>All Categories</h1>
+<p class="sub" id="sub">Loading categories…</p>
+<div class="grid" id="grid"></div>
 </main>
 <script>
-(async function(){
- const grid=document.getElementById('categories');
- try{
-   const r=await fetch('/api/categories',{cache:'no-store'});
-   if(!r.ok) throw new Error('Could not load categories');
-   const data=await r.json();
-   const categories=Array.isArray(data.categories)?data.categories:[];
-   grid.innerHTML=categories.length?categories.map(c=>
-     '<a class="card" href="category.html?category='+encodeURIComponent(c.name)+'">'+
-     '<span class="icon"><i class="fa-solid fa-layer-group"></i></span>'+
-     '<span><span class="name">'+escapeHtml(c.name)+'</span><span class="count">'+Number(c.productCount||0)+' products</span></span></a>'
-   ).join(''):'<div class="empty">No categories have been added yet.</div>';
- }catch(e){grid.innerHTML='<div class="empty">Could not load categories. Please refresh.</div>';console.error(e);}
- function escapeHtml(value){const d=document.createElement('div');d.textContent=value||'';return d.innerHTML;}
-})();
+function escapeHtml(text){const d=document.createElement('div');d.textContent=text||'';return d.innerHTML;}
+
+async function loadCategories(){
+    const grid = document.getElementById('grid');
+    const sub = document.getElementById('sub');
+    try{
+        const response = await fetch('/api/categories');
+        const data = await response.json();
+        const categories = Array.isArray(data.categories) ? data.categories : [];
+
+        if(!categories.length){
+            sub.textContent = 'No categories yet.';
+            grid.innerHTML = '<div class="empty">No categories are currently listed.</div>';
+            return;
+        }
+
+        sub.textContent = categories.length + ' categor' + (categories.length === 1 ? 'y' : 'ies') + ' available';
+        grid.innerHTML = '';
+
+        categories.forEach(function(category){
+            const a = document.createElement('a');
+            a.className = 'card';
+            a.href = 'category.html?category=' + encodeURIComponent(category.slug || category.name);
+            a.innerHTML =
+                '<span class="icon"><i class="fa-solid fa-shapes"></i></span>' +
+                '<span class="name">' + escapeHtml(category.name) + '</span>' +
+                (category.description ? '<span class="desc">' + escapeHtml(category.description) + '</span>' : '') +
+                '<span class="count">' + category.productCount + ' product' + (category.productCount === 1 ? '' : 's') + '</span>';
+            grid.appendChild(a);
+        });
+    }catch(error){
+        sub.textContent = '';
+        grid.innerHTML = '<div class="empty">Could not load categories right now. Please try again shortly.</div>';
+    }
+}
+
+loadCategories();
 </script>
-</body>
-</html>
+</body></html>

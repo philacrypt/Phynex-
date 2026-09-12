@@ -63,7 +63,15 @@
         card.dataset.sellerName = product.sellerName || '';
         card.dataset.sellerPhone = product.sellerPhone || '';
         card.dataset.sellerWhatsapp = product.sellerWhatsapp || '';
-        card.dataset.category = (product.category || '') + ' ' + (product.subcategory || '');
+        // Store normalized slugs (e.g. "Phones & Tablets" -> "phones-tablets")
+        // so category-tile filtering works no matter how the category name
+        // is capitalized or punctuated. Space-separated so filterCategory()
+        // can still do a simple "does this list contain that slug" check.
+        card.dataset.category = [
+            slugify(product.category || ''),
+            slugify(product.subcategory || '')
+        ].filter(Boolean).join(' ');
+        card.dataset.categoryLabel = product.category || '';
 
         const priceHtml = money(product.price) +
             (product.oldPrice
@@ -97,41 +105,6 @@
         return card;
     }
 
-    async function loadStoreCategories() {
-        const container = document.querySelector('.categories');
-        if (!container) return;
-
-        try {
-            const response = await fetch('/api/categories', { cache: 'no-store' });
-            if (!response.ok) throw new Error('Could not load categories');
-            const data = await response.json();
-            const categories = Array.isArray(data.categories) ? data.categories : [];
-
-            container.innerHTML = categories.map(function (category) {
-                return '<div class="category" data-category="' + escapeHtml(category.name) + '" role="button" tabindex="0">' +
-                    '<span class="cat-badge"><i class="fa-solid fa-layer-group"></i></span>' +
-                    '<span>' + escapeHtml(category.name) + '</span>' +
-                    '<small>' + Number(category.productCount || 0) + ' products</small>' +
-                '</div>';
-            }).join('');
-
-            container.querySelectorAll('.category').forEach(function (card) {
-                function openCategory() {
-                    window.location.href = 'category.html?category=' + encodeURIComponent(card.dataset.category);
-                }
-                card.addEventListener('click', openCategory);
-                card.addEventListener('keydown', function (event) {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        openCategory();
-                    }
-                });
-            });
-        } catch (error) {
-            console.error('PHYNEX: Could not load categories.', error);
-        }
-    }
-
     async function loadMarketplaceProducts() {
 
         const flashGrid = document.getElementById('flashDealsGrid');
@@ -150,7 +123,7 @@
 
             if (newGrid) {
                 newGrid.innerHTML = '';
-                products.forEach(function (product) {
+                products.slice(0, 8).forEach(function (product) {
                     newGrid.appendChild(buildProductCard(product));
                 });
             }
@@ -167,14 +140,44 @@
             }
 
             if (flashGrid) {
-                flashGrid.innerHTML = '';
                 products.forEach(function (product) {
                     flashGrid.appendChild(buildProductCard(product));
                 });
             }
 
+            applyUrlProductAndCategoryParams();
+
         } catch (error) {
             console.error('PHYNEX: Could not load live marketplace products.', error);
+        }
+    }
+
+    /* =====================================================
+       DEEP LINKS FROM OTHER PAGES (category.html, categories.html)
+       Supports index.html?category=<slug> to auto-filter to a
+       category, and index.html?product=<id> to open a specific
+       product's details popup, once real listings have loaded.
+       ===================================================== */
+
+    function applyUrlProductAndCategoryParams() {
+
+        const params = new URLSearchParams(location.search);
+        const categoryParam = params.get('category');
+        const productParam = params.get('product');
+
+        if (categoryParam) {
+            filterCategory(categoryParam);
+        }
+
+        if (productParam) {
+
+            const card = document.querySelector(
+                '.product[data-product-id="' + CSS.escape(productParam) + '"]'
+            );
+
+            if (card) {
+                openProductPopup(getProductFromCard(card));
+            }
         }
     }
 
@@ -947,6 +950,8 @@
 
         let found = 0;
 
+        const target = slugify(category);
+
         getProducts().forEach(
             function (card) {
 
@@ -954,12 +959,17 @@
                     (
                         card.dataset.category ||
                         ''
-                    ).split(' ');
+                    ).split(' ').filter(Boolean);
 
+                // Exact slug match, or either slug containing the other,
+                // so a broad tile key like "phones" still matches a fuller
+                // category slug like "phones-tablets", and vice versa.
                 const match =
-                    categories.includes(
-                        category
-                    );
+                    categories.some(function (slug) {
+                        return slug === target ||
+                            slug.indexOf(target) !== -1 ||
+                            target.indexOf(slug) !== -1;
+                    });
 
                 card.style.display =
                     match ? '' : 'none';

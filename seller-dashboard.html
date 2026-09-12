@@ -765,10 +765,40 @@
         });
 
         /* ===================================================
+           CATEGORY OPTIONS (live from admin-managed categories)
+           Keeps the hardcoded list above as a fallback if this
+           fetch fails, so the form still works either way.
+           =================================================== */
+
+        async function loadCategoryOptions() {
+            const select = document.getElementById('pCategory');
+            if (!select) return;
+
+            try {
+                const response = await fetch('/api/categories');
+                const data = await response.json();
+                const categories = Array.isArray(data.categories) ? data.categories : [];
+
+                if (!categories.length) return;
+
+                const current = select.value;
+                select.innerHTML = '<option value="">Select category</option>' +
+                    categories.map(function (c) {
+                        return '<option>' + c.name.replace(/</g, '&lt;') + '</option>';
+                    }).join('');
+
+                if (current) select.value = current;
+            } catch (error) {
+                // Keep the built-in fallback options if this fails.
+            }
+        }
+
+        /* ===================================================
            INIT
            =================================================== */
 
         function init() {
+            loadCategoryOptions();
             loadProducts();
         }
 
