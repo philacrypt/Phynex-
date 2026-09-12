@@ -1,5 +1,6 @@
 const express = require("express");
 const path = require("path");
+const fs = require("fs");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
@@ -19,7 +20,9 @@ app.use(express.static(__dirname));
    DATABASE
 ========================= */
 
-const db = new Database(path.join(__dirname, "phynex.db"));
+const DATA_DIR = process.env.PHYNEX_DATA_DIR || __dirname;
+fs.mkdirSync(DATA_DIR, { recursive: true });
+const db = new Database(path.join(DATA_DIR, "phynex.db"));
 db.pragma("journal_mode = WAL");
 
 db.exec(`
@@ -177,109 +180,43 @@ ensureColumn("orders", "stock_deducted", "INTEGER DEFAULT 0");
 ensureColumn("customers", "google_id", "TEXT");
 ensureColumn("customers", "reset_token", "TEXT");
 ensureColumn("customers", "reset_token_expires", "INTEGER");
+ensureColumn("customers", "token_expires", "INTEGER");
+ensureColumn("sellers", "token_expires", "INTEGER");
+ensureColumn("products", "deleted_at", "INTEGER");
+ensureColumn("orders", "updated_at", "INTEGER");
+ensureColumn("orders", "reservation_expires", "INTEGER");
+ensureColumn("products", "reserved_stock", "INTEGER DEFAULT 0");
 
-// Seed a broad, ready-to-use set of categories the first time the store
-// runs (covers more than just tech so the marketplace isn't tech-only).
-// This only runs once — if the admin has already added/removed categories,
-// we leave their list alone.
-(function seedDefaultCategories() {
-    const count = db.prepare("SELECT COUNT(*) AS c FROM categories").get().c;
-    if (count > 0) return;
+const DEFAULT_CATEGORIES = [
+    ["Phones & Tablets","phones-tablets","Mobile phones, tablets and accessories"],
+    ["Computers & Laptops","computers-laptops","Laptops, desktops, monitors and computer accessories"],
+    ["Electronics","electronics","TVs, audio, smart devices and electronics"],
+    ["Gaming","gaming","Consoles, games, controllers and gaming accessories"],
+    ["Fashion","fashion","Clothing, fashion and accessories"],
+    ["Shoes & Bags","shoes-bags","Shoes, handbags, backpacks and travel bags"],
+    ["Beauty & Personal Care","beauty-personal-care","Beauty, cosmetics and personal-care products"],
+    ["Home & Garden","home-garden","Home improvement, decor, garden and outdoor home items"],
+    ["Furniture","furniture","Beds, sofas, tables, chairs and storage"],
+    ["Appliances","appliances","Kitchen, laundry, cooling and household appliances"],
+    ["Grocery","grocery","Food, beverages and everyday household consumables"],
+    ["Health & Wellness","health-wellness","Wellness and non-prescription health products"],
+    ["Baby & Kids","baby-kids","Baby products, toys, kids clothing and essentials"],
+    ["Sports & Outdoors","sports-outdoors","Sports equipment, fitness and outdoor gear"],
+    ["Automotive","automotive","Car, motorcycle and vehicle parts and accessories"],
+    ["Books & Stationery","books-stationery","Books, school, office and stationery supplies"],
+    ["Jewelry & Watches","jewelry-watches","Jewelry, watches and accessories"],
+    ["Cameras & Photography","cameras-photography","Cameras, lenses and photography equipment"],
+    ["Pet Supplies","pet-supplies","Pet food, accessories and supplies"],
+    ["Industrial & Tools","industrial-tools","Tools, hardware, machinery and business equipment"],
+    ["Services","services","Local and professional services"],
+    ["Other","other","Other products that do not fit another category"]
+];
 
-    const defaults = [
-        ["Phones & Tablets", "Mobile phones, tablets and accessories."],
-        ["Computers & Laptops", "Desktops, laptops, monitors and computer parts."],
-        ["Electronics", "TVs, audio, cameras and general electronics."],
-        ["Gaming", "Consoles, games and gaming accessories."],
-        ["Fashion & Clothing", "Men's, women's and kids' clothing."],
-        ["Shoes & Footwear", "Sneakers, official shoes, sandals and boots."],
-        ["Beauty & Personal Care", "Skincare, makeup, haircare and grooming."],
-        ["Health & Wellness", "Supplements, fitness and wellness products."],
-        ["Home & Living", "Furniture, decor, bedding and storage."],
-        ["Kitchen & Appliances", "Cookware, small appliances and kitchen tools."],
-        ["Groceries & Food", "Packaged foods, snacks and household groceries."],
-        ["Baby & Kids", "Baby gear, toys and kids' essentials."],
-        ["Toys & Games", "Toys, board games and hobby items."],
-        ["Sports & Outdoors", "Fitness gear, camping and outdoor equipment."],
-        ["Automotive", "Car accessories, parts and tools."],
-        ["Books & Stationery", "Books, office and school supplies."],
-        ["Jewelry & Watches", "Jewelry, watches and fashion accessories."],
-        ["Pet Supplies", "Food, toys and accessories for pets."],
-        ["Garden & Outdoor Living", "Garden tools, plants and outdoor furniture."],
-        ["Other", "Anything that doesn't fit another category."]
-    ];
-
-    const insert = db.prepare(
-        "INSERT INTO categories (name, slug, description, created_at) VALUES (?, ?, ?, ?)"
-    );
-
-    const now = Date.now();
-
-    defaults.forEach(function (entry) {
-        const name = entry[0];
-        const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-        try {
-            insert.run(name, slug, entry[1], now);
-        } catch (error) {
-            // Ignore duplicates — safe to re-run.
-        }
-    });
-})();
-
-/* =========================
-   LOGIN RATE LIMITING (brute-force protection)
-   Tracks failed sign-in attempts per IP + account identifier. After too
-   many failures in a short window, further attempts are blocked for a
-   cooldown period. Successful logins reset the counter.
-========================= */
-
-const LOGIN_MAX_ATTEMPTS = 6;
-const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-const loginAttempts = new Map(); // key -> { count, firstAttempt, lockedUntil }
-
-function loginRateLimitKey(request, identifier) {
-    return request.ip + ":" + String(identifier || "").toLowerCase();
-}
-
-function checkLoginRateLimit(request, identifier) {
-    const key = loginRateLimitKey(request, identifier);
-    const entry = loginAttempts.get(key);
-
-    if (!entry) return null;
-
-    if (entry.lockedUntil && entry.lockedUntil > Date.now()) {
-        const minutesLeft = Math.ceil((entry.lockedUntil - Date.now()) / 60000);
-        return "Too many failed sign-in attempts. Please try again in " + minutesLeft + " minute" + (minutesLeft === 1 ? "" : "s") + ".";
-    }
-
-    if (entry.lockedUntil && entry.lockedUntil <= Date.now()) {
-        loginAttempts.delete(key);
-    }
-
-    return null;
-}
-
-function recordLoginFailure(request, identifier) {
-    const key = loginRateLimitKey(request, identifier);
-    const now = Date.now();
-    const entry = loginAttempts.get(key) || { count: 0, firstAttempt: now };
-
-    if (now - entry.firstAttempt > LOGIN_WINDOW_MS) {
-        entry.count = 0;
-        entry.firstAttempt = now;
-    }
-
-    entry.count += 1;
-
-    if (entry.count >= LOGIN_MAX_ATTEMPTS) {
-        entry.lockedUntil = now + LOGIN_WINDOW_MS;
-    }
-
-    loginAttempts.set(key, entry);
-}
-
-function clearLoginFailures(request, identifier) {
-    loginAttempts.delete(loginRateLimitKey(request, identifier));
+const seedCategory = db.prepare(
+    "INSERT OR IGNORE INTO categories (name, slug, description, created_at) VALUES (?, ?, ?, ?)"
+);
+for (const category of DEFAULT_CATEGORIES) {
+    seedCategory.run(category[0], category[1], category[2], Date.now());
 }
 
 /* =========================
@@ -466,7 +403,7 @@ function publicProduct(product) {
         tags: product.tags || "",
         featured: Boolean(product.featured),
         sku: product.sku || "",
-        stock: product.stock != null ? product.stock : 0,
+        stock: product.stock != null ? Math.max(0, Number(product.stock) - Number(product.reserved_stock || 0)) : 0,
         lowStockThreshold: product.low_stock_threshold != null ? product.low_stock_threshold : 5,
         image: (media[0] && media[0].url) || product.image || "",
         images: media.filter(function (m) { return m.type === "image"; }).map(function (m) { return m.url; }),
@@ -515,8 +452,8 @@ function requireSeller(request, response, next) {
     }
 
     const seller = db
-        .prepare("SELECT * FROM sellers WHERE token = ?")
-        .get(token);
+        .prepare("SELECT * FROM sellers WHERE token = ? AND (token_expires IS NULL OR token_expires > ?)")
+        .get(token, Date.now());
 
     if (!seller) {
         return response.status(401).json({ message: "Your session has expired. Please log in again." });
@@ -561,9 +498,28 @@ function requireAdmin(request, response, next) {
     next();
 }
 
+const authAttempts = new Map();
+const AUTH_WINDOW_MS = 15 * 60 * 1000;
+const AUTH_MAX_ATTEMPTS = 8;
+function authRateLimited(request, identity) {
+    const key = String(request.ip || "unknown") + ":" + String(identity || "").toLowerCase();
+    const now = Date.now();
+    const row = authAttempts.get(key);
+    if (!row || now - row.startedAt > AUTH_WINDOW_MS) {
+        authAttempts.set(key, { startedAt: now, count: 1 });
+        return false;
+    }
+    row.count += 1;
+    return row.count > AUTH_MAX_ATTEMPTS;
+}
+
 app.post("/api/admin/login", function (request, response) {
 
     const password = String((request.body || {}).password || "");
+
+    if (authRateLimited(request, "admin")) {
+        return response.status(429).json({ message: "Too many login attempts. Please try again in 15 minutes." });
+    }
 
     if (!process.env.ADMIN_PASSWORD) {
         return response.status(503).json({
@@ -571,24 +527,9 @@ app.post("/api/admin/login", function (request, response) {
         });
     }
 
-    const lockMessage = checkLoginRateLimit(request, "admin");
-    if (lockMessage) {
-        return response.status(429).json({ message: lockMessage });
-    }
-
-    const expected = Buffer.from(process.env.ADMIN_PASSWORD);
-    const supplied = Buffer.from(password);
-
-    const valid =
-        expected.length === supplied.length &&
-        crypto.timingSafeEqual(expected, supplied);
-
-    if (!valid) {
-        recordLoginFailure(request, "admin");
+    if (password !== process.env.ADMIN_PASSWORD) {
         return response.status(401).json({ message: "Incorrect admin password." });
     }
-
-    clearLoginFailures(request, "admin");
 
     const token = newToken();
     adminTokens.add(token);
@@ -610,8 +551,8 @@ function requireCustomer(request, response, next) {
     }
 
     const customer = db
-        .prepare("SELECT * FROM customers WHERE token = ?")
-        .get(token);
+        .prepare("SELECT * FROM customers WHERE token = ? AND (token_expires IS NULL OR token_expires > ?)")
+        .get(token, Date.now());
 
     if (!customer) {
         return response.status(401).json({ message: "Your session has expired. Please log in again." });
@@ -642,8 +583,8 @@ app.post("/api/customers/register", async function (request, response) {
         return response.status(400).json({ message: "Enter a valid email address." });
     }
 
-    if (password.length < 6) {
-        return response.status(400).json({ message: "Password must be at least 6 characters." });
+    if (password.length < 8) {
+        return response.status(400).json({ message: "Password must be at least 8 characters." });
     }
 
     const existing = db.prepare("SELECT id FROM customers WHERE email = ?").get(email);
@@ -657,10 +598,10 @@ app.post("/api/customers/register", async function (request, response) {
 
     const result = db
         .prepare(
-            `INSERT INTO customers (name, email, phone, password_hash, token, created_at)
-             VALUES (?, ?, ?, ?, ?, ?)`
+            `INSERT INTO customers (name, email, phone, password_hash, token, token_expires, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`
         )
-        .run(name, email, phone, passwordHash, token, Date.now());
+        .run(name, email, phone, passwordHash, token, Date.now() + 7 * 24 * 60 * 60 * 1000, Date.now());
 
     const customer = db.prepare("SELECT * FROM customers WHERE id = ?").get(result.lastInsertRowid);
 
@@ -676,30 +617,25 @@ app.post("/api/customers/login", async function (request, response) {
     const email = String(body.email || "").trim().toLowerCase();
     const password = String(body.password || "");
 
-    const lockMessage = checkLoginRateLimit(request, email);
-    if (lockMessage) {
-        return response.status(429).json({ message: lockMessage });
+    if (authRateLimited(request, email)) {
+        return response.status(429).json({ message: "Too many login attempts. Please try again in 15 minutes." });
     }
 
     const customer = db.prepare("SELECT * FROM customers WHERE email = ?").get(email);
 
     if (!customer) {
-        recordLoginFailure(request, email);
         return response.status(401).json({ message: "Incorrect email or password." });
     }
 
     const valid = await bcrypt.compare(password, customer.password_hash);
 
     if (!valid) {
-        recordLoginFailure(request, email);
         return response.status(401).json({ message: "Incorrect email or password." });
     }
 
-    clearLoginFailures(request, email);
-
     const token = newToken();
 
-    db.prepare("UPDATE customers SET token = ? WHERE id = ?").run(token, customer.id);
+    db.prepare("UPDATE customers SET token = ?, token_expires = ? WHERE id = ?").run(token, Date.now() + 7 * 24 * 60 * 60 * 1000, customer.id);
 
     logLogin("customer", customer, "login");
 
@@ -759,7 +695,7 @@ app.post("/api/customers/google", async function (request, response) {
 
     const token = newToken();
 
-    db.prepare("UPDATE customers SET token = ? WHERE id = ?").run(token, customer.id);
+    db.prepare("UPDATE customers SET token = ?, token_expires = ? WHERE id = ?").run(token, Date.now() + 7 * 24 * 60 * 60 * 1000, customer.id);
 
     customer = db.prepare("SELECT * FROM customers WHERE id = ?").get(customer.id);
 
@@ -827,8 +763,8 @@ app.post("/api/customers/reset-password", async function (request, response) {
         return response.status(400).json({ message: "Missing or invalid reset link." });
     }
 
-    if (password.length < 6) {
-        return response.status(400).json({ message: "Password must be at least 6 characters." });
+    if (password.length < 8) {
+        return response.status(400).json({ message: "Password must be at least 8 characters." });
     }
 
     const customer = db.prepare(
@@ -893,8 +829,8 @@ app.post("/api/sellers/register", async function (request, response) {
         return response.status(400).json({ message: "Enter a valid email address." });
     }
 
-    if (password.length < 6) {
-        return response.status(400).json({ message: "Password must be at least 6 characters." });
+    if (password.length < 8) {
+        return response.status(400).json({ message: "Password must be at least 8 characters." });
     }
 
     const existing = db.prepare("SELECT id FROM sellers WHERE email = ?").get(email);
@@ -908,10 +844,10 @@ app.post("/api/sellers/register", async function (request, response) {
 
     const result = db
         .prepare(
-            `INSERT INTO sellers (business_name, email, phone, whatsapp, password_hash, token, status, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, 'approved', ?)`
+            `INSERT INTO sellers (business_name, email, phone, whatsapp, password_hash, token, token_expires, status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'approved', ?)`
         )
-        .run(businessName, email, phone, whatsapp, passwordHash, token, Date.now());
+        .run(businessName, email, phone, whatsapp, passwordHash, token, Date.now() + 7 * 24 * 60 * 60 * 1000, Date.now());
 
     const seller = db.prepare("SELECT * FROM sellers WHERE id = ?").get(result.lastInsertRowid);
 
@@ -928,26 +864,21 @@ app.post("/api/sellers/login", async function (request, response) {
     const email = String(body.email || "").trim().toLowerCase();
     const password = String(body.password || "");
 
-    const lockMessage = checkLoginRateLimit(request, email);
-    if (lockMessage) {
-        return response.status(429).json({ message: lockMessage });
+    if (authRateLimited(request, email)) {
+        return response.status(429).json({ message: "Too many login attempts. Please try again in 15 minutes." });
     }
 
     const seller = db.prepare("SELECT * FROM sellers WHERE email = ?").get(email);
 
     if (!seller) {
-        recordLoginFailure(request, email);
         return response.status(401).json({ message: "Incorrect email or password." });
     }
 
     const valid = await bcrypt.compare(password, seller.password_hash);
 
     if (!valid) {
-        recordLoginFailure(request, email);
         return response.status(401).json({ message: "Incorrect email or password." });
     }
-
-    clearLoginFailures(request, email);
 
     if (seller.status === "suspended") {
         return response.status(403).json({ message: "Your seller account has been suspended. Contact PHYNEX support." });
@@ -955,7 +886,7 @@ app.post("/api/sellers/login", async function (request, response) {
 
     const token = newToken();
 
-    db.prepare("UPDATE sellers SET token = ? WHERE id = ?").run(token, seller.id);
+    db.prepare("UPDATE sellers SET token = ?, token_expires = ? WHERE id = ?").run(token, Date.now() + 7 * 24 * 60 * 60 * 1000, seller.id);
 
     logLogin("seller", seller, "login");
 
@@ -993,7 +924,6 @@ app.put("/api/sellers/me", requireSeller, function (request, response) {
    MEDIA UPLOAD (images + short videos)
 ========================= */
 
-const fs = require("fs");
 const multer = require("multer");
 
 const uploadsDir = path.join(__dirname, "uploads");
@@ -1139,34 +1069,6 @@ app.delete("/api/seller/products/:id", requireSeller, function (request, respons
     db.prepare("DELETE FROM products WHERE id = ?").run(product.id);
 
     response.json({ ok: true });
-});
-
-/* =========================
-   PUBLIC — CATEGORIES
-   Lets the storefront (homepage tiles, category browsing, the seller's
-   "add product" category list) always match whatever the admin has
-   configured, instead of a hardcoded list baked into each page.
-========================= */
-
-app.get("/api/categories", function (request, response) {
-
-    const rows = db.prepare("SELECT * FROM categories ORDER BY name ASC").all();
-
-    const countStmt = db.prepare(
-        "SELECT COUNT(*) AS c FROM products WHERE category = ? AND status = 'approved'"
-    );
-
-    response.json({
-        categories: rows.map(function (category) {
-            return {
-                id: category.id,
-                name: category.name,
-                slug: category.slug,
-                description: category.description,
-                productCount: countStmt.get(category.name).c
-            };
-        })
-    });
 });
 
 /* =========================
@@ -1711,6 +1613,22 @@ app.get("/api/admin/customers", requireAdmin, function (request, response) {
    ADMIN — CATEGORIES
 ========================= */
 
+app.get("/api/categories", function (request, response) {
+    const rows = db.prepare("SELECT id, name, slug, description FROM categories ORDER BY name ASC").all();
+    const countStmt = db.prepare("SELECT COUNT(*) AS c FROM products WHERE category = ? AND status = 'approved'");
+    response.json({
+        categories: rows.map(function (category) {
+            return {
+                id: category.id,
+                name: category.name,
+                slug: category.slug,
+                description: category.description || "",
+                productCount: countStmt.get(category.name).c
+            };
+        })
+    });
+});
+
 app.get("/api/admin/categories", requireAdmin, function (request, response) {
 
     const rows = db.prepare("SELECT * FROM categories ORDER BY name ASC").all();
@@ -2008,50 +1926,140 @@ async function getAccessToken() {
    "order_items" row per cart line, then attempts payment.
 ========================= */
 
+function releaseExpiredReservations() {
+    const now = Date.now();
+    const expired = db.prepare(
+        "SELECT id FROM orders WHERE payment_status = 'pending' AND status = 'pending' AND reservation_expires IS NOT NULL AND reservation_expires < ?"
+    ).all(now);
+    if (!expired.length) return;
+
+    const release = db.prepare(
+        "UPDATE products SET reserved_stock = MAX(0, reserved_stock - ?) WHERE id = ?"
+    );
+    const items = db.prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?").all;
+    const tx = db.transaction(function () {
+        for (const order of expired) {
+            const rows = items(order.id);
+            for (const item of rows) {
+                if (item.product_id) release.run(item.quantity, item.product_id);
+            }
+            db.prepare("UPDATE orders SET payment_status = 'expired', status = 'cancelled', reservation_expires = NULL, updated_at = ? WHERE id = ?")
+                .run(now, order.id);
+        }
+    });
+    tx();
+}
+
 app.post("/api/mpesa/stkpush", async function (request, response) {
 
     if (!mpesaConfigured()) {
-        return response.status(503).json({
-            message: "M-PESA is not configured yet. Add your Daraja credentials to .env."
-        });
+        return response.status(503).json({ message: "M-PESA is not configured yet. Add your Daraja credentials to .env." });
     }
+
+    releaseExpiredReservations();
 
     const payload = request.body || {};
-
-    const phone = normalizePhone(payload.mpesaPhone);
-    const amount = Math.round(Number(payload.total));
-
-    const calculatedAmount = Array.isArray(payload.items)
-        ? payload.items.reduce(function (sum, item) {
-            return sum + Number(item.price) * Number(item.quantity);
-        }, 0)
-        : 0;
-
-    if (!phone) {
-        return response.status(400).json({ message: "Enter a valid Kenyan M-PESA number." });
-    }
-
-    if (!Number.isFinite(amount) || amount < 1) {
-        return response.status(400).json({ message: "The order total must be at least KSh 1." });
-    }
-
-    if (!Array.isArray(payload.items) || payload.items.length === 0) {
-        return response.status(400).json({ message: "Your cart is empty." });
-    }
-
-    if (amount !== Math.round(calculatedAmount) + DELIVERY_FEE) {
-        return response.status(400).json({ message: "The order total could not be verified." });
-    }
-
     const customer = optionalCustomer(request);
     const customerInfo = payload.customer || {};
     const delivery = payload.delivery || {};
+    const requestedItems = Array.isArray(payload.items) ? payload.items : [];
+
+    if (!requestedItems.length) {
+        return response.status(400).json({ message: "Your cart is empty." });
+    }
+
+    const phone = normalizePhone(payload.mpesaPhone);
+    if (!phone) return response.status(400).json({ message: "Enter a valid Kenyan M-PESA number." });
+
+    const productIds = requestedItems.map(item => Number(item.id)).filter(Number.isInteger);
+    if (productIds.length !== requestedItems.length) {
+        return response.status(400).json({ message: "Your cart contains an invalid product." });
+    }
+
+    const placeholders = productIds.map(() => "?").join(",");
+    const rows = db.prepare(
+        `SELECT products.*, sellers.business_name, sellers.phone AS seller_phone, sellers.whatsapp AS seller_whatsapp
+         FROM products JOIN sellers ON sellers.id = products.seller_id
+         WHERE products.id IN (${placeholders}) AND products.status = 'approved'`
+    ).all(...productIds);
+
+    const byId = new Map(rows.map(row => [row.id, row]));
+    const authoritativeItems = [];
+    let subtotal = 0;
+
+    for (const item of requestedItems) {
+        const id = Number(item.id);
+        const product = byId.get(id);
+        const quantity = Math.max(1, Math.round(Number(item.quantity) || 1));
+
+        if (!product) {
+            return response.status(400).json({ message: "One of the products is no longer available." });
+        }
+
+        const available = Math.max(0, Number(product.stock || 0) - Number(product.reserved_stock || 0));
+        if (available < quantity) {
+            return response.status(409).json({ message: product.name + " has only " + available + " available." });
+        }
+
+        subtotal += Number(product.price) * quantity;
+        authoritativeItems.push({
+            product,
+            quantity
+        });
+    }
+
+    const total = Math.round(subtotal + DELIVERY_FEE);
+    const orderNumber = generateOrderNumber();
+    const reservationExpires = Date.now() + 30 * 60 * 1000;
+
+    let orderId;
 
     try {
+        const createOrder = db.transaction(function () {
+            const result = db.prepare(
+                `INSERT INTO orders
+                    (order_number, customer_id, customer_name, customer_email, customer_phone,
+                     county, location, address, instructions, subtotal, delivery_fee, total,
+                     payment_method, payment_status, status, reservation_expires, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'mpesa', 'pending', 'pending', ?, ?, ?)`
+            ).run(
+                orderNumber,
+                customer ? customer.id : null,
+                String(customerInfo.name || (customer && customer.name) || "").trim(),
+                String(customerInfo.email || (customer && customer.email) || "").trim(),
+                String(customerInfo.phone || payload.mpesaPhone || "").trim(),
+                String(delivery.county || "").trim(),
+                String(delivery.location || "").trim(),
+                String(delivery.address || "").trim(),
+                String(delivery.instructions || "").trim(),
+                subtotal,
+                DELIVERY_FEE,
+                total,
+                reservationExpires,
+                Date.now(),
+                Date.now()
+            );
+
+            const id = result.lastInsertRowid;
+            const insertItem = db.prepare(
+                "INSERT INTO order_items (order_id, product_id, seller_id, name, image, price, quantity) VALUES (?, ?, ?, ?, ?, ?, ?)"
+            );
+            const reserve = db.prepare(
+                "UPDATE products SET reserved_stock = COALESCE(reserved_stock, 0) + ? WHERE id = ? AND (stock - COALESCE(reserved_stock, 0)) >= ?"
+            );
+
+            for (const item of authoritativeItems) {
+                const changed = reserve.run(item.quantity, item.product.id, item.quantity);
+                if (changed.changes !== 1) throw new Error("Stock changed while your order was being prepared. Please try again.");
+                insertItem.run(id, item.product.id, item.product.seller_id, item.product.name, item.product.image || "", item.product.price, item.quantity);
+            }
+            return id;
+        });
+
+        orderId = createOrder();
 
         const accessToken = await getAccessToken();
         const requestTimestamp = timestamp();
-
         const password = Buffer.from(
             process.env.MPESA_SHORTCODE + process.env.MPESA_PASSKEY + requestTimestamp
         ).toString("base64");
@@ -2066,7 +2074,7 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
                     Password: password,
                     Timestamp: requestTimestamp,
                     TransactionType: "CustomerPayBillOnline",
-                    Amount: amount,
+                    Amount: total,
                     PartyA: phone,
                     PartyB: process.env.MPESA_SHORTCODE,
                     PhoneNumber: phone,
@@ -2080,74 +2088,23 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
         const result = await darajaResponse.json();
 
         if (!darajaResponse.ok || !result.CheckoutRequestID) {
-            return response.status(502).json({
-                message: result.errorMessage || result.ResponseDescription || "M-PESA rejected the STK Push request."
-            });
+            db.prepare("UPDATE orders SET payment_status = 'failed', status = 'cancelled', reservation_expires = NULL, updated_at = ? WHERE id = ?")
+                .run(Date.now(), orderId);
+            const items = db.prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?").all(orderId);
+            const release = db.prepare("UPDATE products SET reserved_stock = MAX(0, reserved_stock - ?) WHERE id = ?");
+            items.forEach(item => { if (item.product_id) release.run(item.quantity, item.product_id); });
+            return response.status(502).json({ message: result.errorMessage || result.ResponseDescription || "M-PESA rejected the STK Push request." });
         }
 
-        const orderNumber = generateOrderNumber();
-        const subtotal = Math.round(calculatedAmount);
-
-        const orderResult = db
-            .prepare(
-                `INSERT INTO orders
-                    (order_number, customer_id, customer_name, customer_email, customer_phone,
-                     county, location, address, instructions, subtotal, delivery_fee, total,
-                     payment_method, payment_status, status, checkout_request_id, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'mpesa', 'pending', 'pending', ?, ?)`
-            )
-            .run(
-                orderNumber,
-                customer ? customer.id : null,
-                String(customerInfo.name || (customer && customer.name) || "").trim(),
-                String(customerInfo.email || (customer && customer.email) || "").trim(),
-                String(customerInfo.phone || payload.mpesaPhone || "").trim(),
-                String(delivery.county || "").trim(),
-                String(delivery.location || "").trim(),
-                String(delivery.address || "").trim(),
-                String(delivery.instructions || "").trim(),
-                subtotal,
-                DELIVERY_FEE,
-                amount,
-                result.CheckoutRequestID,
-                Date.now()
-            );
-
-        const orderId = orderResult.lastInsertRowid;
-
-        const insertItem = db.prepare(
-            "INSERT INTO order_items (order_id, product_id, seller_id, name, image, price, quantity) VALUES (?, ?, ?, ?, ?, ?, ?)"
-        );
-
-        payload.items.forEach(function (item) {
-
-            const numericId = Number(item.id);
-            const productId = Number.isFinite(numericId) ? numericId : null;
-
-            let sellerId = null;
-
-            if (productId) {
-                const productRow = db.prepare("SELECT seller_id FROM products WHERE id = ?").get(productId);
-                if (productRow) sellerId = productRow.seller_id;
-            }
-
-            insertItem.run(
-                orderId,
-                productId,
-                sellerId,
-                String(item.name || "").trim(),
-                String(item.image || "").trim(),
-                Math.round(Number(item.price) || 0),
-                Math.max(1, Math.round(Number(item.quantity) || 1))
-            );
-        });
+        db.prepare("UPDATE orders SET checkout_request_id = ?, updated_at = ? WHERE id = ?")
+            .run(result.CheckoutRequestID, Date.now(), orderId);
 
         payments.set(result.CheckoutRequestID, {
             status: "pending",
-            orderNumber: orderNumber,
-            orderId: orderId,
-            amount: amount,
-            phone: phone,
+            orderNumber,
+            orderId,
+            amount: total,
+            phone,
             createdAt: Date.now()
         });
 
@@ -2155,12 +2112,19 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
 
         return response.json({
             checkoutRequestId: result.CheckoutRequestID,
-            orderNumber: orderNumber,
+            orderNumber,
             customerMessage: result.CustomerMessage || "M-PESA payment request sent."
         });
 
     } catch (error) {
-        return response.status(502).json({ message: error.message || "Unable to reach M-PESA." });
+        if (orderId) {
+            const items = db.prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?").all(orderId);
+            const release = db.prepare("UPDATE products SET reserved_stock = MAX(0, reserved_stock - ?) WHERE id = ?");
+            items.forEach(item => { if (item.product_id) release.run(item.quantity, item.product_id); });
+            db.prepare("UPDATE orders SET payment_status = 'failed', status = 'cancelled', reservation_expires = NULL, updated_at = ? WHERE id = ?")
+                .run(Date.now(), orderId);
+        }
+        return response.status(502).json({ message: error.message || "Unable to process your order." });
     }
 });
 
@@ -2183,12 +2147,12 @@ function deductStockForOrder(orderId) {
     const items = db.prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?").all(orderId);
 
     const updateStock = db.prepare(
-        "UPDATE products SET stock = MAX(0, stock - ?) WHERE id = ?"
+        "UPDATE products SET stock = MAX(0, stock - ?), reserved_stock = MAX(0, COALESCE(reserved_stock, 0) - ?) WHERE id = ?"
     );
 
     items.forEach(function (item) {
         if (item.product_id) {
-            updateStock.run(item.quantity, item.product_id);
+            updateStock.run(item.quantity, item.quantity, item.product_id);
         }
     });
 
@@ -2201,10 +2165,15 @@ app.post("/api/mpesa/callback", function (request, response) {
 
     if (callback && callback.CheckoutRequestID) {
 
-        const payment = payments.get(callback.CheckoutRequestID) || {
-            status: "pending",
-            createdAt: Date.now()
-        };
+        let payment = payments.get(callback.CheckoutRequestID);
+        if (!payment) {
+            const order = db.prepare("SELECT id, order_number AS orderNumber, total AS amount, customer_phone AS phone FROM orders WHERE checkout_request_id = ?").get(callback.CheckoutRequestID);
+            if (order) {
+                payment = Object.assign({}, order, { status: "pending", createdAt: Date.now() });
+            } else {
+                payment = { status: "pending", createdAt: Date.now() };
+            }
+        }
 
         const paid = Number(callback.ResultCode) === 0;
 
@@ -2215,11 +2184,17 @@ app.post("/api/mpesa/callback", function (request, response) {
 
         if (payment.orderId) {
             db.prepare(
-                "UPDATE orders SET payment_status = ?, status = ? WHERE id = ?"
-            ).run(paid ? "paid" : "failed", paid ? "paid" : "cancelled", payment.orderId);
+                "UPDATE orders SET payment_status = ?, status = ?, reservation_expires = NULL, updated_at = ? WHERE id = ?"
+            ).run(paid ? "paid" : "failed", paid ? "paid" : "cancelled", Date.now(), payment.orderId);
 
             if (paid) {
                 deductStockForOrder(payment.orderId);
+            } else {
+                const failedItems = db.prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?").all(payment.orderId);
+                const release = db.prepare("UPDATE products SET reserved_stock = MAX(0, COALESCE(reserved_stock, 0) - ?) WHERE id = ?");
+                failedItems.forEach(function (item) {
+                    if (item.product_id) release.run(item.quantity, item.product_id);
+                });
             }
 
             logActivity(
