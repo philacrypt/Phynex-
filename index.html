@@ -1842,7 +1842,22 @@
                 gap: 8px;
             }
         }
-    </style>
+    
+        .pp-review-summary {
+            font-size: 14px; font-weight: 700; color: #172033; margin-bottom: 14px;
+        }
+        .pp-review-form { padding: 12px; border: 1px solid #e4e7ed; border-radius: 12px; background: #fafbfc; margin-bottom: 14px; }
+        .pp-review-login-note, .pp-rating-message { margin: 0 0 10px; color: #687083; font-size: 13px; }
+        .pp-star-picker { display:flex; gap:4px; margin: 8px 0 12px; }
+        .pp-star-picker button { border:0; background:transparent; color:#cbd0d8; font-size:30px; line-height:1; cursor:pointer; padding:2px 4px; }
+        .pp-star-picker button.selected, .pp-star-picker button:hover { color:#f5b301; }
+        .pp-save-rating { border:0; background:#0875e1; color:#fff; font-weight:700; border-radius:8px; padding:10px 14px; cursor:pointer; }
+        .pp-save-rating:disabled { opacity:.55; cursor:not-allowed; }
+        .pp-review-item { border-top:1px solid #e7eaf0; padding:12px 0; }
+        .pp-review-stars { color:#f5b301; letter-spacing:1px; }
+        .pp-review-meta { color:#687083; font-size:12px; margin-top:4px; }
+
+</style>
 </head>
 
 <body>
@@ -1974,7 +1989,7 @@
 <section class="showcase">
     <div class="showcase-grid">
 
-        <a class="showcase-tile" href="javascript:void(0)" data-category="phones">
+        <a class="showcase-tile" href="category.html?category=phones" data-category="phones">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
@@ -1986,7 +2001,7 @@
             </div>
         </a>
 
-        <a class="showcase-tile" href="javascript:void(0)" data-category="computers">
+        <a class="showcase-tile" href="category.html?category=computers" data-category="computers">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
@@ -1998,7 +2013,7 @@
             </div>
         </a>
 
-        <a class="showcase-tile" href="javascript:void(0)" data-category="gaming">
+        <a class="showcase-tile" href="category.html?category=gaming" data-category="gaming">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
@@ -2010,7 +2025,7 @@
             </div>
         </a>
 
-        <a class="showcase-tile" href="javascript:void(0)" data-category="accessories">
+        <a class="showcase-tile" href="category.html?category=accessories" data-category="accessories">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
@@ -2142,9 +2157,7 @@
                 Dell Vostro 15 3500 i7 11th Gen 8GB 400GB SSD
             </div>
 
-            <div class="rating">
-                ★★★★★ (24)
-            </div>
+            <div class="rating" aria-label="No ratings yet"></div>
 
             <div class="price">
                 KSh 35,000
@@ -2180,9 +2193,7 @@
                 HP EliteDesk 830 G5 i5 8th Gen 8GB 256GB SSD
             </div>
 
-            <div class="rating">
-                ★★★★★ (18)
-            </div>
+            <div class="rating" aria-label="No ratings yet"></div>
 
             <div class="price">
                 KSh 32,500
@@ -2218,9 +2229,7 @@
                 BT Speaker HF226
             </div>
 
-            <div class="rating">
-                ★★★★★ (31)
-            </div>
+            <div class="rating" aria-label="No ratings yet"></div>
 
             <div class="price">
                 KSh 2,000
@@ -2256,9 +2265,7 @@
                 MacBook Air i5 2017 256GB SSD 8GB RAM
             </div>
 
-            <div class="rating">
-                ★★★★★ (15)
-            </div>
+            <div class="rating" aria-label="No ratings yet"></div>
 
             <div class="price">
                 KSh 20,500
@@ -2294,9 +2301,7 @@
              Lenovo Thinkpad T460 256GB SSD 8GB RAM   
             </div>
 
-            <div class="rating">
-                ★★★★★ (41)
-            </div>
+            <div class="rating" aria-label="No ratings yet"></div>
 
             <div class="price">
                 KSh 23,000
@@ -2463,7 +2468,20 @@
         </div>
 
         <div class="pp-tab-panel" id="ppReviews">
-            <p class="pp-reviews-empty">No reviews yet for this product. Be the first to leave one after your order.</p>
+            <div class="pp-review-summary" id="ppReviewSummary">No ratings yet</div>
+            <div class="pp-review-form" id="ppReviewForm">
+                <p class="pp-review-login-note" id="ppReviewLoginNote">Log in to rate this product.</p>
+                <div class="pp-star-picker" id="ppStarPicker" aria-label="Choose a rating">
+                    <button type="button" data-rating="1" aria-label="1 star">★</button>
+                    <button type="button" data-rating="2" aria-label="2 stars">★</button>
+                    <button type="button" data-rating="3" aria-label="3 stars">★</button>
+                    <button type="button" data-rating="4" aria-label="4 stars">★</button>
+                    <button type="button" data-rating="5" aria-label="5 stars">★</button>
+                </div>
+                <button type="button" class="pp-save-rating" id="ppSaveRating">Save rating</button>
+                <p class="pp-rating-message" id="ppRatingMessage" role="status"></p>
+            </div>
+            <div id="ppReviewList"></div>
         </div>
 
         <div class="pp-section">
@@ -2746,38 +2764,8 @@
 </script>
 
 <script>
-    // Promo buttons use the store's real category/filter controls.
-    // Clicking Explore Gaming selects Gaming in the existing product store
-    // and brings the matching products into view instead of doing nothing.
-    document.addEventListener('DOMContentLoaded', function () {
-        var gamingButton = document.getElementById('gamingButton');
-        var gamingNav = document.querySelector('.nav-item[data-category="gaming"]');
-
-        if (gamingButton) {
-            gamingButton.addEventListener('click', function () {
-                if (gamingNav) {
-                    gamingNav.click();
-                }
-
-                var productsSection = document.getElementById('productsSection');
-                if (productsSection) {
-                    setTimeout(function () {
-                        productsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }, 80);
-                }
-            });
-        }
-
-        var newArrivalsButton = document.getElementById('newArrivalsButton');
-        if (newArrivalsButton) {
-            newArrivalsButton.addEventListener('click', function () {
-                var newArrivals = document.getElementById('newArrivalsSection');
-                if (newArrivals) {
-                    newArrivals.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            });
-        }
-    });
+    // Category navigation is handled by script.js so category clicks open
+    // the dedicated category page instead of scrolling the homepage.
 </script>
 
 <script src="script.js"></script>
