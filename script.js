@@ -83,7 +83,7 @@
             '</div>' +
             '<div class="product-info">' +
                 '<div class="product-name">' + escapeHtml(product.name) + '</div>' +
-                '<div class="rating">' + (product.sellerName ? 'Sold by ' + escapeHtml(product.sellerName) : '') + '</div>' +
+                '<div class="rating">' + (product.sellerName ? 'Sell by ' + escapeHtml(product.sellerName) : '') + '</div>' +
                 '<div class="price">' + priceHtml + '</div>' +
                 '<div class="stock-status' + (inStock ? '' : ' sold-out') + '">' +
                     (inStock ? 'In stock' : 'Sold out') +

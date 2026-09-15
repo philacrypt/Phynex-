@@ -26,7 +26,7 @@
    grid.innerHTML=products.length?products.map(p=>
     '<a class="card" href="index.html?product='+encodeURIComponent(p.id)+'">'+
     '<div class="pic"><img src="'+esc(p.image||'')+'" alt="'+esc(p.name)+'" loading="lazy"></div>'+
-    '<div class="info"><div class="name">'+esc(p.name)+'</div><div class="seller">'+(p.sellerName?'Sold by '+esc(p.sellerName):'')+'</div><div class="price">'+money(p.price)+'</div></div></a>'
+    '<div class="info"><div class="name">'+esc(p.name)+'</div><div class="seller">'+(p.sellerName?'Sell by '+esc(p.sellerName):'')+'</div><div class="price">'+money(p.price)+'</div></div></a>'
    ).join(''):'<div class="empty">No approved products are currently in this category.</div>';
   }catch(e){count.textContent='';grid.innerHTML='<div class="empty">Could not load products. Please refresh.</div>';}
  }
