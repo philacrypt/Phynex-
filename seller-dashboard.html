@@ -436,10 +436,18 @@
                     </div>
                 </div>
 
-                <label for="pCategory">Category</label>
-                <select id="pCategory" name="category">
-                    <option value="">Select category</option>
-                </select>
+                <div class="field-grid">
+                    <div>
+                        <label for="pStock">Stock quantity*</label>
+                        <input id="pStock" name="stock" type="number" min="0" value="1" required>
+                    </div>
+                    <div>
+                        <label for="pCategory">Category</label>
+                        <select id="pCategory" name="category">
+                            <option value="">Select category</option>
+                        </select>
+                    </div>
+                </div>
 
                 <label for="pDescription">Description</label>
                 <textarea id="pDescription" name="description" placeholder="Describe the product, what's included, and its condition."></textarea>

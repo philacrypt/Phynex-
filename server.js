@@ -23,6 +23,22 @@ app.use(express.static(__dirname));
 
 const DATA_DIR = process.env.PHYNEX_DATA_DIR || __dirname;
 fs.mkdirSync(DATA_DIR, { recursive: true });
+
+if (!process.env.PHYNEX_DATA_DIR) {
+    console.warn(
+        "\n*** PHYNEX WARNING ***\n" +
+        "PHYNEX_DATA_DIR is not set, so the database and uploaded images are\n" +
+        "being stored inside the app's own code folder. On Render (and most\n" +
+        "hosts) this folder is WIPED on every redeploy/restart, which means\n" +
+        "every product, order, seller and image will be permanently lost the\n" +
+        "next time this service redeploys or restarts.\n" +
+        "Fix: attach a Persistent Disk to this service in the Render\n" +
+        "dashboard (Settings -> Disks), mount it at e.g. /data, and set the\n" +
+        "environment variable PHYNEX_DATA_DIR=/data. See README-FIXES.md.\n" +
+        "***********************\n"
+    );
+}
+
 const db = new Database(path.join(DATA_DIR, "phynex.db"));
 db.pragma("journal_mode = WAL");
 
