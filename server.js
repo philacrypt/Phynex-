@@ -996,7 +996,12 @@ app.put("/api/sellers/me", requireSeller, function (request, response) {
 
 const multer = require("multer");
 
-const uploadsDir = path.join(__dirname, "uploads");
+// Uploaded images/videos must live on the same persistent disk as the
+// database (DATA_DIR). If they were saved under __dirname (the app's own
+// code folder) instead, every server restart/redeploy would wipe them out
+// while the database still remembered their URLs - giving the
+// "product stays for a while then the image disappears" symptom.
+const uploadsDir = path.join(DATA_DIR, "uploads");
 
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });

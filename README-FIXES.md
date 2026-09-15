@@ -1,38 +1,41 @@
 # PHYNEX marketplace fixes
 
-## Latest update (Sep 2026) — AI image-based auto-categorization
-- **Sellers no longer have to pick a category by hand.** As soon as a
-  seller attaches a product photo in the "Add product" form
-  (`seller-dashboard.html`), the photo is sent to a new endpoint,
-  `POST /api/seller/categorize-image`, which uses Claude's vision
-  model (`lib/image-categorizer.js`) to identify the product and
-  suggest the matching store category (e.g. a laptop photo →
-  "Computers & Laptops", a dress → "Fashion", shoes → "Shoes & Bags",
-  a sofa → "Furniture", packaged food → "Grocery").
-- **Confidence check.** Every suggestion comes back with a confidence
-  score:
-  - High confidence → the category is filled in automatically; the
-    seller can still click "Not right? Choose a different category"
-    to override it.
-  - Medium confidence → the seller is asked "Is this **<category>**?"
-    with Yes/Confirm or No/pick-manually buttons, so a low-confidence
-    guess never gets saved without a human checking it.
-  - No image, an unclear photo, or the AI service unavailable/not
-    configured → the category dropdown (now populated from the same
-    live category list used everywhere else on the site) is shown so
-    the seller can pick manually, exactly like before this feature
-    existed.
-- **Nothing breaks without an API key.** Set `ANTHROPIC_API_KEY` in
-  `.env` to turn this on. Without it, `classifyProductImage()` returns
-  `{ available: false }` immediately and the site behaves exactly as
-  it did before — product submission, the existing keyword-based
-  `lib/categorizer.js` fallback, and admin add/edit product all work
-  unchanged.
-- The final safety net is unchanged: `applyAutoCategory()` in
-  `server.js` still runs the text-based keyword categorizer as a
-  fallback, and only trusts the AI's image-based category when the
-  seller confirmed it or the AI was confident *and* the category is
-  one that actually exists in the store's category list.
+## Latest update (Sep 2026, round 2)
+- **Product images no longer disappear after a restart/redeploy.**
+  Uploaded images/videos were being saved to a folder inside the app's own
+  code directory (`__dirname/uploads`), which is wiped every time the
+  server restarts or redeploys - even though the database (which still
+  remembered the image's URL) was correctly saved to the persistent disk.
+  Uploads are now saved under the same persistent directory as the
+  database (`PHYNEX_DATA_DIR/uploads`), so they survive restarts and
+  redeploys exactly like the database does. **No extra Render setup is
+  needed beyond what's already below** - the existing persistent disk
+  mounted at `/data` now holds both `phynex.db` and the `uploads` folder.
+  If you're moving from the old version, copy any existing images from
+  the app folder's `uploads/` directory into `/data/uploads/` once after
+  deploying this update, or previously-uploaded images will still be
+  missing (only newly-uploaded ones are protected automatically).
+- **Seller/admin category dropdowns now match the store's real
+  categories, so the AI auto-categorizer and manual category choices
+  agree.** The "Add Product" category dropdown in `seller-dashboard.html`
+  and `admin.html` used a hardcoded list of category names (e.g.
+  "Laptops & Computers", "Gaming Consoles", "PC Gaming") that didn't
+  match any of the real categories seeded in the database (e.g.
+  "Computers & Laptops", "Gaming"). Since the auto-categorizer only
+  overrides a seller's chosen category when it's very confident, most
+  products kept whatever mismatched category the seller picked - a
+  category that didn't exist anywhere else in the store, so the product
+  never showed up on any category page or count. The seller dashboard's
+  dropdown now loads its options live from `/api/categories`, and the
+  admin dropdowns now use the live category list (with a corrected
+  fallback list) instead of the old mismatched one.
+  - **Existing products already saved with one of the old bogus category
+    names will still need fixing.** Open each affected product in the
+    admin panel and re-save it with a category from the corrected
+    dropdown (or re-run the categorizer via
+    `node scripts/backfill-categories.js --apply`, which re-scans every
+    product's name/description and fixes categories it recognizes with
+    high confidence).
 
 ## Previous update (Sep 2026)
 - **Add to Cart / Buy Now fixed on the homepage.** Both buttons now use a single

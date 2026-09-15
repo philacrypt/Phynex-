@@ -350,13 +350,21 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
     } catch(e){toast(e.message,'error');}
   };
 
+  // Fallback list only, used if /api/admin/categories can't be reached.
+  // Kept in sync with the store's real, seeded category names (server.js
+  // DEFAULT_CATEGORIES) - these must match exactly, or products picked
+  // from this dropdown won't match any real category on the site.
   const PRODUCT_CATEGORIES = [
-    'Phones & Tablets','Laptops & Computers','Computer Accessories','Gaming Consoles','Gaming Accessories','Gaming Chairs','PC Gaming','Monitors','TVs & Home Theater','Audio & Headphones','Cameras & Photography','Smartwatches & Wearables','Printers & Scanners','Networking & Wi-Fi','Storage & Memory','Power & Charging','Office Equipment','Home Appliances','Smart Home','Drones & RC','Car Electronics','Security & CCTV','Cables & Adapters','Software & Digital','Other Electronics'
+    'Phones & Tablets','Computers & Laptops','Electronics','Gaming','Fashion','Shoes & Bags','Beauty & Personal Care','Home & Garden','Furniture','Appliances','Grocery','Health & Wellness','Baby & Kids','Sports & Outdoors','Automotive','Books & Stationery','Jewelry & Watches','Cameras & Photography','Pet Supplies','Industrial & Tools','Services','Other'
   ];
-  function fillFilterCategories(){ const sel=$('productCategory'); if(!sel)return; const current=sel.value; sel.innerHTML='<option value="">All categories</option>'+PRODUCT_CATEGORIES.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join(''); if(current)sel.value=current; }
+  function currentCategoryNames(){
+    const live=(categories||[]).map(c=>c.name).filter(Boolean);
+    return live.length?live:PRODUCT_CATEGORIES;
+  }
+  function fillFilterCategories(){ const sel=$('productCategory'); if(!sel)return; const current=sel.value; sel.innerHTML='<option value="">All categories</option>'+currentCategoryNames().map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join(''); if(current)sel.value=current; }
   function fillCategorySelect(selected=''){
     const sel=$('productCategorySelect'); if(!sel)return;
-    sel.innerHTML='<option value="">Select category</option>'+PRODUCT_CATEGORIES.map(c=>`<option value="${esc(c)}" ${c===selected?'selected':''}>${esc(c)}</option>`).join('');
+    sel.innerHTML='<option value="">Select category</option>'+currentCategoryNames().map(c=>`<option value="${esc(c)}" ${c===selected?'selected':''}>${esc(c)}</option>`).join('');
   }
   function previewFiles(input, target){
     const el=$(target); el.innerHTML='';
