@@ -1674,6 +1674,19 @@
             color: #a9bce0;
         }
 
+        #newsletterMessage.error {
+            color: #ff9b9b;
+        }
+
+        #newsletterMessage.success {
+            color: #8be29b;
+        }
+
+        .newsletter-form button:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+        }
+
         .footer-bottom {
             border-top: 1px solid rgba(255,255,255,.12);
             padding: 18px 5%;
@@ -1875,7 +1888,14 @@
 
     <div class="header-actions">
 
-       
+        <a class="action" href="account.html">
+            <span class="action-icon"><i class="fa-solid fa-user"></i></span>
+            <div class="action-text">
+                Account
+                <small>Login</small>
+            </div>
+        </a>
+
         <a class="action" href="delivery.html#tracking">
             <span class="action-icon"><i class="fa-solid fa-box"></i></span>
             <div class="action-text">
@@ -2573,8 +2593,7 @@
             <div class="social-links">
                 <a href="https://www.facebook.com/" target="_blank" rel="noopener">Facebook</a>
                 <a href="https://www.instagram.com/" target="_blank" rel="noopener">Instagram</a>
-                <a href="https://wa.me/254793977389
-        " target="_blank" rel="noopener">WhatsApp</a>
+                <a href="https://wa.me/254793977389" target="_blank" rel="noopener">WhatsApp</a>
             </div>
         </div>
 
@@ -2746,25 +2765,15 @@
 </script>
 
 <script>
-    // Promo buttons use the store's real category/filter controls.
-    // Clicking Explore Gaming selects Gaming in the existing product store
-    // and brings the matching products into view instead of doing nothing.
+    // "Explore Gaming" opens the real Gaming category page directly,
+    // the same way tapping the Gaming tile/nav-item does - no more
+    // scrolling down the homepage instead of actually navigating.
     document.addEventListener('DOMContentLoaded', function () {
         var gamingButton = document.getElementById('gamingButton');
-        var gamingNav = document.querySelector('.nav-item[data-category="gaming"]');
 
         if (gamingButton) {
             gamingButton.addEventListener('click', function () {
-                if (gamingNav) {
-                    gamingNav.click();
-                }
-
-                var productsSection = document.getElementById('productsSection');
-                if (productsSection) {
-                    setTimeout(function () {
-                        productsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }, 80);
-                }
+                window.location.href = 'category.html?category=' + encodeURIComponent('Gaming');
             });
         }
 
@@ -2775,6 +2784,59 @@
                 if (newArrivals) {
                     newArrivals.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
+            });
+        }
+
+        var newsletterForm = document.getElementById('newsletterForm');
+        if (newsletterForm) {
+            newsletterForm.addEventListener('submit', function (event) {
+                event.preventDefault();
+
+                var emailInput = document.getElementById('newsletterEmail');
+                var messageEl = document.getElementById('newsletterMessage');
+                var submitButton = newsletterForm.querySelector('button[type="submit"]');
+                var email = emailInput ? emailInput.value.trim() : '';
+
+                if (!messageEl) return;
+
+                messageEl.classList.remove('error', 'success');
+
+                if (!email) {
+                    messageEl.textContent = 'Please enter your email address.';
+                    messageEl.classList.add('error');
+                    return;
+                }
+
+                if (submitButton) submitButton.disabled = true;
+                messageEl.textContent = 'Subscribing...';
+
+                fetch('/api/newsletter', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email })
+                })
+                    .then(function (response) {
+                        return response.json().then(function (data) {
+                            return { ok: response.ok, data: data };
+                        });
+                    })
+                    .then(function (result) {
+                        if (result.ok && result.data && result.data.ok) {
+                            messageEl.textContent = result.data.message || "You're subscribed!";
+                            messageEl.classList.add('success');
+                            newsletterForm.reset();
+                        } else {
+                            messageEl.textContent = (result.data && result.data.message) || 'Could not subscribe right now.';
+                            messageEl.classList.add('error');
+                        }
+                    })
+                    .catch(function () {
+                        messageEl.textContent = 'Could not subscribe right now. Please try again later.';
+                        messageEl.classList.add('error');
+                    })
+                    .finally(function () {
+                        if (submitButton) submitButton.disabled = false;
+                    });
             });
         }
     });

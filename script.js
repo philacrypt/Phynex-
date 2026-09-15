@@ -97,6 +97,68 @@
         return card;
     }
 
+    /* =====================================================
+       CATEGORY TAP → OPEN CATEGORY PAGE (INSTANT, NO SCROLL)
+       Maps the short slugs used in the markup (data-category="computers")
+       to the real category names stored on products in the database
+       (e.g. "Computers & Laptops"), so tapping a category actually opens
+       a page showing that category's real, approved products - instead
+       of doing nothing, or smooth-scrolling down the homepage.
+       This one delegated listener covers:
+         - the top category bar (.nav-item)
+         - the "Shop by Category" tiles (.category)
+         - the homepage promo banner tiles (.showcase-tile)
+       so every place a category is tappable behaves the same way.
+       ===================================================== */
+
+    const CATEGORY_SLUG_TO_NAME = {
+        'phones': 'Phones & Tablets',
+        'computers': 'Computers & Laptops',
+        'electronics': 'Electronics',
+        'gaming': 'Gaming'
+    };
+
+    function goToCategoryBySlug(slug) {
+
+        const normalized = String(slug || '').toLowerCase().trim();
+
+        // "All Categories" → browse every category.
+        if (normalized === 'all') {
+            window.location.href = 'categories.html';
+            return true;
+        }
+
+        const realName = CATEGORY_SLUG_TO_NAME[normalized];
+
+        if (realName) {
+            window.location.href =
+                'category.html?category=' + encodeURIComponent(realName);
+            return true;
+        }
+
+        return false;
+    }
+
+    document.addEventListener('click', function (event) {
+
+        const target = event.target.closest(
+            '.nav-item[data-category], .category[data-category], .showcase-tile[data-category]'
+        );
+
+        if (!target) return;
+
+        const slug = target.dataset.category;
+
+        // "Deals" stays as an on-page jump to the Flash Deals section -
+        // it isn't a real store category, just a homepage filter.
+        if (slug === 'deals') return;
+
+        if (goToCategoryBySlug(slug)) {
+            event.preventDefault();
+        }
+
+    });
+
     async function loadStoreCategories() {
         const container = document.querySelector('.categories');
         if (!container) return;
@@ -1691,32 +1753,14 @@
             }
 
             /* ---------------------------------------------
-               HERO CATEGORY LINKS
-               --------------------------------------------- */
-
-            document
-                .querySelectorAll(
-                    '.hero-links a[data-category]'
-                )
-                .forEach(
-                    function (link) {
-
-                        link.addEventListener(
-                            'click',
-                            function () {
-
-                                filterCategory(
-                                    link.dataset.category
-                                );
-
-                            }
-                        );
-
-                    }
-                );
-
-            /* ---------------------------------------------
-               CATEGORY TILES
+               CATEGORY TAPS now navigate straight to the real
+               category page (see the delegated click listener
+               near the top of this file, next to
+               goToCategoryBySlug). Tapping a category used to
+               just filter the 5 demo cards on this page and
+               smooth-scroll down to them - it now opens
+               category.html with that category's real, approved
+               products from every seller instead.
                --------------------------------------------- */
 
             document
@@ -1725,21 +1769,7 @@
                 )
                 .forEach(
                     function (tile) {
-
-                        tile.style.cursor =
-                            'pointer';
-
-                        tile.addEventListener(
-                            'click',
-                            function () {
-
-                                filterCategory(
-                                    tile.dataset.category
-                                );
-
-                            }
-                        );
-
+                        tile.style.cursor = 'pointer';
                     }
                 );
 
