@@ -447,6 +447,27 @@
                 <label for="pSpecs">Specifications</label>
                 <textarea id="pSpecs" name="specifications" placeholder="Model, storage, RAM, colour, dimensions, warranty…"></textarea>
 
+                <div class="field-grid">
+                    <div>
+                        <label for="pWarranty">Warranty</label>
+                        <select id="pWarranty" name="warranty">
+                            <option value="">No warranty</option>
+                            <option>3 months</option>
+                            <option>6 months</option>
+                            <option>12 months</option>
+                            <option>24 months</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="pDispatchLocation">Ships from (city/area)</label>
+                        <input id="pDispatchLocation" name="dispatchLocation" placeholder="e.g. Nairobi CBD">
+                    </div>
+                </div>
+
+                <label for="pReturnPolicy">Return / exchange options</label>
+                <input id="pReturnPolicy" name="returnPolicy" placeholder="e.g. 7-Day Return, 7-Day Exchange">
+                <div class="upload-help" style="margin:-6px 0 10px;">Comma-separate the options you actually offer for this product — they'll show as tags on the product page. Leave blank if none.</div>
+
                 <label class="full-field" for="pMedia">Photos / video (up to 6 files)</label>
                 <div class="upload-box">
                     <input id="pMedia" name="media" type="file" accept="image/*,video/*" multiple>

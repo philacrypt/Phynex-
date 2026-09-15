@@ -221,6 +221,8 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
         <label>SKU<input name="sku" placeholder="Optional SKU"></label>
         <label>Condition<select name="condition"><option>New</option><option>Refurbished</option><option>Used - Excellent</option><option>Used - Good</option></select></label>
         <label>Warranty<select name="warranty"><option>No warranty</option><option>3 months</option><option>6 months</option><option>12 months</option><option>24 months</option></select></label>
+        <label>Ships from (city/area)<input name="dispatchLocation" placeholder="e.g. Nairobi CBD"></label>
+        <label>Return / exchange options<input name="returnPolicy" placeholder="e.g. 7-Day Return, 7-Day Exchange"></label>
         <div class="form-section-title">Product images</div>
         <label style="grid-column:1/-1">Main product image*
           <div class="image-upload">
@@ -355,7 +357,7 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
   // DEFAULT_CATEGORIES) - these must match exactly, or products picked
   // from this dropdown won't match any real category on the site.
   const PRODUCT_CATEGORIES = [
-    'Phones & Tablets','Computers & Laptops','Electronics','Gaming','Fashion','Shoes & Bags','Beauty & Personal Care','Home & Garden','Furniture','Appliances','Grocery','Health & Wellness','Baby & Kids','Sports & Outdoors','Automotive','Books & Stationery','Jewelry & Watches','Cameras & Photography','Pet Supplies','Industrial & Tools','Services','Other'
+    'Phones & Tablets','Computers & Laptops','Electronics','Gaming','Clothing & Fashion','Shoes & Bags','Beauty & Personal Care','Home & Garden','Furniture','Appliances','Accessories','Home & Office','Grocery','Health & Wellness','Baby & Kids','Sports & Outdoors','Automotive','Books & Stationery','Jewelry & Watches','Cameras & Photography','Pet Supplies','Industrial & Tools','Services','Other'
   ];
   function currentCategoryNames(){
     const live=(categories||[]).map(c=>c.name).filter(Boolean);

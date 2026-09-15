@@ -193,18 +193,22 @@ ensureColumn("products", "deleted_at", "INTEGER");
 ensureColumn("orders", "updated_at", "INTEGER");
 ensureColumn("orders", "reservation_expires", "INTEGER");
 ensureColumn("products", "reserved_stock", "INTEGER DEFAULT 0");
+ensureColumn("products", "dispatch_location", "TEXT");
+ensureColumn("products", "return_policy", "TEXT");
 
 const DEFAULT_CATEGORIES = [
     ["Phones & Tablets","phones-tablets","Mobile phones, tablets and accessories"],
     ["Computers & Laptops","computers-laptops","Laptops, desktops, monitors and computer accessories"],
     ["Electronics","electronics","TVs, audio, smart devices and electronics"],
     ["Gaming","gaming","Consoles, games, controllers and gaming accessories"],
-    ["Fashion","fashion","Clothing, fashion and accessories"],
+    ["Clothing & Fashion","clothing-fashion","Clothing, fashion wear and style accessories"],
     ["Shoes & Bags","shoes-bags","Shoes, handbags, backpacks and travel bags"],
     ["Beauty & Personal Care","beauty-personal-care","Beauty, cosmetics and personal-care products"],
     ["Home & Garden","home-garden","Home improvement, decor, garden and outdoor home items"],
     ["Furniture","furniture","Beds, sofas, tables, chairs and storage"],
     ["Appliances","appliances","Kitchen, laundry, cooling and household appliances"],
+    ["Accessories","accessories","General accessories that don't belong to one specific department"],
+    ["Home & Office","home-office","Home organization, office supplies and small home/office essentials"],
     ["Grocery","grocery","Food, beverages and everyday household consumables"],
     ["Health & Wellness","health-wellness","Wellness and non-prescription health products"],
     ["Baby & Kids","baby-kids","Baby products, toys, kids clothing and essentials"],
@@ -225,6 +229,18 @@ const seedCategory = db.prepare(
 for (const category of DEFAULT_CATEGORIES) {
     seedCategory.run(category[0], category[1], category[2], Date.now());
 }
+
+/* One-time rename: the "Fashion" category was renamed to "Clothing &
+   Fashion" so it clearly matches what sellers/customers actually call
+   it ("clothing"). This updates any already-seeded category row and
+   any products already saved under the old name, so nothing already
+   listed as "Fashion" silently disappears from its category page. */
+db.prepare(
+    "UPDATE categories SET name = 'Clothing & Fashion', slug = 'clothing-fashion', description = 'Clothing, fashion wear and style accessories' WHERE name = 'Fashion'"
+).run();
+db.prepare(
+    "UPDATE products SET category = 'Clothing & Fashion' WHERE category = 'Fashion'"
+).run();
 
 /* =========================
    AI AUTO-CATEGORIZATION
@@ -470,6 +486,8 @@ function publicProduct(product) {
         subcategory: product.subcategory || "",
         condition: product.condition_label || "",
         warranty: product.warranty || "",
+        dispatchLocation: product.dispatch_location || "",
+        returnPolicy: product.return_policy || "",
         tags: product.tags || "",
         featured: Boolean(product.featured),
         sku: product.sku || "",
@@ -1099,6 +1117,9 @@ app.post("/api/products", requireSeller, function (request, response, next) {
     });
 
     const category = autoCategory.category;
+    const warranty = String(body.warranty || "").trim();
+    const dispatchLocation = String(body.dispatchLocation || "").trim();
+    const returnPolicy = String(body.returnPolicy || "").trim();
 
     const files = request.files || [];
 
@@ -1116,12 +1137,13 @@ app.post("/api/products", requireSeller, function (request, response, next) {
     const result = db
         .prepare(
             `INSERT INTO products
-                (seller_id, name, description, specifications, price, old_price, category, subcategory, image, media, status, sponsored, tracking_code, stock, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, ?, ?, ?)`
+                (seller_id, name, description, specifications, price, old_price, category, subcategory, image, media, status, sponsored, tracking_code, stock, warranty, dispatch_location, return_policy, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, ?, ?, ?, ?, ?, ?)`
         )
         .run(
             request.seller.id, name, description, specifications, price,
-            oldPrice, category, autoCategory.subcategory || "", firstImage, mediaJson, trackingCode, stock, Date.now()
+            oldPrice, category, autoCategory.subcategory || "", firstImage, mediaJson, trackingCode, stock,
+            warranty, dispatchLocation, returnPolicy, Date.now()
         );
 
     const product = db.prepare("SELECT * FROM products WHERE id = ?").get(result.lastInsertRowid);
@@ -1228,6 +1250,40 @@ app.get("/api/track/:code", function (request, response) {
     }
 
     response.json({ product: publicProduct(product) });
+});
+
+/* =========================
+   PUBLIC — PRODUCT REVIEWS
+   Returns the approved reviews for one product, plus a rounded
+   average rating, so the product popup's Reviews tab can show real
+   customer feedback instead of a permanently-empty placeholder.
+========================= */
+
+app.get("/api/products/:id/reviews", function (request, response) {
+
+    const rows = db
+        .prepare(
+            "SELECT customer_name, rating, comment, created_at FROM reviews WHERE product_id = ? AND status = 'approved' ORDER BY created_at DESC"
+        )
+        .all(request.params.id);
+
+    const count = rows.length;
+    const average = count
+        ? Math.round((rows.reduce(function (sum, row) { return sum + Number(row.rating || 0); }, 0) / count) * 10) / 10
+        : 0;
+
+    response.json({
+        reviews: rows.map(function (row) {
+            return {
+                customerName: row.customer_name || "Anonymous",
+                rating: Number(row.rating || 0),
+                comment: row.comment || "",
+                createdAt: row.created_at
+            };
+        }),
+        averageRating: average,
+        count: count
+    });
 });
 
 /* =========================
@@ -1430,8 +1486,8 @@ app.post("/api/admin/products", requireAdmin, handleAdminUpload, function (reque
             `INSERT INTO products
                 (seller_id, name, description, specifications, price, old_price, category, image, media,
                  status, sponsored, tracking_code, stock, low_stock_threshold, sku, brand, subcategory,
-                 condition_label, warranty, tags, featured, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                 condition_label, warranty, dispatch_location, return_policy, tags, featured, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
         .run(
             systemSeller.id,
@@ -1451,6 +1507,8 @@ app.post("/api/admin/products", requireAdmin, handleAdminUpload, function (reque
             autoCategory.subcategory,
             String(body.condition || "").trim(),
             String(body.warranty || "").trim(),
+            String(body.dispatchLocation || "").trim(),
+            String(body.returnPolicy || "").trim(),
             String(body.tags || "").trim(),
             body.featured === "true" ? 1 : 0,
             Date.now()
@@ -1525,7 +1583,7 @@ app.put("/api/admin/products/:id", requireAdmin, handleAdminUpload, function (re
         `UPDATE products SET
             name = ?, description = ?, specifications = ?, price = ?, old_price = ?, category = ?,
             image = ?, media = ?, stock = ?, sku = ?, brand = ?, subcategory = ?, condition_label = ?,
-            warranty = ?, tags = ?, featured = ?
+            warranty = ?, dispatch_location = ?, return_policy = ?, tags = ?, featured = ?
          WHERE id = ?`
     ).run(
         name,
@@ -1542,6 +1600,8 @@ app.put("/api/admin/products/:id", requireAdmin, handleAdminUpload, function (re
         autoCategory.subcategory,
         body.condition != null ? String(body.condition).trim() : existing.condition_label,
         body.warranty != null ? String(body.warranty).trim() : existing.warranty,
+        body.dispatchLocation != null ? String(body.dispatchLocation).trim() : existing.dispatch_location,
+        body.returnPolicy != null ? String(body.returnPolicy).trim() : existing.return_policy,
         finalTags,
         body.featured != null ? (body.featured === "true" ? 1 : 0) : existing.featured,
         request.params.id

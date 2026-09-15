@@ -63,6 +63,9 @@
         card.dataset.sellerName = product.sellerName || '';
         card.dataset.sellerPhone = product.sellerPhone || '';
         card.dataset.sellerWhatsapp = product.sellerWhatsapp || '';
+        card.dataset.warranty = product.warranty || '';
+        card.dataset.dispatchLocation = product.dispatchLocation || '';
+        card.dataset.returnPolicy = product.returnPolicy || '';
         card.dataset.category = (product.category || '') + ' ' + (product.subcategory || '');
 
         const priceHtml = money(product.price) +
@@ -115,7 +118,11 @@
         'phones': 'Phones & Tablets',
         'computers': 'Computers & Laptops',
         'electronics': 'Electronics',
-        'gaming': 'Gaming'
+        'gaming': 'Gaming',
+        'accessories': 'Accessories',
+        'home-office': 'Home & Office',
+        'fashion': 'Clothing & Fashion',
+        'clothing': 'Clothing & Fashion'
     };
 
     function goToCategoryBySlug(slug) {
@@ -149,9 +156,23 @@
 
         const slug = target.dataset.category;
 
-        // "Deals" stays as an on-page jump to the Flash Deals section -
-        // it isn't a real store category, just a homepage filter.
-        if (slug === 'deals') return;
+        // "Deals" isn't a real store category - it jumps to the Flash
+        // Deals section on the homepage. If we're already on the
+        // homepage, scroll straight there; otherwise navigate home
+        // first and land on the same section.
+        if (slug === 'deals') {
+            event.preventDefault();
+
+            const dealsSection = document.getElementById('productsSection');
+
+            if (dealsSection) {
+                dealsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                window.location.href = 'index.html#productsSection';
+            }
+
+            return;
+        }
 
         if (goToCategoryBySlug(slug)) {
             event.preventDefault();
@@ -592,7 +613,16 @@
                 card.dataset.sellerPhone || '',
 
             sellerWhatsapp:
-                card.dataset.sellerWhatsapp || ''
+                card.dataset.sellerWhatsapp || '',
+
+            warranty:
+                card.dataset.warranty || '',
+
+            dispatchLocation:
+                card.dataset.dispatchLocation || '',
+
+            returnPolicy:
+                card.dataset.returnPolicy || ''
         };
     }
 
@@ -873,6 +903,67 @@
         }
 
         /* ---------------------------------------------
+           LOCAL DISPATCH
+           Shows where THIS product actually ships from,
+           set by the seller, instead of a fixed location
+           shown for every listing regardless of seller.
+           --------------------------------------------- */
+
+        const dispatchNote =
+            document.getElementById('modalDispatchNote');
+
+        if (dispatchNote) {
+            dispatchNote.innerHTML = product.dispatchLocation
+                ? 'Ships from <strong>' + escapeHtml(product.dispatchLocation) + '</strong>. Select a delivery address at checkout to see delivery times for your area.'
+                : 'Ships from <strong>' + escapeHtml(product.sellerName || 'the seller') + '</strong>. Select a delivery address at checkout to see delivery times for your area.';
+        }
+
+        /* ---------------------------------------------
+           WARRANTY / RETURN OPTIONS
+           Built from what this seller actually set for this
+           product (return_policy tags + warranty length),
+           instead of showing the same fixed guarantees on
+           every listing regardless of what the seller offers.
+           The whole section is hidden if the seller set neither.
+           --------------------------------------------- */
+
+        const warrantySection =
+            document.getElementById('modalWarrantySection');
+
+        const warrantyTags =
+            document.getElementById('modalWarrantyTags');
+
+        if (warrantySection && warrantyTags) {
+
+            const tags = String(product.returnPolicy || '')
+                .split(',')
+                .map(function (tag) { return tag.trim(); })
+                .filter(Boolean);
+
+            if (product.warranty) {
+                tags.push(product.warranty + ' Warranty');
+            }
+
+            if (tags.length) {
+                warrantyTags.innerHTML = tags
+                    .map(function (tag) { return '<span>' + escapeHtml(tag) + '</span>'; })
+                    .join('');
+                warrantySection.style.display = '';
+            } else {
+                warrantyTags.innerHTML = '';
+                warrantySection.style.display = 'none';
+            }
+        }
+
+        /* ---------------------------------------------
+           REVIEWS
+           Loads this product's real, approved reviews
+           instead of always showing a static placeholder.
+           --------------------------------------------- */
+
+        loadProductReviews(product.id);
+
+        /* ---------------------------------------------
            TRACKING CODE
            --------------------------------------------- */
 
@@ -989,6 +1080,55 @@
         document.body.style.overflow = '';
 
         currentProduct = null;
+    }
+
+    async function loadProductReviews(productId) {
+
+        const summary = document.getElementById('modalReviewsSummary');
+        const list = document.getElementById('modalReviewsList');
+        const empty = document.getElementById('modalReviewsEmpty');
+
+        if (!summary || !list || !empty) return;
+
+        summary.innerHTML = '';
+        list.innerHTML = '';
+        empty.style.display = 'none';
+
+        if (!productId) {
+            empty.style.display = '';
+            return;
+        }
+
+        try {
+
+            const response = await fetch('/api/products/' + encodeURIComponent(productId) + '/reviews', { cache: 'no-store' });
+            if (!response.ok) throw new Error('Could not load reviews');
+            const data = await response.json();
+            const reviews = Array.isArray(data.reviews) ? data.reviews : [];
+
+            if (!reviews.length) {
+                empty.style.display = '';
+                return;
+            }
+
+            summary.innerHTML =
+                '<strong>' + data.averageRating + ' / 5</strong> from ' +
+                data.count + (data.count === 1 ? ' review' : ' reviews');
+
+            list.innerHTML = reviews.map(function (review) {
+                return '<div class="pp-review">' +
+                    '<div class="pp-review-head">' +
+                        '<strong>' + escapeHtml(review.customerName) + '</strong>' +
+                        '<span>' + '★'.repeat(Math.round(review.rating)) + '</span>' +
+                    '</div>' +
+                    (review.comment ? '<p>' + escapeHtml(review.comment) + '</p>' : '') +
+                '</div>';
+            }).join('');
+
+        } catch (error) {
+            console.error('PHYNEX: Could not load reviews.', error);
+            empty.style.display = '';
+        }
     }
 
     /* =====================================================

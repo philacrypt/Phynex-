@@ -1365,6 +1365,42 @@
             line-height: 1.6;
         }
 
+        #modalReviewsSummary {
+            font-size: 14px;
+            color: #172033;
+            margin-bottom: 12px;
+        }
+
+        .pp-review {
+            padding: 10px 0;
+            border-top: 1px solid #eef0f4;
+            font-size: 13px;
+            color: #687083;
+        }
+
+        .pp-review:first-child {
+            border-top: none;
+        }
+
+        .pp-review-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+            color: #172033;
+        }
+
+        .pp-review-head span {
+            color: #ffa41c;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+
+        .pp-review p {
+            margin: 0;
+            line-height: 1.5;
+        }
+
         .pp-section {
             padding: 16px 18px;
             border-top: 8px solid #f7f8fa;
@@ -2483,22 +2519,19 @@
         </div>
 
         <div class="pp-tab-panel" id="ppReviews">
-            <p class="pp-reviews-empty">No reviews yet for this product. Be the first to leave one after your order.</p>
+            <div id="modalReviewsSummary"></div>
+            <div id="modalReviewsList"></div>
+            <p class="pp-reviews-empty" id="modalReviewsEmpty">No reviews yet for this product. Be the first to leave one after your order.</p>
         </div>
 
-        <div class="pp-section">
+        <div class="pp-section" id="modalDispatchSection">
             <div class="pp-dispatch"><i class="fa-solid fa-location-dot"></i> Local Dispatch</div>
-            <p class="pp-shipping-note">Ships from <strong>PHYNEX Nairobi</strong>. Select a delivery address at checkout to see delivery times for your area.</p>
+            <p class="pp-shipping-note" id="modalDispatchNote">Ships from the seller. Select a delivery address at checkout to see delivery times for your area.</p>
         </div>
 
-        <div class="pp-section">
+        <div class="pp-section" id="modalWarrantySection" style="display:none;">
             <div class="pp-section-title"><i class="fa-solid fa-shield-halved"></i> Warranty Options</div>
-            <div class="pp-tags">
-                <span>7-Day No-Reason Return</span>
-                <span>7-Day Return</span>
-                <span>7-Day Exchange</span>
-                <span>120-Day Support</span>
-            </div>
+            <div class="pp-tags" id="modalWarrantyTags"></div>
             <p class="pp-shipping-note">All details at <a href="waranty.html" style="color:#0875e1;font-weight:bold;">Warranty Policy</a></p>
         </div>
 
