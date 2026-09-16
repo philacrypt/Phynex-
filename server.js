@@ -12,8 +12,53 @@ const port = Number(process.env.PORT) || 3000;
 
 const payments = new Map();
 
+app.disable("x-powered-by");
+
+app.use(function (request, response, next) {
+    response.setHeader("X-Content-Type-Options", "nosniff");
+    response.setHeader("X-Frame-Options", "SAMEORIGIN");
+    response.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    response.setHeader("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+    next();
+});
+
+// PHYNEX is normally same-origin. If an API consumer is hosted on a
+// separate origin, list only those trusted origins in ALLOWED_ORIGINS.
+app.use(function (request, response, next) {
+    const origin = request.headers.origin;
+    const allowed = String(process.env.ALLOWED_ORIGINS || "")
+        .split(",").map(function (item) { return item.trim(); }).filter(Boolean);
+
+    if (!origin || allowed.length === 0) return next();
+    if (!allowed.includes(origin)) {
+        return response.status(403).json({ message: "Origin is not allowed." });
+    }
+
+    response.setHeader("Access-Control-Allow-Origin", origin);
+    response.setHeader("Vary", "Origin");
+    response.setHeader("Access-Control-Allow-Credentials", "true");
+    response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    response.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+
+    if (request.method === "OPTIONS") return response.sendStatus(204);
+    next();
+});
+
 app.use(express.json({ limit: "100kb" }));
 app.use(express.static(__dirname));
+
+// Explicit fallback routes for the category pages. express.static above
+// should already serve these, but some hosts/build steps can be picky
+// about which top-level files get deployed, so this guarantees the
+// pages that "Shop now" / category taps link to always resolve instead
+// of returning "Cannot GET".
+app.get("/category.html", function (request, response) {
+    response.sendFile(path.join(__dirname, "category.html"));
+});
+
+app.get("/categories.html", function (request, response) {
+    response.sendFile(path.join(__dirname, "categories.html"));
+});
 
 /* =========================
    DATABASE
@@ -352,6 +397,23 @@ const LOGIN_MAX_ATTEMPTS = 6;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const loginAttempts = new Map(); // key -> { count, firstAttempt, lockedUntil }
 
+const SENSITIVE_ACTION_WINDOW_MS = 15 * 60 * 1000;
+const sensitiveActionAttempts = new Map();
+
+function sensitiveActionRateLimited(request, action) {
+    const key = action + ":" + request.ip;
+    const now = Date.now();
+    const entry = sensitiveActionAttempts.get(key);
+
+    if (!entry || now - entry.windowStart > SENSITIVE_ACTION_WINDOW_MS) {
+        sensitiveActionAttempts.set(key, { windowStart: now, count: 1 });
+        return false;
+    }
+
+    entry.count += 1;
+    return entry.count > 10;
+}
+
 function loginRateLimitKey(request, identifier) {
     return request.ip + ":" + String(identifier || "").toLowerCase();
 }
@@ -401,8 +463,125 @@ function clearLoginFailures(request, identifier) {
    SMALL HELPERS
 ========================= */
 
-function newToken() {
-    return crypto.randomBytes(24).toString("hex");
+function newToken(bytes = 32) {
+    return crypto.randomBytes(bytes).toString("hex");
+}
+
+function hashToken(token) {
+    return crypto.createHash("sha256").update(String(token)).digest("hex");
+}
+
+function parseCookies(request) {
+    const header = request.headers.cookie || "";
+    const cookies = {};
+    header.split(";").forEach(function (part) {
+        const index = part.indexOf("=");
+        if (index === -1) return;
+        const key = part.slice(0, index).trim();
+        const value = part.slice(index + 1).trim();
+        if (key) cookies[key] = decodeURIComponent(value);
+    });
+    return cookies;
+}
+
+function setCustomerSession(response, customerId) {
+    const rawToken = newToken(32);
+    const maxAge = 7 * 24 * 60 * 60 * 1000;
+    db.prepare("UPDATE customers SET session_token_hash = ?, session_expires = ?, token = NULL WHERE id = ?")
+        .run(hashToken(rawToken), Date.now() + maxAge, customerId);
+
+    const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
+    response.setHeader(
+        "Set-Cookie",
+        "phynex_session=" + encodeURIComponent(rawToken) +
+        "; Max-Age=" + Math.floor(maxAge / 1000) +
+        "; Path=/; HttpOnly; SameSite=Lax" + secure
+    );
+    return rawToken;
+}
+
+function clearCustomerSession(response, customerId) {
+    if (customerId) {
+        db.prepare("UPDATE customers SET session_token_hash = NULL, session_expires = NULL, token = NULL WHERE id = ?")
+            .run(customerId);
+    }
+    response.setHeader(
+        "Set-Cookie",
+        "phynex_session=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax"
+    );
+}
+
+function normalizeKenyanPhone(value) {
+    const digits = String(value || "").replace(/\D/g, "");
+
+    // Kenyan 10-digit mobile/service ranges currently supported by PHYNEX.
+    // 07x covers the common mobile operator ranges; 010/011 cover the
+    // common 01x mobile ranges requested by the store.
+    if (/^0[7][0-9]\d{7}$/.test(digits)) return "+254" + digits.slice(1);
+    if (/^01[01]\d{7}$/.test(digits)) return "+254" + digits.slice(1);
+    if (/^2547[0-9]\d{8}$/.test(digits)) return "+" + digits;
+    if (/^25401[01]\d{7}$/.test(digits)) return "+" + digits;
+    return null;
+}
+
+function isPlausibleEmail(email) {
+    if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,63}$/.test(email)) return false;
+    const lower = email.toLowerCase();
+    const blocked = new Set([
+        "test@test.com", "fake@email.com", "abc@abc.com",
+        "test@example.com", "user@example.com", "name@example.com",
+        "example@example.com", "test@example.org", "test@example.net"
+    ]);
+    if (blocked.has(lower)) return false;
+    const [local, domain] = lower.split("@");
+    if (!local || !domain || local.length > 64) return false;
+    if (/^(test|fake|dummy|random|asdf|abc)([0-9._-]*)$/.test(local)) return false;
+    if (/^(example|invalid|localhost|test)$/i.test(domain.split(".")[0])) return false;
+    return true;
+}
+
+function passwordIsStrong(password) {
+    return typeof password === "string" &&
+        password.length >= 8 &&
+        password.length <= 128 &&
+        /[A-Za-z]/.test(password) &&
+        /\d/.test(password);
+}
+
+function emailVerificationConfigured() {
+    return Boolean(mailTransporter && process.env.APP_URL);
+}
+
+function smsVerificationConfigured() {
+    return Boolean(process.env.AT_USERNAME && process.env.AT_API_KEY && process.env.AT_SENDER_ID);
+}
+
+async function sendSms(phone, message) {
+    const body = new URLSearchParams({
+        username: process.env.AT_USERNAME,
+        to: phone,
+        message: message,
+        from: process.env.AT_SENDER_ID
+    });
+
+    const response = await fetch(
+        process.env.AT_SMS_URL || "https://api.africastalking.com/version1/messaging",
+        {
+            method: "POST",
+            headers: {
+                "apiKey": process.env.AT_API_KEY,
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Accept": "application/json"
+            },
+            body: body.toString()
+        }
+    );
+
+    if (!response.ok) {
+        throw new Error("SMS provider returned HTTP " + response.status);
+    }
+
+    return response.json();
 }
 
 function generateTrackingCode() {
@@ -534,6 +713,8 @@ function publicCustomer(customer) {
         name: customer.name,
         email: customer.email,
         phone: customer.phone,
+        emailVerified: Boolean(customer.email_verified_at),
+        phoneVerified: Boolean(customer.phone_verified_at),
         hasGoogle: Boolean(customer.google_id)
     };
 }
@@ -731,147 +912,397 @@ app.post("/api/admin/login", function (request, response) {
 });
 
 /* =========================
-   CUSTOMER AUTH MIDDLEWARE
+   CUSTOMER AUTHENTICATION
+   Email verification + optional real SMS OTP + HttpOnly session cookie.
 ========================= */
 
-function requireCustomer(request, response, next) {
+function getAuthenticatedCustomer(request) {
+    const cookies = parseCookies(request);
+    const session = cookies.phynex_session;
 
+    if (session) {
+        const customer = db.prepare(
+            "SELECT * FROM customers WHERE session_token_hash = ? AND session_expires > ?"
+        ).get(hashToken(session), Date.now());
+
+        if (customer) return customer;
+    }
+
+    // Backward-compatible only: accept an old Bearer token during migration.
+    // New sessions are never returned to the browser as bearer tokens.
     const header = request.headers.authorization || "";
-    const token = header.startsWith("Bearer ") ? header.slice(7) : "";
+    if (header.startsWith("Bearer ")) {
+        const token = header.slice(7);
+        return db.prepare("SELECT * FROM customers WHERE token = ?").get(token) || null;
+    }
 
-    if (!token) {
+    return null;
+}
+
+function requireCustomer(request, response, next) {
+    const customer = getAuthenticatedCustomer(request);
+
+    if (!customer) {
         return response.status(401).json({ message: "Please log in to continue." });
     }
 
-    const customer = db
-        .prepare("SELECT * FROM customers WHERE token = ?")
-        .get(token);
+    if (!customer.email_verified_at) {
+        return response.status(403).json({ message: "Please verify your email before continuing." });
+    }
 
-    if (!customer) {
-        return response.status(401).json({ message: "Your session has expired. Please log in again." });
+    if (smsVerificationConfigured() && !customer.phone_verified_at) {
+        return response.status(403).json({ message: "Please verify your phone number before continuing." });
     }
 
     request.customer = customer;
     next();
 }
 
-/* =========================
-   CUSTOMER REGISTER / LOGIN
-========================= */
+function optionalCustomer(request) {
+    const customer = getAuthenticatedCustomer(request);
+    if (!customer || !customer.email_verified_at) return null;
+    if (smsVerificationConfigured() && !customer.phone_verified_at) return null;
+    return customer;
+}
+
+function customerLoginAllowed(customer) {
+    return Boolean(
+        customer &&
+        customer.email_verified_at &&
+        (!smsVerificationConfigured() || customer.phone_verified_at)
+    );
+}
+
+async function sendVerificationEmail(customer, rawToken) {
+    if (!mailTransporter) {
+        throw new Error("Email delivery is not configured.");
+    }
+
+    const baseUrl = (process.env.APP_URL || "").replace(/\/$/, "");
+    const verifyUrl = baseUrl + "/api/customers/verify-email?token=" + encodeURIComponent(rawToken);
+
+    await mailTransporter.sendMail({
+        from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+        to: customer.email,
+        subject: "Verify your PHYNEX email address",
+        text:
+            "Hi " + customer.name + ",\n\n" +
+            "Please verify your PHYNEX email address by opening this link:\n" +
+            verifyUrl + "\n\n" +
+            "This link expires in 24 hours. If you did not create this account, ignore this message.\n\n" +
+            "The PHYNEX Team",
+        html:
+            "<p>Hi " + escapeHtmlServer(customer.name) + ",</p>" +
+            "<p>Please verify your PHYNEX email address:</p>" +
+            "<p><a href=\"" + verifyUrl + "\">Verify my email address</a></p>" +
+            "<p>This link expires in 24 hours. If you did not create this account, you can ignore this message.</p>"
+    });
+}
+
+function escapeHtmlServer(value) {
+    return String(value || "").replace(/[&<>"']/g, function (char) {
+        return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char];
+    });
+}
+
+function createEmailVerification(customerId) {
+    const rawToken = newToken(32);
+    db.prepare(
+        "UPDATE customers SET email_verification_token_hash = ?, email_verification_expires = ? WHERE id = ?"
+    ).run(hashToken(rawToken), Date.now() + 24 * 60 * 60 * 1000, customerId);
+    return rawToken;
+}
+
+function createPhoneOtp(customerId) {
+    const code = String(crypto.randomInt(100000, 1000000));
+    db.prepare(
+        "UPDATE customers SET phone_verification_code_hash = ?, phone_verification_expires = ?, phone_verification_attempts = 0 WHERE id = ?"
+    ).run(hashToken(code), Date.now() + 10 * 60 * 1000, customerId);
+    return code;
+}
+
+function genericPasswordResetResponse() {
+    return {
+        ok: true,
+        message: "If that email has an account, a reset link has been sent."
+    };
+}
 
 app.post("/api/customers/register", async function (request, response) {
-
     const body = request.body || {};
-
     const name = String(body.name || "").trim();
     const email = String(body.email || "").trim().toLowerCase();
-    const phone = String(body.phone || "").trim();
+    const phone = normalizeKenyanPhone(body.phone);
     const password = String(body.password || "");
+    const confirmPassword = String(body.confirmPassword || "");
 
-    if (!name || !email || !password) {
-        return response.status(400).json({ message: "Name, email and password are required." });
+    if (!name || !email || !body.phone || !password || !confirmPassword) {
+        return response.status(400).json({ message: "Full name, email, phone, password and password confirmation are required." });
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        return response.status(400).json({ message: "Enter a valid email address." });
+    if (name.length < 2 || name.length > 120) {
+        return response.status(400).json({ message: "Enter a valid full name." });
     }
 
-    if (password.length < 6) {
-        return response.status(400).json({ message: "Password must be at least 6 characters." });
+    if (!isPlausibleEmail(email)) {
+        return response.status(400).json({ message: "Invalid email address." });
+    }
+
+    if (!phone) {
+        return response.status(400).json({ message: "Invalid Kenyan phone number." });
+    }
+
+    if (password !== confirmPassword) {
+        return response.status(400).json({ message: "Passwords do not match." });
+    }
+
+    if (!passwordIsStrong(password)) {
+        return response.status(400).json({ message: "Password must be at least 8 characters and contain at least one letter and one number." });
+    }
+
+    if (!emailVerificationConfigured()) {
+        return response.status(503).json({ message: "Email verification is not configured. Add the required email settings to the server .env." });
     }
 
     const existing = db.prepare("SELECT id FROM customers WHERE email = ?").get(email);
-
     if (existing) {
-        return response.status(409).json({ message: "An account with that email already exists." });
+        return response.status(409).json({ message: "This email is already registered." });
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
-    const token = newToken();
+    const phoneOwner = db.prepare("SELECT id FROM customers WHERE phone = ?").get(phone);
+    if (phoneOwner) {
+        return response.status(409).json({ message: "This phone number is already registered." });
+    }
 
-    const result = db
-        .prepare(
-            `INSERT INTO customers (name, email, phone, password_hash, token, created_at)
-             VALUES (?, ?, ?, ?, ?, ?)`
-        )
-        .run(name, email, phone, passwordHash, token, Date.now());
+    const passwordHash = await bcrypt.hash(password, 12);
 
-    const customer = db.prepare("SELECT * FROM customers WHERE id = ?").get(result.lastInsertRowid);
+    const result = db.prepare(
+        `INSERT INTO customers
+            (name, email, phone, password_hash, token, created_at)
+         VALUES (?, ?, ?, ?, NULL, ?)`
+    ).run(name, email, phone, passwordHash, Date.now());
+
+    const customerId = result.lastInsertRowid;
+    let customer = db.prepare("SELECT * FROM customers WHERE id = ?").get(customerId);
+
+    const emailToken = createEmailVerification(customerId);
+    try {
+        await sendVerificationEmail(customer, emailToken);
+    } catch (error) {
+        db.prepare(
+            "DELETE FROM customers WHERE id = ?"
+        ).run(customerId);
+        console.error("Verification email failed:", error.message);
+        return response.status(502).json({ message: "We could not send the verification email. Please try again." });
+    }
+
+    let phoneVerificationRequired = false;
+    if (smsVerificationConfigured()) {
+        const otp = createPhoneOtp(customerId);
+        try {
+            await sendSms(
+                phone,
+                "Your PHYNEX verification code is " + otp + ". It expires in 10 minutes."
+            );
+            phoneVerificationRequired = true;
+        } catch (error) {
+            db.prepare("DELETE FROM customers WHERE id = ?").run(customerId);
+            console.error("Verification SMS failed:", error.message);
+            return response.status(502).json({ message: "We could not send the phone verification code. Please try again." });
+        }
+    }
 
     logLogin("customer", customer, "register");
 
-    // Real email notification: let the new customer know their PHYNEX
-    // account is live. Fire-and-forget so a slow/misconfigured mail
-    // server never blocks or breaks account creation itself.
-    if (contactMailConfigured()) {
-        mailTransporter.sendMail({
-            from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-            to: customer.email,
-            subject: "Welcome to PHYNEX!",
-            text:
-                "Hi " + customer.name + ",\n\n" +
-                "Welcome to PHYNEX! Your account has been created successfully using " + customer.email + ".\n\n" +
-                "You can now sign in any time to shop phones, computers, gaming gear, electronics and more, track orders and save your details for faster checkout.\n\n" +
-                "Thanks for joining us.\nThe PHYNEX Team"
-        }).catch(function (error) {
-            console.error("Welcome email failed to send:", error.message);
-        });
-    }
-
-    response.json({ token: token, customer: publicCustomer(customer) });
+    response.status(201).json({
+        ok: true,
+        message: phoneVerificationRequired
+            ? "Verification email sent. We also sent an OTP to your phone."
+            : "Verification email sent.",
+        emailVerificationRequired: true,
+        phoneVerificationRequired: phoneVerificationRequired
+    });
 });
 
-app.post("/api/customers/login", async function (request, response) {
+app.get("/api/customers/verify-email", function (request, response) {
+    const token = String(request.query.token || "").trim();
 
-    const body = request.body || {};
+    if (!token || token.length < 40) {
+        return response.redirect("/customer-login.html?verified=0");
+    }
 
-    const email = String(body.email || "").trim().toLowerCase();
-    const password = String(body.password || "");
+    const customer = db.prepare(
+        `SELECT * FROM customers
+         WHERE email_verification_token_hash = ?
+           AND email_verification_expires > ?`
+    ).get(hashToken(token), Date.now());
 
-    const lockMessage = checkLoginRateLimit(request, email);
-    if (lockMessage) {
-        return response.status(429).json({ message: lockMessage });
+    if (!customer) {
+        return response.redirect("/customer-login.html?verified=0");
+    }
+
+    db.prepare(
+        `UPDATE customers
+         SET email_verified_at = ?, email_verification_token_hash = NULL, email_verification_expires = NULL
+         WHERE id = ?`
+    ).run(Date.now(), customer.id);
+
+    response.redirect("/customer-login.html?verified=1");
+});
+
+app.post("/api/customers/resend-verification", async function (request, response) {
+    if (sensitiveActionRateLimited(request, "email-verification")) {
+        return response.json({ ok: true, message: "If that account needs verification, a new verification email has been sent." });
+    }
+
+    const email = String((request.body || {}).email || "").trim().toLowerCase();
+
+    // Deliberately generic to avoid account enumeration.
+    if (!isPlausibleEmail(email)) {
+        return response.json({ ok: true, message: "If that account needs verification, a new verification email has been sent." });
     }
 
     const customer = db.prepare("SELECT * FROM customers WHERE email = ?").get(email);
+    if (!customer || customer.email_verified_at) {
+        return response.json({ ok: true, message: "If that account needs verification, a new verification email has been sent." });
+    }
+
+    const token = createEmailVerification(customer.id);
+    try {
+        await sendVerificationEmail(customer, token);
+    } catch (error) {
+        console.error("Verification resend failed:", error.message);
+    }
+
+    return response.json({ ok: true, message: "If that account needs verification, a new verification email has been sent." });
+});
+
+app.post("/api/customers/verify-phone", function (request, response) {
+    if (!smsVerificationConfigured()) {
+        return response.status(503).json({ message: "Phone verification is not configured on this server." });
+    }
+
+    const customer = getAuthenticatedCustomer(request);
+    if (!customer) {
+        return response.status(401).json({ message: "Please log in to continue." });
+    }
+
+    const code = String((request.body || {}).code || "").trim();
+    if (!/^\d{6}$/.test(code)) {
+        return response.status(400).json({ message: "Invalid phone verification code." });
+    }
+
+    if (customer.phone_verification_attempts >= 5) {
+        return response.status(429).json({ message: "Too many OTP attempts. Request a new code later." });
+    }
+
+    if (!customer.phone_verification_code_hash || !customer.phone_verification_expires ||
+        customer.phone_verification_expires <= Date.now()) {
+        return response.status(400).json({ message: "The phone verification code has expired. Request a new code." });
+    }
+
+    const valid = crypto.timingSafeEqual(
+        Buffer.from(customer.phone_verification_code_hash, "hex"),
+        Buffer.from(hashToken(code), "hex")
+    );
+
+    if (!valid) {
+        db.prepare("UPDATE customers SET phone_verification_attempts = COALESCE(phone_verification_attempts, 0) + 1 WHERE id = ?")
+            .run(customer.id);
+        return response.status(400).json({ message: "Invalid phone verification code." });
+    }
+
+    db.prepare(
+        `UPDATE customers
+         SET phone_verified_at = ?, phone_verification_code_hash = NULL,
+             phone_verification_expires = NULL, phone_verification_attempts = 0
+         WHERE id = ?`
+    ).run(Date.now(), customer.id);
+
+    response.json({ ok: true, message: "Your phone number has been verified." });
+});
+
+app.post("/api/customers/resend-phone-code", async function (request, response) {
+    if (sensitiveActionRateLimited(request, "phone-otp")) {
+        return response.status(429).json({ message: "Too many OTP requests. Please try again later." });
+    }
+    if (!smsVerificationConfigured()) {
+        return response.status(503).json({ message: "Phone verification is not configured on this server." });
+    }
+
+    const customer = getAuthenticatedCustomer(request);
+    if (!customer) return response.status(401).json({ message: "Please log in to continue." });
+    if (customer.phone_verified_at) return response.json({ ok: true, message: "Phone number is already verified." });
+
+    const otp = createPhoneOtp(customer.id);
+    try {
+        await sendSms(customer.phone, "Your PHYNEX verification code is " + otp + ". It expires in 10 minutes.");
+    } catch (error) {
+        console.error("Verification SMS resend failed:", error.message);
+        return response.status(502).json({ message: "Could not send a new verification code." });
+    }
+
+    response.json({ ok: true, message: "A new phone verification code has been sent." });
+});
+
+app.post("/api/customers/login", async function (request, response) {
+    const body = request.body || {};
+    const identifier = String(body.identifier || body.email || body.phone || "").trim();
+    const password = String(body.password || "");
+    const normalizedEmail = identifier.toLowerCase();
+    const normalizedPhone = normalizeKenyanPhone(identifier);
+
+    const lockMessage = checkLoginRateLimit(request, identifier);
+    if (lockMessage) return response.status(429).json({ message: lockMessage });
+
+    const customer = db.prepare(
+        normalizedPhone
+            ? "SELECT * FROM customers WHERE phone = ? OR email = ?"
+            : "SELECT * FROM customers WHERE email = ?"
+    ).get(normalizedPhone || normalizedEmail, normalizedEmail);
 
     if (!customer) {
-        recordLoginFailure(request, email);
+        recordLoginFailure(request, identifier);
         return response.status(401).json({ message: "Incorrect email or password." });
     }
 
     const valid = await bcrypt.compare(password, customer.password_hash);
-
     if (!valid) {
-        recordLoginFailure(request, email);
+        recordLoginFailure(request, identifier);
         return response.status(401).json({ message: "Incorrect email or password." });
     }
 
-    clearLoginFailures(request, email);
+    if (!customer.email_verified_at) {
+        clearLoginFailures(request, identifier);
+        return response.status(403).json({ message: "Please verify your email before logging in." });
+    }
 
-    const token = newToken();
+    if (smsVerificationConfigured() && !customer.phone_verified_at) {
+        clearLoginFailures(request, identifier);
+        setCustomerSession(response, customer.id); // limited verification session; protected APIs still reject it
+        return response.status(403).json({
+            message: "Please verify your phone number before logging in.",
+            phoneVerificationRequired: true
+        });
+    }
 
-    db.prepare("UPDATE customers SET token = ? WHERE id = ?").run(token, customer.id);
+    clearLoginFailures(request, identifier);
+    setCustomerSession(response, customer.id);
 
     logLogin("customer", customer, "login");
 
-    response.json({ token: token, customer: publicCustomer(customer) });
+    response.json({ ok: true, customer: publicCustomer(customer) });
 });
 
 app.post("/api/customers/google", async function (request, response) {
-
     if (!googleConfigured() || !googleClient) {
-        return response.status(503).json({ message: "Google sign-in is not configured yet. Add GOOGLE_CLIENT_ID to .env." });
+        return response.status(503).json({ message: "Google sign-in is not configured yet." });
     }
 
     const credential = String((request.body || {}).credential || "");
-
-    if (!credential) {
-        return response.status(400).json({ message: "Missing Google credential." });
-    }
+    if (!credential) return response.status(400).json({ message: "Missing Google credential." });
 
     let payload;
-
     try {
         const ticket = await googleClient.verifyIdToken({
             idToken: credential,
@@ -891,78 +1322,57 @@ app.post("/api/customers/google", async function (request, response) {
     const googleId = String(payload.sub);
 
     let customer = db.prepare("SELECT * FROM customers WHERE email = ?").get(email);
-    let isNewCustomer = false;
 
     if (customer) {
-        if (!customer.google_id) {
-            db.prepare("UPDATE customers SET google_id = ? WHERE id = ?").run(googleId, customer.id);
+        if (!customer.google_id || !customer.email_verified_at) {
+            db.prepare("UPDATE customers SET google_id = ?, email_verified_at = COALESCE(email_verified_at, ?) WHERE id = ?")
+                .run(googleId, Date.now(), customer.id);
         }
     } else {
-        isNewCustomer = true;
-        const placeholderHash = await bcrypt.hash(crypto.randomBytes(24).toString("hex"), 10);
-
-        const result = db
-            .prepare(
-                `INSERT INTO customers (name, email, phone, password_hash, google_id, token, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`
-            )
-            .run(name, email, "", placeholderHash, googleId, "", Date.now());
+        const placeholderHash = await bcrypt.hash(crypto.randomBytes(24).toString("hex"), 12);
+        const result = db.prepare(
+            `INSERT INTO customers
+                (name, email, phone, password_hash, google_id, token, email_verified_at, created_at)
+             VALUES (?, ?, ?, ?, ?, NULL, ?, ?)`
+        ).run(name, email, "", placeholderHash, googleId, Date.now(), Date.now());
 
         customer = db.prepare("SELECT * FROM customers WHERE id = ?").get(result.lastInsertRowid);
     }
 
-    if (isNewCustomer && contactMailConfigured()) {
-        mailTransporter.sendMail({
-            from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-            to: customer.email,
-            subject: "Welcome to PHYNEX!",
-            text:
-                "Hi " + customer.name + ",\n\n" +
-                "Welcome to PHYNEX! Your account has been created successfully using " + customer.email + ".\n\n" +
-                "You can now sign in any time to shop phones, computers, gaming gear, electronics and more, track orders and save your details for faster checkout.\n\n" +
-                "Thanks for joining us.\nThe PHYNEX Team"
-        }).catch(function (error) {
-            console.error("Welcome email failed to send:", error.message);
-        });
+    if (!customer.email_verified_at) {
+        return response.status(403).json({ message: "Please verify your email before logging in." });
     }
 
-    const token = newToken();
-
-    db.prepare("UPDATE customers SET token = ? WHERE id = ?").run(token, customer.id);
-
+    setCustomerSession(response, customer.id);
     customer = db.prepare("SELECT * FROM customers WHERE id = ?").get(customer.id);
-
     logLogin("customer", customer, "google");
 
-    response.json({ token: token, customer: publicCustomer(customer) });
+    response.json({ ok: true, customer: publicCustomer(customer) });
 });
 
 app.post("/api/customers/forgot-password", async function (request, response) {
+    if (sensitiveActionRateLimited(request, "password-reset")) {
+        return response.json(genericPasswordResetResponse());
+    }
 
     const email = String((request.body || {}).email || "").trim().toLowerCase();
 
-    if (!email) {
-        return response.status(400).json({ message: "Enter your account email." });
+    if (!isPlausibleEmail(email)) {
+        return response.json(genericPasswordResetResponse());
     }
 
     const customer = db.prepare("SELECT * FROM customers WHERE email = ?").get(email);
+    if (!customer) return response.json(genericPasswordResetResponse());
 
-    // Always reply the same way whether or not the email exists,
-    // so this endpoint can't be used to check who has an account.
-    const genericReply = { ok: true, message: "If that email has an account, a reset link has been sent." };
+    const resetToken = newToken(32);
+    const expires = Date.now() + 60 * 60 * 1000;
 
-    if (!customer) {
-        return response.json(genericReply);
-    }
-
-    const resetToken = crypto.randomBytes(32).toString("hex");
-    const expires = Date.now() + 60 * 60 * 1000; // 1 hour
-
+    // Store only a SHA-256 hash of the reset token.
     db.prepare("UPDATE customers SET reset_token = ?, reset_token_expires = ? WHERE id = ?")
-        .run(resetToken, expires, customer.id);
+        .run(hashToken(resetToken), expires, customer.id);
 
-    const resetUrl = (process.env.APP_URL || "").replace(/\/$/, "") +
-        "/customer-reset-password.html?token=" + resetToken;
+    const baseUrl = (process.env.APP_URL || "").replace(/\/$/, "");
+    const resetUrl = baseUrl + "/customer-reset-password.html?token=" + encodeURIComponent(resetToken);
 
     if (mailTransporter) {
         try {
@@ -970,65 +1380,61 @@ app.post("/api/customers/forgot-password", async function (request, response) {
                 from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
                 to: customer.email,
                 subject: "Reset your PHYNEX password",
-                text: "Reset your password here: " + resetUrl + "\n\nThis link expires in 1 hour. If you didn't request this, ignore this email.",
+                text: "Reset your PHYNEX password here:\n" + resetUrl + "\n\nThis link expires in 1 hour and can only be used once.",
                 html: "<p>Reset your PHYNEX password by clicking the link below:</p>" +
-                    "<p><a href=\"" + resetUrl + "\">" + resetUrl + "</a></p>" +
-                    "<p>This link expires in 1 hour. If you didn't request this, you can ignore this email.</p>"
+                    "<p><a href=\"" + resetUrl + "\">Reset password</a></p>" +
+                    "<p>This link expires in 1 hour and can only be used once.</p>"
             });
         } catch (error) {
-            // Don't leak email-sending failures to the client — log it server-side instead.
             console.error("Password reset email failed:", error.message);
         }
-    } else {
-        console.log("PHYNEX password reset link for " + customer.email + ": " + resetUrl);
     }
 
-    response.json(genericReply);
+    response.json(genericPasswordResetResponse());
 });
 
 app.post("/api/customers/reset-password", async function (request, response) {
-
     const body = request.body || {};
     const token = String(body.token || "").trim();
     const password = String(body.password || "");
+    const confirmPassword = String(body.confirmPassword || "");
 
-    if (!token) {
-        return response.status(400).json({ message: "Missing or invalid reset link." });
-    }
-
-    if (password.length < 6) {
-        return response.status(400).json({ message: "Password must be at least 6 characters." });
+    if (!token) return response.status(400).json({ message: "Missing or invalid reset link." });
+    if (password !== confirmPassword) return response.status(400).json({ message: "Passwords do not match." });
+    if (!passwordIsStrong(password)) {
+        return response.status(400).json({ message: "Password must be at least 8 characters and contain at least one letter and one number." });
     }
 
     const customer = db.prepare(
         "SELECT * FROM customers WHERE reset_token = ? AND reset_token_expires > ?"
-    ).get(token, Date.now());
+    ).get(hashToken(token), Date.now());
 
     if (!customer) {
         return response.status(400).json({ message: "This reset link is invalid or has expired." });
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
-    const sessionToken = newToken();
+    const passwordHash = await bcrypt.hash(password, 12);
 
     db.prepare(
-        "UPDATE customers SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL, token = ? WHERE id = ?"
-    ).run(passwordHash, sessionToken, customer.id);
+        `UPDATE customers
+         SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL,
+             session_token_hash = NULL, session_expires = NULL, token = NULL
+         WHERE id = ?`
+    ).run(passwordHash, customer.id);
 
-    const updated = db.prepare("SELECT * FROM customers WHERE id = ?").get(customer.id);
+    logLogin("customer", customer, "password_reset");
 
-    logLogin("customer", updated, "password_reset");
-
-    response.json({ token: sessionToken, customer: publicCustomer(updated) });
+    response.json({ ok: true, message: "Password updated successfully. Please log in again." });
 });
 
 app.get("/api/customers/me", requireCustomer, function (request, response) {
     response.json({ customer: publicCustomer(request.customer) });
 });
 
-app.post("/api/customers/logout", requireCustomer, function (request, response) {
-    db.prepare("UPDATE customers SET token = NULL WHERE id = ?").run(request.customer.id);
-    logLogin("customer", request.customer, "logout");
+app.post("/api/customers/logout", function (request, response) {
+    const customer = getAuthenticatedCustomer(request);
+    if (customer) logLogin("customer", customer, "logout");
+    clearCustomerSession(response, customer && customer.id);
     response.json({ ok: true });
 });
 
@@ -2298,14 +2704,8 @@ function mpesaConfigured() {
 }
 
 function normalizePhone(value) {
-    const digits = String(value || "").replace(/\D/g, "");
-
-    if (/^07\d{8}$/.test(digits)) return "254" + digits.slice(1);
-    if (/^01\d{8}$/.test(digits)) return "254" + digits.slice(1);
-    if (/^2547\d{8}$/.test(digits)) return digits;
-    if (/^2541\d{8}$/.test(digits)) return digits;
-
-    return null;
+    const normalized = normalizeKenyanPhone(value);
+    return normalized ? normalized.slice(1) : null;
 }
 
 function darajaBaseUrl() {
@@ -2352,7 +2752,7 @@ async function getAccessToken() {
    "order_items" row per cart line, then attempts payment.
 ========================= */
 
-app.post("/api/mpesa/stkpush", async function (request, response) {
+app.post("/api/mpesa/stkpush", requireCustomer, async function (request, response) {
 
     if (!mpesaConfigured()) {
         return response.status(503).json({
@@ -2387,8 +2787,12 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
         return response.status(400).json({ message: "The order total could not be verified." });
     }
 
-    const customer = optionalCustomer(request);
-    const customerInfo = payload.customer || {};
+    const customer = request.customer;
+    const customerInfo = {
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone
+    };
     const delivery = payload.delivery || {};
 
     try {
@@ -2580,11 +2984,16 @@ app.post("/api/mpesa/callback", function (request, response) {
    CHECK PAYMENT STATUS
 ========================= */
 
-app.get("/api/mpesa/status/:checkoutRequestId", function (request, response) {
+app.get("/api/mpesa/status/:checkoutRequestId", requireCustomer, function (request, response) {
 
     const payment = payments.get(request.params.checkoutRequestId);
 
     if (!payment) {
+        return response.status(404).json({ status: "unknown", message: "Payment request not found." });
+    }
+
+    const order = db.prepare("SELECT customer_id FROM orders WHERE id = ?").get(payment.orderId);
+    if (!order || order.customer_id !== request.customer.id) {
         return response.status(404).json({ status: "unknown", message: "Payment request not found." });
     }
 
@@ -2630,7 +3039,7 @@ app.post("/api/contact", async function (request, response) {
 
     if (!contactMailConfigured()) {
         return response.status(503).json({
-            message: "Contact form is not configured yet. Add EMAIL_USER and EMAIL_PASS to .env."
+            message: "Contact form is not configured yet. Add EMAIL_USER and EMAIL_PASSWORD to .env."
         });
     }
 
@@ -2687,7 +3096,9 @@ app.get("/api/health", function (_request, response) {
         ok: true,
         mpesaConfigured: mpesaConfigured(),
         contactMailConfigured: contactMailConfigured(),
+        emailVerificationConfigured: emailVerificationConfigured(),
         googleConfigured: googleConfigured(),
+        phoneVerificationConfigured: smsVerificationConfigured(),
         adminConfigured: Boolean(process.env.ADMIN_PASSWORD)
     });
 });

@@ -149,6 +149,7 @@
         }
 
         .msg.error { display: block; background: #fdeaea; color: #b42318; }
+        .msg.success { display: block; background: #e8f6ec; color: #0f7a3d; }
     </style>
 </head>
 <body>
@@ -172,14 +173,14 @@
 
             <form id="loginForm">
 
-                <label for="email">Email</label>
-                <input type="email" id="email" required>
+                <label for="identifier">Email or Kenyan phone</label>
+                <input type="text" id="identifier" autocomplete="username" required>
 
                 <div class="label-row">
                     <label for="password" style="margin-top:0;">Password</label>
                     <a href="customer-forgot-password.html">Forgot password?</a>
                 </div>
-                <input type="password" id="password" required>
+                <input type="password" id="password" autocomplete="current-password" required>
 
                 <div id="formMsg" class="msg"></div>
 
@@ -187,6 +188,7 @@
             </form>
 
             <p class="switch">New to PHYNEX? <a href="#" id="registerLink">Create an account</a></p>
+            <p class="switch"><a href="#" id="resendVerification">Resend verification email</a></p>
         </div>
     </main>
 
@@ -194,33 +196,22 @@
     <script>
         var params = new URLSearchParams(window.location.search);
         var redirect = params.get('redirect') || '';
+        var verified = params.get('verified');
 
-        // Already logged in? Don't make them log in again — just continue on.
-        if (localStorage.getItem('phynexCustomerToken')) {
-            window.location.href = redirect || 'account.html';
-        }
-
-        if (redirect) {
-            document.getElementById('redirectNote').style.display = 'block';
-        }
+        if (redirect) document.getElementById('redirectNote').style.display = 'block';
 
         document.getElementById('registerLink').href =
             'customer-register.html' + (redirect ? '?redirect=' + encodeURIComponent(redirect) : '');
 
-        function completeLogin(data) {
-            localStorage.setItem('phynexCustomerToken', data.token);
-            localStorage.setItem('phynexCustomerName', data.customer.name);
-            window.location.href = redirect || 'account.html';
-        }
-
-        function showError(text) {
+        function showMessage(text, success) {
             var msg = document.getElementById('formMsg');
-            msg.className = 'msg error';
+            msg.className = success ? 'msg success' : 'msg error';
             msg.textContent = text;
         }
 
-        // Sign in with Google — only shown once the server confirms
-        // a GOOGLE_CLIENT_ID is configured.
+        if (verified === '1') showMessage('Your account has been verified. You can now log in.', true);
+        if (verified === '0') showMessage('This verification link is invalid or has expired.', false);
+
         (function initGoogle() {
             fetch('/api/config').then(function (r) { return r.json(); }).then(function (config) {
                 if (!config.googleClientId || typeof google === 'undefined') return;
@@ -231,14 +222,18 @@
                         try {
                             var res = await fetch('/api/customers/google', {
                                 method: 'POST',
+                                credentials: 'include',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ credential: response.credential })
                             });
                             var data = await res.json();
-                            if (!res.ok) { showError(data.message || 'Google sign-in failed.'); return; }
-                            completeLogin(data);
+                            if (!res.ok) {
+                                showMessage(data.message || 'Google sign-in failed.', false);
+                                return;
+                            }
+                            window.location.href = redirect || 'account.html';
                         } catch (error) {
-                            showError('Network error. Please try again.');
+                            showMessage('Network error. Please try again.', false);
                         }
                     }
                 });
@@ -247,10 +242,30 @@
                     document.getElementById('googleBtn'),
                     { theme: 'outline', size: 'large', width: 340 }
                 );
-
                 document.getElementById('googleDivider').style.display = 'flex';
             }).catch(function () {});
         })();
+
+        document.getElementById('resendVerification').addEventListener('click', async function (event) {
+            event.preventDefault();
+            var email = document.getElementById('identifier').value.trim();
+            if (!email || email.indexOf('@') === -1) {
+                showMessage('Enter your email address first.', false);
+                return;
+            }
+
+            try {
+                var response = await fetch('/api/customers/resend-verification', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email })
+                });
+                var data = await response.json();
+                showMessage(data.message || 'If that account needs verification, a new verification email has been sent.', response.ok);
+            } catch (error) {
+                showMessage('Network error. Please try again.', false);
+            }
+        });
 
         document.getElementById('loginForm').addEventListener('submit', async function (event) {
             event.preventDefault();
@@ -266,9 +281,10 @@
             try {
                 var response = await fetch('/api/customers/login', {
                     method: 'POST',
+                    credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        email: document.getElementById('email').value.trim(),
+                        identifier: document.getElementById('identifier').value.trim(),
                         password: document.getElementById('password').value
                     })
                 });
@@ -276,23 +292,27 @@
                 var data = await response.json();
 
                 if (!response.ok) {
-                    msg.className = 'msg error';
-                    msg.textContent = data.message || 'Could not log you in.';
+                    if (data.phoneVerificationRequired) {
+                        window.location.href = 'customer-verify-phone.html' +
+                            '?redirect=' + encodeURIComponent(redirect);
+                        return;
+                    }
+
+                    showMessage(data.message || 'Could not log you in.', false);
                     btn.disabled = false;
                     btn.textContent = 'Log In';
                     return;
                 }
 
-                completeLogin(data);
+                localStorage.setItem('phynexCustomerName', data.customer.name);
+                window.location.href = redirect || 'account.html';
 
             } catch (error) {
-                msg.className = 'msg error';
-                msg.textContent = 'Network error. Please try again.';
+                showMessage('Network error. Please try again.', false);
                 btn.disabled = false;
                 btn.textContent = 'Log In';
             }
         });
     </script>
-
 </body>
 </html>

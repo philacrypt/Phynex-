@@ -165,10 +165,13 @@
                 <input type="email" id="email" required>
 
                 <label for="phone">Phone number</label>
-                <input type="tel" id="phone" placeholder="07XXXXXXXX">
+                <input type="tel" id="phone" placeholder="07XXXXXXXX" autocomplete="tel" required>
 
                 <label for="password">Password</label>
-                <input type="password" id="password" minlength="6" required>
+                <input type="password" id="password" minlength="8" autocomplete="new-password" required>
+
+                <label for="confirmPassword">Confirm password</label>
+                <input type="password" id="confirmPassword" minlength="8" autocomplete="new-password" required>
 
                 <div id="formMsg" class="msg"></div>
 
@@ -184,12 +187,6 @@
         var params = new URLSearchParams(window.location.search);
         var redirect = params.get('redirect') || '';
 
-        // Already have an account on this device? Skip straight past
-        // the sign-up form instead of asking them to register again.
-        if (localStorage.getItem('phynexCustomerToken')) {
-            window.location.href = redirect || 'account.html';
-        }
-
         if (redirect) {
             document.getElementById('redirectNote').style.display = 'block';
         }
@@ -197,15 +194,15 @@
         document.getElementById('loginLink').href =
             'customer-login.html' + (redirect ? '?redirect=' + encodeURIComponent(redirect) : '');
 
-        function completeLogin(data) {
-            localStorage.setItem('phynexCustomerToken', data.token);
-            localStorage.setItem('phynexCustomerName', data.customer.name);
-            window.location.href = redirect || 'account.html';
-        }
-
         function showError(text) {
             var msg = document.getElementById('formMsg');
             msg.className = 'msg error';
+            msg.textContent = text;
+        }
+
+        function showSuccess(text) {
+            var msg = document.getElementById('formMsg');
+            msg.className = 'msg success';
             msg.textContent = text;
         }
 
@@ -219,12 +216,13 @@
                         try {
                             var res = await fetch('/api/customers/google', {
                                 method: 'POST',
+                                credentials: 'include',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ credential: response.credential })
                             });
                             var data = await res.json();
                             if (!res.ok) { showError(data.message || 'Google sign-in failed.'); return; }
-                            completeLogin(data);
+                            window.location.href = redirect || 'account.html';
                         } catch (error) {
                             showError('Network error. Please try again.');
                         }
@@ -245,9 +243,22 @@
 
             var msg = document.getElementById('formMsg');
             var btn = document.getElementById('submitBtn');
+            var password = document.getElementById('password').value;
+            var confirmPassword = document.getElementById('confirmPassword').value;
 
             msg.className = 'msg';
             msg.textContent = '';
+
+            if (password !== confirmPassword) {
+                showError('Passwords do not match.');
+                return;
+            }
+
+            if (password.length < 8 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+                showError('Password must be at least 8 characters and contain at least one letter and one number.');
+                return;
+            }
+
             btn.disabled = true;
             btn.textContent = 'Creating account...';
 
@@ -259,38 +270,33 @@
                         name: document.getElementById('name').value.trim(),
                         email: document.getElementById('email').value.trim(),
                         phone: document.getElementById('phone').value.trim(),
-                        password: document.getElementById('password').value
+                        password: password,
+                        confirmPassword: confirmPassword
                     })
                 });
 
                 var data = await response.json();
 
                 if (!response.ok) {
-                    msg.className = 'msg error';
-                    msg.textContent = data.message || 'Could not create your account.';
+                    showError(data.message || 'Could not create your account.');
                     btn.disabled = false;
                     btn.textContent = 'Create Account';
                     return;
                 }
 
-                localStorage.setItem('phynexCustomerToken', data.token);
-                localStorage.setItem('phynexCustomerName', data.customer.name);
-
-                msg.className = 'msg success';
-                msg.textContent = 'Account created!';
-
-                setTimeout(function () {
-                    window.location.href = redirect || 'account.html';
-                }, 500);
-
+                showSuccess(
+                    data.phoneVerificationRequired
+                        ? 'Verification email sent. We also sent a phone OTP. Verify your email, then log in to complete phone verification.'
+                        : 'Verification email sent. Check your inbox and click the verification link before logging in.'
+                );
+                document.getElementById('registerForm').reset();
+                btn.textContent = 'Verification email sent';
             } catch (error) {
-                msg.className = 'msg error';
-                msg.textContent = 'Network error. Please try again.';
+                showError('Network error. Please try again.');
                 btn.disabled = false;
                 btn.textContent = 'Create Account';
             }
         });
     </script>
-
 </body>
 </html>

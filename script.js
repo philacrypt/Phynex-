@@ -9,7 +9,7 @@
     'use strict';
 
     const CART_KEY = 'phynexCart';
-    const CUSTOMER_TOKEN_KEY = 'phynexCustomerToken';
+    const CUSTOMER_NAME_KEY = 'phynexCustomerName';
     const DELIVERY_FEE = 300; // must match DELIVERY_FEE in server.js
 
     /* =====================================================
@@ -220,16 +220,6 @@
        ===================================================== */
 
     function goToCheckout() {
-
-        if (!localStorage.getItem(CUSTOMER_TOKEN_KEY)) {
-
-            window.location.href =
-                'customer-login.html?redirect=' +
-                encodeURIComponent('checkout.html');
-
-            return;
-        }
-
         window.location.href = 'checkout.html';
     }
 
@@ -284,6 +274,32 @@
             document.getElementById('checkoutItems');
 
         if (!itemsBox) return; // not on checkout.html
+
+        fetch('/api/customers/me', { credentials: 'include' })
+            .then(function (response) {
+                if (response.status === 401 || response.status === 403) {
+                    window.location.href = 'customer-login.html?redirect=' + encodeURIComponent('checkout.html');
+                    return null;
+                }
+                return response.json();
+            })
+            .then(function (data) {
+                if (!data || !data.customer) return;
+                const c = data.customer;
+                const nameField = document.getElementById('customerName');
+                const emailField = document.getElementById('customerEmail');
+                const phoneField = document.getElementById('customerPhone');
+                if (nameField && !nameField.value) nameField.value = c.name || '';
+                if (emailField) {
+                    emailField.value = c.email || '';
+                    emailField.readOnly = true;
+                }
+                if (phoneField && !phoneField.value) phoneField.value = c.phone || '';
+                localStorage.setItem(CUSTOMER_NAME_KEY, c.name || '');
+            })
+            .catch(function () {
+                window.location.href = 'customer-login.html?redirect=' + encodeURIComponent('checkout.html');
+            });
 
         const emptyMsg =
             document.getElementById('checkoutEmpty');
@@ -747,11 +763,12 @@
         renderReviewForm(numericId, formWrap);
     }
 
-    function renderReviewForm(productId, formWrap) {
+    async function renderReviewForm(productId, formWrap) {
 
-        const token = localStorage.getItem(CUSTOMER_TOKEN_KEY);
-
-        if (!token) {
+        try {
+            const authResponse = await fetch('/api/customers/me', { credentials: 'include' });
+            if (!authResponse.ok) throw new Error('not authenticated');
+        } catch (error) {
             formWrap.innerHTML =
                 '<p class="pp-review-note">' +
                 '<a href="customer-login.html">Log in</a> and buy this product to leave a review.' +
@@ -792,9 +809,9 @@
 
                 const response = await fetch('/api/products/' + productId + '/reviews', {
                     method: 'POST',
+                    credentials: 'include',
                     headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: 'Bearer ' + token
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ rating: rating, comment: comment })
                 });
@@ -1612,17 +1629,6 @@
 
             setMessage('Sending the M-PESA payment request...');
 
-            const customerToken =
-                localStorage.getItem(CUSTOMER_TOKEN_KEY);
-
-            const headers = {
-                'Content-Type': 'application/json'
-            };
-
-            if (customerToken) {
-                headers['Authorization'] = 'Bearer ' + customerToken;
-            }
-
             try {
 
                 const response =
@@ -1630,7 +1636,10 @@
 
                         method: 'POST',
 
-                        headers: headers,
+                        credentials: 'include',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
 
                         body: JSON.stringify({
 

@@ -117,61 +117,46 @@
     </main>
 
     <script>
-        var TOKEN_KEY = 'phynexCustomerToken';
-        var NAME_KEY = 'phynexCustomerName';
-        var token = localStorage.getItem(TOKEN_KEY);
+        fetch('/api/customers/me', {
+            credentials: 'include'
+        }).then(function (response) {
+            if (response.status === 401 || response.status === 403) {
+                window.location.href = 'customer-login.html?redirect=' + encodeURIComponent('account.html');
+                return null;
+            }
+            return response.json();
+        }).then(function (data) {
+            if (!data || !data.customer) return;
 
-        if (!token) {
-            window.location.href = 'customer-login.html?redirect=' + encodeURIComponent('account.html');
-        } else {
+            var c = data.customer;
+            var initial = (c.name || c.email || '?').trim().charAt(0).toUpperCase();
+            var verification = c.phoneVerified ? 'Verified' : 'Not verified';
 
-            fetch('/api/customers/me', {
-                headers: { Authorization: 'Bearer ' + token }
-            }).then(function (response) {
+            document.getElementById('card').innerHTML =
+                '<div class="avatar">' + initial + '</div>' +
+                '<h1>' + escapeHtml(c.name || 'PHYNEX customer') + '</h1>' +
+                '<p class="email">' + escapeHtml(c.email || '') + '</p>' +
+                '<div class="row"><span>Phone</span><span>' + escapeHtml(c.phone || 'Not set') + '</span></div>' +
+                '<div class="row"><span>Phone verification</span><span>' + verification + '</span></div>' +
+                '<div class="row"><span>Signed in with</span><span>' + (c.hasGoogle ? 'Google' : 'Email &amp; password') + '</span></div>' +
+                '<div class="actions">' +
+                    '<a class="primary" href="index.html">Continue shopping</a>' +
+                    '<a href="customer-forgot-password.html">Change password</a>' +
+                    '<button class="danger" id="logoutBtn">Log out</button>' +
+                '</div>';
 
-                if (response.status === 401) {
-                    localStorage.removeItem(TOKEN_KEY);
-                    localStorage.removeItem(NAME_KEY);
-                    window.location.href = 'customer-login.html?redirect=' + encodeURIComponent('account.html');
-                    return null;
-                }
-
-                return response.json();
-
-            }).then(function (data) {
-
-                if (!data || !data.customer) return;
-
-                var c = data.customer;
-                var initial = (c.name || c.email || '?').trim().charAt(0).toUpperCase();
-
-                document.getElementById('card').innerHTML =
-                    '<div class="avatar">' + initial + '</div>' +
-                    '<h1>' + escapeHtml(c.name || 'PHYNEX customer') + '</h1>' +
-                    '<p class="email">' + escapeHtml(c.email || '') + '</p>' +
-                    '<div class="row"><span>Phone</span><span>' + escapeHtml(c.phone || 'Not set') + '</span></div>' +
-                    '<div class="row"><span>Signed in with</span><span>' + (c.hasGoogle ? 'Google' : 'Email &amp; password') + '</span></div>' +
-                    '<div class="actions">' +
-                        '<a class="primary" href="index.html">Continue shopping</a>' +
-                        '<a href="customer-forgot-password.html">Change password</a>' +
-                        '<button class="danger" id="logoutBtn">Log out</button>' +
-                    '</div>';
-
-                document.getElementById('logoutBtn').addEventListener('click', function () {
-                    fetch('/api/customers/logout', {
-                        method: 'POST',
-                        headers: { Authorization: 'Bearer ' + token }
-                    }).finally(function () {
-                        localStorage.removeItem(TOKEN_KEY);
-                        localStorage.removeItem(NAME_KEY);
-                        window.location.href = 'index.html';
-                    });
+            document.getElementById('logoutBtn').addEventListener('click', function () {
+                fetch('/api/customers/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                }).finally(function () {
+                    localStorage.removeItem('phynexCustomerName');
+                    window.location.href = 'index.html';
                 });
-
-            }).catch(function () {
-                document.getElementById('card').innerHTML = '<div class="loading">Could not load your account. Please refresh.</div>';
             });
-        }
+        }).catch(function () {
+            document.getElementById('card').innerHTML = '<div class="loading">Could not load your account. Please refresh.</div>';
+        });
 
         function escapeHtml(text) {
             var div = document.createElement('div');
