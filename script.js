@@ -232,10 +232,14 @@
             const products = Array.isArray(data.products) ? data.products : [];
 
             if (newGrid) {
-                newGrid.innerHTML = '';
-                products.forEach(function (product) {
-                    newGrid.appendChild(buildProductCard(product));
-                });
+                if (products.length) {
+                    newGrid.innerHTML = '';
+                    products.forEach(function (product) {
+                        newGrid.appendChild(buildProductCard(product));
+                    });
+                } else {
+                    newGrid.innerHTML = '<p class="products-empty-note">No new arrivals yet — check back soon.</p>';
+                }
             }
 
             const sponsored = products.filter(function (product) { return product.sponsored; });
@@ -249,7 +253,12 @@
                 if (sponsoredSection) sponsoredSection.style.display = '';
             }
 
-            if (flashGrid) {
+            // If there are no live, approved products yet, leave the
+            // existing homepage content in the Flash Deals grid alone
+            // instead of clearing it to blank — an empty-looking
+            // storefront is worse than a placeholder while the store
+            // is still getting its first listings approved.
+            if (flashGrid && products.length) {
                 flashGrid.innerHTML = '';
                 products.forEach(function (product) {
                     flashGrid.appendChild(buildProductCard(product));
