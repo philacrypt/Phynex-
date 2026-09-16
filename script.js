@@ -1138,65 +1138,11 @@
        ===================================================== */
 
     function searchProducts() {
-
-        const input =
-            document.getElementById(
-                'searchInput'
-            );
-
+        const input = document.getElementById('searchInput');
         if (!input) return;
-
-        const query =
-            input.value
-                .trim()
-                .toLowerCase();
-
-        if (!query) {
-
-            showAllProducts();
-
-            return;
-        }
-
-        let found = 0;
-
-        getProducts().forEach(
-            function (card) {
-
-                const nameElement =
-                    card.querySelector(
-                        '.product-name'
-                    );
-
-                const name =
-                    nameElement
-                        ? nameElement.textContent
-                            .toLowerCase()
-                        : '';
-
-                const match =
-                    name.includes(query);
-
-                card.style.display =
-                    match ? '' : 'none';
-
-                if (match) found++;
-            }
-        );
-
-        scrollToProducts();
-
-        showToast(
-            found +
-            (
-                found === 1
-                    ? ' result'
-                    : ' results'
-            ) +
-            ' for "' +
-            input.value.trim() +
-            '"'
-        );
+        const query = input.value.trim();
+        if (!query) return;
+        window.location.href = 'category.html?search=' + encodeURIComponent(query);
     }
 
     /* =====================================================
@@ -1850,16 +1796,9 @@
                         tile.style.cursor =
                             'pointer';
 
-                        tile.addEventListener(
-                            'click',
-                            function () {
-
-                                filterCategory(
-                                    tile.dataset.category
-                                );
-
-                            }
-                        );
+                        tile.addEventListener('click', function () {
+                                window.location.href = 'category.html?category=' + encodeURIComponent(tile.dataset.category);
+                            });
 
                     }
                 );
