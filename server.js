@@ -10,6 +10,21 @@ require("dotenv").config();
 const app = express();
 const port = Number(process.env.PORT) || 3000;
 
+// Express 4 does NOT forward a rejected promise from an async route
+// handler to error-handling middleware automatically — an exception
+// thrown inside an `async function (request, response) { ... }` route
+// just becomes an unhandled rejection and the request hangs with no
+// response ever sent. From the browser that looks exactly like a
+// connection failure ("Network error"), even though the server is fine
+// and the real problem is a bug in that one route. Wrapping every async
+// route in this makes sure such errors reach the JSON error handler
+// below instead of hanging the request.
+function asyncHandler(fn) {
+    return function (request, response, next) {
+        Promise.resolve(fn(request, response, next)).catch(next);
+    };
+}
+
 const payments = new Map();
 
 app.disable("x-powered-by");
@@ -1113,7 +1128,7 @@ function genericPasswordResetResponse() {
     };
 }
 
-app.post("/api/customers/register", async function (request, response) {
+app.post("/api/customers/register", asyncHandler(async function (request, response) {
     const body = request.body || {};
     const name = String(body.name || "").trim();
     const email = String(body.email || "").trim().toLowerCase();
@@ -1207,7 +1222,7 @@ app.post("/api/customers/register", async function (request, response) {
         emailVerificationRequired: true,
         phoneVerificationRequired: phoneVerificationRequired
     });
-});
+}));
 
 app.get("/api/customers/verify-email", function (request, response) {
     const token = String(request.query.token || "").trim();
@@ -1235,7 +1250,7 @@ app.get("/api/customers/verify-email", function (request, response) {
     response.redirect("/customer-login.html?verified=1");
 });
 
-app.post("/api/customers/resend-verification", async function (request, response) {
+app.post("/api/customers/resend-verification", asyncHandler(async function (request, response) {
     if (sensitiveActionRateLimited(request, "email-verification")) {
         return response.json({ ok: true, message: "If that account needs verification, a new verification email has been sent." });
     }
@@ -1260,7 +1275,7 @@ app.post("/api/customers/resend-verification", async function (request, response
     }
 
     return response.json({ ok: true, message: "If that account needs verification, a new verification email has been sent." });
-});
+}));
 
 app.post("/api/customers/verify-phone", function (request, response) {
     if (!smsVerificationConfigured()) {
@@ -1307,7 +1322,7 @@ app.post("/api/customers/verify-phone", function (request, response) {
     response.json({ ok: true, message: "Your phone number has been verified." });
 });
 
-app.post("/api/customers/resend-phone-code", async function (request, response) {
+app.post("/api/customers/resend-phone-code", asyncHandler(async function (request, response) {
     if (sensitiveActionRateLimited(request, "phone-otp")) {
         return response.status(429).json({ message: "Too many OTP requests. Please try again later." });
     }
@@ -1328,9 +1343,9 @@ app.post("/api/customers/resend-phone-code", async function (request, response) 
     }
 
     response.json({ ok: true, message: "A new phone verification code has been sent." });
-});
+}));
 
-app.post("/api/customers/login", async function (request, response) {
+app.post("/api/customers/login", asyncHandler(async function (request, response) {
     const body = request.body || {};
     const identifier = String(body.identifier || body.email || body.phone || "").trim();
     const password = String(body.password || "");
@@ -1377,9 +1392,9 @@ app.post("/api/customers/login", async function (request, response) {
     logLogin("customer", customer, "login");
 
     response.json({ ok: true, customer: publicCustomer(customer) });
-});
+}));
 
-app.post("/api/customers/google", async function (request, response) {
+app.post("/api/customers/google", asyncHandler(async function (request, response) {
     if (!googleConfigured() || !googleClient) {
         return response.status(503).json({ message: "Google sign-in is not configured yet." });
     }
@@ -1433,9 +1448,9 @@ app.post("/api/customers/google", async function (request, response) {
     logLogin("customer", customer, "google");
 
     response.json({ ok: true, customer: publicCustomer(customer) });
-});
+}));
 
-app.post("/api/customers/forgot-password", async function (request, response) {
+app.post("/api/customers/forgot-password", asyncHandler(async function (request, response) {
     if (sensitiveActionRateLimited(request, "password-reset")) {
         return response.json(genericPasswordResetResponse());
     }
@@ -1476,9 +1491,9 @@ app.post("/api/customers/forgot-password", async function (request, response) {
     }
 
     response.json(genericPasswordResetResponse());
-});
+}));
 
-app.post("/api/customers/reset-password", async function (request, response) {
+app.post("/api/customers/reset-password", asyncHandler(async function (request, response) {
     const body = request.body || {};
     const token = String(body.token || "").trim();
     const password = String(body.password || "");
@@ -1510,7 +1525,7 @@ app.post("/api/customers/reset-password", async function (request, response) {
     logLogin("customer", customer, "password_reset");
 
     response.json({ ok: true, message: "Password updated successfully. Please log in again." });
-});
+}));
 
 app.get("/api/customers/me", requireCustomer, function (request, response) {
     response.json({ customer: publicCustomer(request.customer) });
@@ -1527,7 +1542,7 @@ app.post("/api/customers/logout", function (request, response) {
    SELLER REGISTER / LOGIN
 ========================= */
 
-app.post("/api/sellers/register", async function (request, response) {
+app.post("/api/sellers/register", asyncHandler(async function (request, response) {
 
     const body = request.body || {};
 
@@ -1579,9 +1594,9 @@ app.post("/api/sellers/register", async function (request, response) {
     logLogin("seller", seller, "register");
 
     response.json({ token: token, seller: publicSeller(seller) });
-});
+}));
 
-app.post("/api/sellers/login", async function (request, response) {
+app.post("/api/sellers/login", asyncHandler(async function (request, response) {
 
     const body = request.body || {};
 
@@ -1620,7 +1635,7 @@ app.post("/api/sellers/login", async function (request, response) {
     logLogin("seller", seller, "login");
 
     response.json({ token: token, seller: publicSeller(seller) });
-});
+}));
 
 app.get("/api/sellers/me", requireSeller, function (request, response) {
     response.json({ seller: publicSeller(request.seller) });
@@ -2838,7 +2853,7 @@ async function getAccessToken() {
    "order_items" row per cart line, then attempts payment.
 ========================= */
 
-app.post("/api/mpesa/stkpush", requireCustomer, async function (request, response) {
+app.post("/api/mpesa/stkpush", requireCustomer, asyncHandler(async function (request, response) {
 
     if (!mpesaConfigured()) {
         return response.status(503).json({
@@ -3028,7 +3043,7 @@ app.post("/api/mpesa/stkpush", requireCustomer, async function (request, respons
         releaseStock(resolvedItems);
         return response.status(502).json({ message: error.message || "Unable to reach M-PESA." });
     }
-});
+}));
 
 /* =========================
    M-PESA CALLBACK
@@ -3203,7 +3218,7 @@ function isRateLimited(ip) {
     return entry.count > CONTACT_MAX_PER_WINDOW;
 }
 
-app.post("/api/contact", async function (request, response) {
+app.post("/api/contact", asyncHandler(async function (request, response) {
 
     if (!contactMailConfigured()) {
         return response.status(503).json({
@@ -3253,7 +3268,7 @@ app.post("/api/contact", async function (request, response) {
         console.error("Contact form email failed:", error.message);
         return response.status(502).json({ message: "Could not send message. Please try again later." });
     }
-});
+}));
 
 /* =========================
    SERVER HEALTH
@@ -3312,6 +3327,25 @@ function releaseStaleReservations() {
 }
 
 setInterval(releaseStaleReservations, 5 * 60 * 1000);
+
+/* =========================
+   JSON 404 + ERROR HANDLERS
+   Must be registered after every route above. Without these, an unknown
+   path or an uncaught exception falls through to Express's default HTML
+   error page — which breaks every frontend `await response.json()` call
+   and shows a misleading "Network error" even though the request did
+   reach the server.
+========================= */
+
+app.use(function (request, response) {
+    response.status(404).json({ message: "Not found." });
+});
+
+app.use(function (error, request, response, next) {
+    console.error("Unhandled request error:", error);
+    if (response.headersSent) return next(error);
+    response.status(500).json({ message: "Something went wrong on our end. Please try again." });
+});
 
 /* =========================
    START SERVER
