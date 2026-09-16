@@ -94,9 +94,7 @@
                           ' (' + product.reviewCount + ')'
                         : 'No reviews yet') +
                 '</div>' +
-                (product.sellerName
-                    ? '<div class="sold-by">Sold by ' + escapeHtml(product.sellerName) + '</div>'
-                    : '') +
+                '<div class="sold-by">Sold by PHYNEX</div>' +
                 '<div class="price">' + priceHtml + '</div>' +
                 '<div class="stock-status' + (inStock ? '' : ' sold-out') + '">' +
                     (inStock ? 'In stock' : 'Sold out') +
@@ -962,8 +960,7 @@
         const sellerCall =
             document.getElementById('modalSellerCall');
 
-        const displayName =
-            product.sellerName || 'PHYNEX';
+        const displayName = 'PHYNEX';
 
         if (sellerName) {
             sellerName.textContent = displayName;
@@ -1138,11 +1135,24 @@
        ===================================================== */
 
     function searchProducts() {
-        const input = document.getElementById('searchInput');
+
+        // Search needs to look across every product in the marketplace,
+        // not just whatever is currently rendered on this page, so it
+        // hands off to a dedicated results page (same pattern as the
+        // category links) instead of filtering the homepage in place.
+        const input =
+            document.getElementById(
+                'searchInput'
+            );
+
         if (!input) return;
+
         const query = input.value.trim();
+
         if (!query) return;
-        window.location.href = 'category.html?search=' + encodeURIComponent(query);
+
+        window.location.href =
+            'category.html?search=' + encodeURIComponent(query);
     }
 
     /* =====================================================
@@ -1796,9 +1806,16 @@
                         tile.style.cursor =
                             'pointer';
 
-                        tile.addEventListener('click', function () {
-                                window.location.href = 'category.html?category=' + encodeURIComponent(tile.dataset.category);
-                            });
+                        tile.addEventListener(
+                            'click',
+                            function () {
+
+                                filterCategory(
+                                    tile.dataset.category
+                                );
+
+                            }
+                        );
 
                     }
                 );

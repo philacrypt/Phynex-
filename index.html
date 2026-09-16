@@ -1900,12 +1900,9 @@
 <nav class="nav" id="categoryNav">
 
     <div class="nav-item" data-category="all"><i class="fa-solid fa-bars"></i> All Categories</div>
-    <div class="nav-item" data-category="phones">Phones & Tablets</div>
-    <div class="nav-item" data-category="computers">Computers</div>
-    <div class="nav-item" data-category="electronics">Electronics</div>
-    <div class="nav-item" data-category="gaming">Gaming</div>
-    <div class="nav-item" data-category="accessories">Accessories</div>
-    <div class="nav-item" data-category="home-office">Home & Office</div>
+    <!-- The real categories (every one the business actually has) are
+         fetched from /api/categories and inserted here at load time,
+         instead of a hardcoded, easily-outdated shortlist. -->
     <div class="nav-item deals" data-category="deals">Deals</div>
 
 </nav>
@@ -2573,12 +2570,41 @@
             window.location.href = 'category.html?category=' + encodeURIComponent(target);
         }
 
-        // Top category bar (All Categories, Phones & Tablets, Gaming, Deals...)
+        // Top category bar (All Categories, Deals, and every real category)
         document.querySelectorAll('.nav-item[data-category]').forEach(function (item) {
             item.addEventListener('click', function () {
                 goToCategory(item.getAttribute('data-category'));
             });
         });
+
+        // Fill in the rest of the bar with every category the store
+        // actually has, so it's never out of sync with what's for sale.
+        var categoryNav = document.getElementById('categoryNav');
+        var dealsTab = document.querySelector('.nav-item.deals');
+
+        if (categoryNav) {
+            fetch('/api/categories')
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
+                    var categories = Array.isArray(data.categories) ? data.categories : [];
+
+                    categories.forEach(function (category) {
+                        var item = document.createElement('div');
+                        item.className = 'nav-item';
+                        item.setAttribute('data-category', category.slug || category.name);
+                        item.textContent = category.name;
+
+                        item.addEventListener('click', function () {
+                            goToCategory(category.slug || category.name);
+                        });
+
+                        categoryNav.insertBefore(item, dealsTab || null);
+                    });
+                })
+                .catch(function (error) {
+                    console.error('PHYNEX: Could not load categories for the nav bar.', error);
+                });
+        }
 
         // Homepage category cards (Phones & Tablets, Laptops, Gaming...)
         document.querySelectorAll('.category[data-category]').forEach(function (item) {
