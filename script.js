@@ -276,7 +276,23 @@
                 localStorage.getItem(CART_KEY)
             );
 
-            return Array.isArray(cart) ? cart : [];
+            if (!Array.isArray(cart)) return [];
+
+            // Sample/demo cards don't have a real numeric database ID,
+            // so if one was ever added to the cart before purchasing was
+            // disabled on them, it would sit there permanently blocking
+            // checkout with "Your cart contains an invalid product."
+            // Quietly drop anything without a real ID so an old, already
+            // affected cart self-heals instead of staying stuck.
+            const cleaned = cart.filter(function (item) {
+                return item && Number.isInteger(Number(item.id)) && item.id !== '';
+            });
+
+            if (cleaned.length !== cart.length) {
+                localStorage.setItem(CART_KEY, JSON.stringify(cleaned));
+            }
+
+            return cleaned;
         } catch (error) {
             return [];
         }
@@ -814,6 +830,23 @@
     function openProductPopup(product) {
 
         currentProduct = product;
+
+        // Sample/demo cards (the homepage placeholders shown when the
+        // store has no real listings yet) don't have a real numeric
+        // product ID from the database, so they can never actually be
+        // checked out - trying to buy one is exactly what was causing
+        // "Your cart contains an invalid product." Disable purchasing
+        // for those here instead of letting the request reach the server.
+        const isRealProduct = Number.isInteger(Number(product && product.id)) && product.id !== '';
+
+        const modalAddToCart = document.getElementById('modalAddToCart');
+        const modalBuyNow = document.getElementById('modalBuyNow');
+
+        [modalAddToCart, modalBuyNow].forEach(function (button) {
+            if (!button) return;
+            button.disabled = !isRealProduct;
+            button.title = isRealProduct ? '' : 'This is a sample listing and is not available for purchase.';
+        });
 
         const image =
             document.getElementById(
@@ -2228,7 +2261,8 @@
                     function () {
 
                         if (
-                            !currentProduct
+                            !currentProduct ||
+                            modalAdd.disabled
                         ) return;
 
                         const qty =
@@ -2263,7 +2297,8 @@
                     function () {
 
                         if (
-                            !currentProduct
+                            !currentProduct ||
+                            modalBuy.disabled
                         ) return;
 
                         const qty =
