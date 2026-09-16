@@ -378,6 +378,20 @@ const DEFAULT_CATEGORIES = [
     ["Pet Supplies","pet-supplies","Pet food, accessories and supplies"],
     ["Industrial & Tools","industrial-tools","Tools, hardware, machinery and business equipment"],
     ["Services","services","Local and professional services"],
+    ["Vehicles","vehicles","Cars, motorbikes, trucks and other vehicles for sale"],
+    ["Musical Instruments","musical-instruments","Guitars, keyboards, drums and other musical instruments"],
+    ["Solar & Power Equipment","solar-power","Solar panels, inverters, solar batteries and backup power equipment"],
+    ["Agriculture & Farm Supplies","agriculture-farm-supplies","Farm equipment, animal feed, fertilizer and agricultural supplies"],
+    ["Building & Construction Materials","building-construction","Cement, roofing, tiles, timber and other construction materials"],
+    ["Party & Event Supplies","party-event-supplies","Decorations, tents and supplies for parties, weddings and events"],
+    ["Security & Safety Equipment","security-safety","CCTV, alarms, fire safety and personal safety equipment"],
+    ["Lighting & Electrical","lighting-electrical","Bulbs, fittings, cables and electrical accessories"],
+    ["Kitchenware & Dining","kitchenware-dining","Cookware, cutlery, dinner sets and kitchen essentials"],
+    ["Bedding & Linen","bedding-linen","Bed sheets, mosquito nets, towels and household linen"],
+    ["Wedding & Bridal","wedding-bridal","Wedding gowns, bridal wear and bridal party attire"],
+    ["Underwear & Lingerie","underwear-lingerie","Underwear, lingerie and intimate apparel"],
+    ["Maternity & Nursing","maternity-nursing","Maternity wear and nursing essentials for expecting and new mothers"],
+    ["Digital Products & Gift Cards","digital-gift-cards","Gift cards, airtime vouchers, software licenses and digital codes"],
     ["Other","other","Other products that do not fit another category"]
 ];
 
