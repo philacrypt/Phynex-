@@ -14,7 +14,149 @@ const port = Number(process.env.PORT) || 3000;
 
 const payments = new Map();
 
+function escapeEmailHtml(text) {
+    return String(text || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
+function moneyKsh(amount) {
+    return "KSh " + Number(amount || 0).toLocaleString("en-KE");
+}
+
+// Sends the "your order is confirmed / paid" email. Called once, right
+// after an M-PESA callback marks an order as paid. Never throws — a
+// failed email must not affect payment processing or the customer's
+// order status, so failures are only logged server-side.
+async function sendOrderConfirmationEmail(order, items) {
+    if (!mailTransporter || !order || !order.customer_email) return;
+
+    const itemsText = (items || [])
+        .map(function (item) {
+            return "- " + item.name + " x " + item.quantity + " (" + moneyKsh(item.price * item.quantity) + ")";
+        })
+        .join("\n");
+
+    const itemsHtml = (items || [])
+        .map(function (item) {
+            return "<tr>" +
+                "<td style=\"padding:6px 10px;border-bottom:1px solid #eee;\">" + escapeEmailHtml(item.name) + "</td>" +
+                "<td style=\"padding:6px 10px;border-bottom:1px solid #eee;text-align:center;\">" + Number(item.quantity) + "</td>" +
+                "<td style=\"padding:6px 10px;border-bottom:1px solid #eee;text-align:right;\">" + moneyKsh(item.price * item.quantity) + "</td>" +
+                "</tr>";
+        })
+        .join("");
+
+    try {
+        await mailTransporter.sendMail({
+            from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+            to: order.customer_email,
+            subject: "PHYNEX order " + order.order_number + " confirmed",
+            text:
+                "Hi " + (order.customer_name || "there") + ",\n\n" +
+                "We've received your M-PESA payment and your order is confirmed.\n\n" +
+                "Order number: " + order.order_number + "\n" +
+                "Items:\n" + itemsText + "\n\n" +
+                "Subtotal: " + moneyKsh(order.subtotal) + "\n" +
+                "Delivery fee: " + moneyKsh(order.delivery_fee) + "\n" +
+                "Total paid: " + moneyKsh(order.total) + "\n\n" +
+                "Delivery address: " + [order.address, order.location, order.county].filter(Boolean).join(", ") + "\n\n" +
+                "We'll email you again as your order is dispatched and delivered.\n\n" +
+                "Thank you for shopping with PHYNEX!\nThe PHYNEX Team",
+            html:
+                "<p>Hi " + escapeEmailHtml(order.customer_name || "there") + ",</p>" +
+                "<p>We've received your M-PESA payment and your order is <strong>confirmed</strong>.</p>" +
+                "<p><strong>Order number:</strong> " + escapeEmailHtml(order.order_number) + "</p>" +
+                "<table style=\"border-collapse:collapse;width:100%;max-width:480px;\">" +
+                "<thead><tr>" +
+                "<th style=\"text-align:left;padding:6px 10px;border-bottom:2px solid #071a49;\">Item</th>" +
+                "<th style=\"padding:6px 10px;border-bottom:2px solid #071a49;\">Qty</th>" +
+                "<th style=\"text-align:right;padding:6px 10px;border-bottom:2px solid #071a49;\">Amount</th>" +
+                "</tr></thead><tbody>" + itemsHtml + "</tbody></table>" +
+                "<p><strong>Subtotal:</strong> " + moneyKsh(order.subtotal) + "<br>" +
+                "<strong>Delivery fee:</strong> " + moneyKsh(order.delivery_fee) + "<br>" +
+                "<strong>Total paid:</strong> " + moneyKsh(order.total) + "</p>" +
+                "<p><strong>Delivery address:</strong> " + escapeEmailHtml([order.address, order.location, order.county].filter(Boolean).join(", ")) + "</p>" +
+                "<p>We'll email you again as your order is dispatched and delivered.</p>" +
+                "<p>Thank you for shopping with PHYNEX!<br>The PHYNEX Team</p>"
+        });
+    } catch (error) {
+        console.error("Order confirmation email failed for order " + order.order_number + ":", error.message);
+    }
+}
+
+// Lightweight status-change email for later stages (dispatched/delivered).
+// Same never-throw guarantee as sendOrderConfirmationEmail above.
+async function sendOrderStatusEmail(order, status) {
+    if (!mailTransporter || !order || !order.customer_email) return;
+
+    const labels = {
+        processing: "is now being processed",
+        shipped: "has been dispatched for delivery",
+        delivered: "has been delivered",
+        cancelled: "has been cancelled"
+    };
+
+    const label = labels[status];
+    if (!label) return; // no email for statuses we don't have copy for (e.g. "pending", "paid")
+
+    try {
+        await mailTransporter.sendMail({
+            from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+            to: order.customer_email,
+            subject: "PHYNEX order " + order.order_number + " update",
+            text: "Hi " + (order.customer_name || "there") + ",\n\nYour order " + order.order_number + " " + label + ".\n\nThe PHYNEX Team",
+            html: "<p>Hi " + escapeEmailHtml(order.customer_name || "there") + ",</p>" +
+                "<p>Your order <strong>" + escapeEmailHtml(order.order_number) + "</strong> " + label + ".</p>" +
+                "<p>The PHYNEX Team</p>"
+        });
+    } catch (error) {
+        console.error("Order status email failed for order " + order.order_number + ":", error.message);
+    }
+}
+
+async function sendWelcomeEmail(toEmail, toName) {
+    if (!mailTransporter || !toEmail) return;
+
+    try {
+        await mailTransporter.sendMail({
+            from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+            to: toEmail,
+            subject: "Welcome to PHYNEX!",
+            text: "Hi " + (toName || "there") + ",\n\n" +
+                "Welcome to PHYNEX! Your account has been created and you're all set to start shopping " +
+                "for great deals from trusted sellers.\n\n" +
+                "Happy shopping!\nThe PHYNEX Team",
+            html: "<p>Hi " + escapeEmailHtml(toName || "there") + ",</p>" +
+                "<p>Welcome to <strong>PHYNEX</strong>! Your account has been created and you're all set to start " +
+                "shopping for great deals from trusted sellers.</p>" +
+                "<p>Happy shopping!<br>The PHYNEX Team</p>"
+        });
+    } catch (error) {
+        // Don't fail signup if the welcome email can't be sent — just log it.
+        console.error("Welcome email failed:", error.message);
+    }
+}
+
 app.use(express.json({ limit: "100kb" }));
+
+// If the request body isn't valid JSON (or is too large), express.json()
+// throws before any route handler runs. Without this, Express's default
+// error page (HTML) would be sent back to a fetch() call expecting JSON,
+// causing the browser-side "Unexpected token '<' ... is not valid JSON"
+// error. Catch it here and always answer API-style requests in JSON.
+app.use(function (error, request, response, next) {
+    if (error && error.type === "entity.parse.failed") {
+        return response.status(400).json({ message: "Malformed request body." });
+    }
+    if (error && error.type === "entity.too.large") {
+        return response.status(413).json({ message: "Request body is too large." });
+    }
+    next(error);
+});
+
 app.use(express.static(__dirname));
 
 /* =========================
@@ -408,7 +550,7 @@ const DEFAULT_SETTINGS = {
     supportPhone: "",
     description: "",
     currency: "KES (KSh)",
-    deliveryFee: 300,
+    deliveryFee: 0,
     lowStockThreshold: 5,
     sellerListings: true,
     requireApproval: true,
@@ -711,6 +853,8 @@ app.post("/api/customers/register", async function (request, response) {
 
     logLogin("customer", customer, "register");
 
+    sendWelcomeEmail(customer.email, customer.name);
+
     response.json({ token: token, customer: publicCustomer(customer) });
 });
 
@@ -779,6 +923,7 @@ app.post("/api/customers/google", async function (request, response) {
     const googleId = String(payload.sub);
 
     let customer = db.prepare("SELECT * FROM customers WHERE email = ?").get(email);
+    let isNewCustomer = false;
 
     if (customer) {
         if (!customer.google_id) {
@@ -795,6 +940,7 @@ app.post("/api/customers/google", async function (request, response) {
             .run(name, email, "", placeholderHash, googleId, "", Date.now());
 
         customer = db.prepare("SELECT * FROM customers WHERE id = ?").get(result.lastInsertRowid);
+        isNewCustomer = true;
     }
 
     const token = newToken();
@@ -804,6 +950,10 @@ app.post("/api/customers/google", async function (request, response) {
     customer = db.prepare("SELECT * FROM customers WHERE id = ?").get(customer.id);
 
     logLogin("customer", customer, "google");
+
+    if (isNewCustomer) {
+        sendWelcomeEmail(customer.email, customer.name);
+    }
 
     response.json({ token: token, customer: publicCustomer(customer) });
 });
@@ -903,6 +1053,23 @@ app.post("/api/customers/logout", requireCustomer, function (request, response) 
     response.json({ ok: true });
 });
 
+app.get("/api/customers/orders", requireCustomer, function (request, response) {
+
+    const rows = db
+        .prepare("SELECT * FROM orders WHERE customer_id = ? ORDER BY created_at DESC")
+        .all(request.customer.id);
+
+    const orders = rows.map(function (order) {
+        const items = db
+            .prepare("SELECT id, product_id AS productId, name, image, price, quantity FROM order_items WHERE order_id = ?")
+            .all(order.id);
+
+        return Object.assign(publicOrder(order), { items: items });
+    });
+
+    response.json({ orders: orders });
+});
+
 /* =========================
    SELLER REGISTER / LOGIN
 ========================= */
@@ -957,6 +1124,8 @@ app.post("/api/sellers/register", async function (request, response) {
 
     logActivity("seller_registered", businessName + " created a seller account.");
     logLogin("seller", seller, "register");
+
+    sendWelcomeEmail(seller.email, seller.business_name);
 
     response.json({ token: token, seller: publicSeller(seller) });
 });
@@ -1710,6 +1879,7 @@ app.post("/api/admin/orders/:id/status", requireAdmin, function (request, respon
 
     const order = db.prepare("SELECT * FROM orders WHERE id = ?").get(request.params.id);
     logActivity("order_status_updated", "Order " + order.order_number + " marked as " + status + ".");
+    sendOrderStatusEmail(order, status);
 
     response.json({ ok: true });
 });
@@ -2044,7 +2214,7 @@ app.get("/api/admin/online-users", requireAdmin, function (request, response) {
    M-PESA CONFIGURATION
 ========================= */
 
-const DELIVERY_FEE = 300; // must match DELIVERY_FEE in script.js
+const DELIVERY_FEE = 0; // must match DELIVERY_FEE in script.js — customer is charged the exact item total, no flat add-on
 
 function mpesaConfigured() {
     return Boolean(
@@ -2368,12 +2538,23 @@ app.post("/api/mpesa/callback", function (request, response) {
         payments.set(callback.CheckoutRequestID, payment);
 
         if (payment.orderId) {
+            const existingOrder = db.prepare("SELECT payment_status FROM orders WHERE id = ?").get(payment.orderId);
+            const alreadyPaid = existingOrder && existingOrder.payment_status === "paid";
+
             db.prepare(
                 "UPDATE orders SET payment_status = ?, status = ?, reservation_expires = NULL, updated_at = ? WHERE id = ?"
             ).run(paid ? "paid" : "failed", paid ? "paid" : "cancelled", Date.now(), payment.orderId);
 
             if (paid) {
                 deductStockForOrder(payment.orderId);
+
+                // Guard against Safaricom retrying the callback and us
+                // emailing the customer twice for the same order.
+                if (!alreadyPaid) {
+                    const paidOrder = db.prepare("SELECT * FROM orders WHERE id = ?").get(payment.orderId);
+                    const paidItems = db.prepare("SELECT * FROM order_items WHERE order_id = ?").all(payment.orderId);
+                    sendOrderConfirmationEmail(paidOrder, paidItems);
+                }
             } else {
                 const failedItems = db.prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?").all(payment.orderId);
                 const release = db.prepare("UPDATE products SET reserved_stock = MAX(0, COALESCE(reserved_stock, 0) - ?) WHERE id = ?");
@@ -2580,6 +2761,31 @@ app.get("/api/config", function (_request, response) {
     response.json({
         googleClientId: googleConfigured() ? process.env.GOOGLE_CLIENT_ID : null
     });
+});
+
+/* =========================
+   404 + ERROR HANDLING
+   Everything below must stay JSON for /api/* routes so the
+   front-end's fetch(...).json() calls never receive an HTML
+   error page (the cause of "Unexpected token '<' ... is not
+   valid JSON" errors in the browser console).
+========================= */
+
+app.use("/api", function (request, response) {
+    response.status(404).json({ message: "This endpoint does not exist." });
+});
+
+// Final safety net: any error thrown or passed to next(error) by a route
+// above (including ones we didn't wrap in try/catch) is answered as JSON
+// instead of Express's default HTML error page.
+app.use(function (error, request, response, next) {
+    console.error("Unhandled server error:", error);
+
+    if (response.headersSent) {
+        return next(error);
+    }
+
+    response.status(500).json({ message: "Something went wrong on our end. Please try again." });
 });
 
 /* =========================

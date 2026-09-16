@@ -1,6 +1,41 @@
 # PHYNEX marketplace fixes
 
-## Latest update (Sep 2026, round 2)
+## Latest update (Sep 2026, round 3) — checkout was never actually wired up
+Before this update the backend (`server.js`) already had a fully working,
+persistent order + M-PESA system: it saved every order to SQLite, reserved
+and released stock, verified the Daraja callback, and let admins update
+order status. **None of that was reachable from the storefront**, because
+`checkout.html` had its own separate, self-contained demo `<script>` block
+that never called the backend at all — it faked an order number with
+`Date.now()`, read/wrote a fake cart, and never loaded `script.js`, which is
+where the real M-PESA checkout logic already lived (`initCheckoutPayment`,
+`pollPaymentStatus`, etc., all built to match `checkout.html`'s exact
+element IDs). This is why the page said "Order submission is currently a
+local demo."
+
+- **`checkout.html` now loads `script.js`** instead of its own fake inline
+  script, so "Pay with M-PESA" calls the real `/api/mpesa/stkpush`
+  endpoint, polls `/api/mpesa/status/:checkoutRequestId`, and only shows
+  the confirmation screen once the backend confirms the payment actually
+  succeeded. The outdated "local demo" notice was removed.
+- **Order confirmation email.** When the Daraja callback marks an order as
+  paid, the customer is now emailed a receipt (order number, items,
+  totals, delivery address) using the existing `EMAIL_HOST` / `EMAIL_USER`
+  / `EMAIL_PASSWORD` configuration — no new environment variables needed.
+  A duplicate-callback guard makes sure this email is only ever sent once
+  per order.
+- **Order status emails.** When an admin moves an order to
+  `processing` / `shipped` / `delivered` / `cancelled` from the Orders
+  tab in `admin.html`, the customer now gets a short status-update email
+  too.
+- **JSON-only error responses.** Previously, a malformed request body,
+  an oversized payload, a request to a nonexistent `/api/...` endpoint,
+  or an unexpected server error could fall through to Express's default
+  HTML error page. Any of those would break `fetch(...).json()` calls on
+  the front end with `Unexpected token '<' ... is not valid JSON`. All of
+  these now return proper JSON with an appropriate status code instead.
+
+## Previous update (Sep 2026, round 2)
 - **Product images no longer disappear after a restart/redeploy.**
   Uploaded images/videos were being saved to a folder inside the app's own
   code directory (`__dirname/uploads`), which is wiped every time the

@@ -10,7 +10,7 @@
 
     const CART_KEY = 'phynexCart';
     const CUSTOMER_TOKEN_KEY = 'phynexCustomerToken';
-    const DELIVERY_FEE = 300; // must match DELIVERY_FEE in server.js
+    const DELIVERY_FEE = 0; // must match DELIVERY_FEE in server.js — customer is charged the exact item total, no flat add-on
 
     /* =====================================================
        BASIC HELPERS
