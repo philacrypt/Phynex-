@@ -1213,11 +1213,18 @@ app.put("/api/sellers/me", requireSeller, function (request, response) {
 
 const multer = require("multer");
 
-// Uploaded images/videos must live on the same persistent disk as the
-// database (DATA_DIR). If they were saved under __dirname (the app's own
-// code folder) instead, every server restart/redeploy would wipe them out
-// while the database still remembered their URLs - giving the
-// "product stays for a while then the image disappears" symptom.
+// Product images/videos are uploaded to Cloudinary (a free external image
+// host) so they survive server restarts/redeploys no matter what host this
+// runs on or whether that host has a persistent disk. Set CLOUDINARY_CLOUD_NAME,
+// CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET (free at cloudinary.com) to
+// enable this. Without them, uploads fall back to local disk under DATA_DIR,
+// which only survives restarts if DATA_DIR itself is on a persistent disk -
+// see the PHYNEX_DATA_DIR warning above.
+const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
+const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY;
+const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET;
+const CLOUDINARY_ENABLED = !!(CLOUDINARY_CLOUD_NAME && CLOUDINARY_API_KEY && CLOUDINARY_API_SECRET);
+
 const uploadsDir = path.join(DATA_DIR, "uploads");
 
 if (!fs.existsSync(uploadsDir)) {
@@ -1226,16 +1233,79 @@ if (!fs.existsSync(uploadsDir)) {
 
 app.use("/uploads", express.static(uploadsDir));
 
-const mediaStorage = multer.diskStorage({
-    destination: function (request, file, callback) {
-        callback(null, uploadsDir);
-    },
-    filename: function (request, file, callback) {
-        const ext = path.extname(file.originalname || "");
-        const unique = Date.now() + "-" + crypto.randomBytes(6).toString("hex");
-        callback(null, unique + ext);
+if (!CLOUDINARY_ENABLED) {
+    console.warn(
+        "\n*** PHYNEX WARNING ***\n" +
+        "CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET are not\n" +
+        "set, so uploaded product images/videos are being saved to local disk\n" +
+        "(" + uploadsDir + ") instead of Cloudinary. Unless DATA_DIR is on a\n" +
+        "persistent disk, this folder is wiped on every restart/redeploy and\n" +
+        "uploaded images will disappear again. Sign up free at cloudinary.com and\n" +
+        "set those three environment variables to fix this permanently.\n" +
+        "***********************\n"
+    );
+}
+
+// Signs and uploads one file's buffer to Cloudinary, returns its permanent
+// secure URL. Uses Cloudinary's plain HTTP upload API via fetch, so no
+// extra npm dependency is needed.
+async function uploadBufferToCloudinary(buffer, originalName, resourceType) {
+    const timestamp = Math.floor(Date.now() / 1000);
+    const folder = "phynex";
+    const paramsToSign = "folder=" + folder + "&timestamp=" + timestamp;
+    const signature = crypto
+        .createHash("sha1")
+        .update(paramsToSign + CLOUDINARY_API_SECRET)
+        .digest("hex");
+
+    const form = new FormData();
+    form.append("file", new Blob([buffer]), originalName || "upload");
+    form.append("api_key", CLOUDINARY_API_KEY);
+    form.append("timestamp", String(timestamp));
+    form.append("signature", signature);
+    form.append("folder", folder);
+
+    const uploadUrl =
+        "https://api.cloudinary.com/v1_1/" + CLOUDINARY_CLOUD_NAME + "/" +
+        (resourceType === "video" ? "video" : "image") + "/upload";
+
+    const uploadResponse = await fetch(uploadUrl, { method: "POST", body: form });
+    const data = await uploadResponse.json();
+
+    if (!uploadResponse.ok) {
+        throw new Error((data && data.error && data.error.message) || "Cloudinary upload failed.");
     }
-});
+
+    return data.secure_url;
+}
+
+// Stores a list of multer files (Cloudinary if configured, else local disk
+// as a fallback) and returns [{ url, type }] in the same order given.
+async function storeMediaFiles(files) {
+    const results = [];
+
+    for (const file of files) {
+        const type = file.mimetype.indexOf("video/") === 0 ? "video" : "image";
+
+        if (CLOUDINARY_ENABLED) {
+            const url = await uploadBufferToCloudinary(file.buffer, file.originalname, type);
+            results.push({ url: url, type: type });
+        } else {
+            const ext = path.extname(file.originalname || "");
+            const unique = Date.now() + "-" + crypto.randomBytes(6).toString("hex");
+            const filename = unique + ext;
+            fs.writeFileSync(path.join(uploadsDir, filename), file.buffer);
+            results.push({ url: "/uploads/" + filename, type: type });
+        }
+    }
+
+    return results;
+}
+
+// Files are held in memory just long enough to upload to Cloudinary (or
+// write to local disk as a fallback) - never written to disk by multer
+// itself, so no temp files are left behind.
+const mediaStorage = multer.memoryStorage();
 
 const mediaFileFilter = function (request, file, callback) {
     if (/^image\/|^video\//.test(file.mimetype)) {
@@ -1292,7 +1362,7 @@ app.post("/api/products", requireSeller, function (request, response, next) {
         next();
     });
 
-}, function (request, response) {
+}, async function (request, response) {
 
     const body = request.body || {};
 
@@ -1322,12 +1392,12 @@ app.post("/api/products", requireSeller, function (request, response, next) {
 
     const files = request.files || [];
 
-    const media = files.map(function (file) {
-        return {
-            url: "/uploads/" + file.filename,
-            type: file.mimetype.indexOf("video/") === 0 ? "video" : "image"
-        };
-    });
+    let media;
+    try {
+        media = await storeMediaFiles(files);
+    } catch (error) {
+        return response.status(502).json({ message: error.message || "Could not upload images." });
+    }
 
     const mediaJson = JSON.stringify(media);
     const firstImage = (media.find(function (m) { return m.type === "image"; }) || media[0] || {}).url || "";
@@ -1636,7 +1706,7 @@ app.delete("/api/admin/products/:id", requireAdmin, function (request, response)
 
 // Admin creating a product directly (not via a seller submission).
 // Goes straight to "approved" since an admin is creating it themselves.
-app.post("/api/admin/products", requireAdmin, handleAdminUpload, function (request, response) {
+app.post("/api/admin/products", requireAdmin, handleAdminUpload, async function (request, response) {
 
     const body = request.body || {};
     const files = request.files || {};
@@ -1653,18 +1723,14 @@ app.post("/api/admin/products", requireAdmin, handleAdminUpload, function (reque
     const mainImageFile = (files.image && files.image[0]) || null;
     const galleryFiles = files.gallery || [];
 
-    const media = [];
+    const filesToUpload = mainImageFile ? [mainImageFile].concat(galleryFiles) : galleryFiles;
 
-    if (mainImageFile) {
-        media.push({ url: "/uploads/" + mainImageFile.filename, type: "image" });
+    let media;
+    try {
+        media = await storeMediaFiles(filesToUpload);
+    } catch (error) {
+        return response.status(502).json({ message: error.message || "Could not upload images." });
     }
-
-    galleryFiles.forEach(function (file) {
-        media.push({
-            url: "/uploads/" + file.filename,
-            type: file.mimetype.indexOf("video/") === 0 ? "video" : "image"
-        });
-    });
 
     const mediaJson = JSON.stringify(media);
     const firstImage = (media[0] && media[0].url) || "";
@@ -1720,7 +1786,7 @@ app.post("/api/admin/products", requireAdmin, handleAdminUpload, function (reque
     response.json({ message: "Product created.", product: publicProduct(product) });
 });
 
-app.put("/api/admin/products/:id", requireAdmin, handleAdminUpload, function (request, response) {
+app.put("/api/admin/products/:id", requireAdmin, handleAdminUpload, async function (request, response) {
 
     const existing = db.prepare("SELECT * FROM products WHERE id = ?").get(request.params.id);
 
@@ -1744,20 +1810,20 @@ app.put("/api/admin/products/:id", requireAdmin, handleAdminUpload, function (re
     const mainImageFile = (files.image && files.image[0]) || null;
     const galleryFiles = files.gallery || [];
 
-    if (mainImageFile) {
-        const rest = media.filter(function (m, index) { return index !== 0; });
-        media = [{ url: "/uploads/" + mainImageFile.filename, type: "image" }].concat(rest);
-    }
+    try {
+        if (mainImageFile) {
+            const uploadedMain = (await storeMediaFiles([mainImageFile]))[0];
+            const rest = media.filter(function (m, index) { return index !== 0; });
+            media = [uploadedMain].concat(rest);
+        }
 
-    if (galleryFiles.length) {
-        const mainOnly = media.length ? [media[0]] : [];
-        const newGallery = galleryFiles.map(function (file) {
-            return {
-                url: "/uploads/" + file.filename,
-                type: file.mimetype.indexOf("video/") === 0 ? "video" : "image"
-            };
-        });
-        media = mainOnly.concat(newGallery);
+        if (galleryFiles.length) {
+            const mainOnly = media.length ? [media[0]] : [];
+            const newGallery = await storeMediaFiles(galleryFiles);
+            media = mainOnly.concat(newGallery);
+        }
+    } catch (error) {
+        return response.status(502).json({ message: error.message || "Could not upload images." });
     }
 
     const mediaJson = JSON.stringify(media);

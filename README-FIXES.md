@@ -1,6 +1,27 @@
 # PHYNEX marketplace fixes
 
-## Latest update (Sep 2026, round 3) — checkout was never actually wired up
+## Latest update (Sep 2026, round 4) — product images now go to Cloudinary
+Uploaded product images/videos are now uploaded straight to Cloudinary (a
+free external image host) instead of being saved to local disk, so they
+survive server restarts/redeploys no matter which host runs this app or
+whether that host has a persistent disk attached.
+
+- **Set up (required):** create a free account at cloudinary.com, then add
+  three environment variables to your host (Render, Northflank, etc.):
+  `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+  (all three are shown on your Cloudinary dashboard home page).
+- **Without those variables set**, uploads automatically fall back to local
+  disk under `PHYNEX_DATA_DIR/uploads` exactly like before — so nothing
+  breaks if you haven't set up Cloudinary yet, but images will still
+  disappear on restart unless `PHYNEX_DATA_DIR` is on a persistent disk.
+- **This only affects newly-uploaded images from now on** — existing
+  product images already saved under `/uploads/...` are untouched and will
+  keep working as long as that folder still exists; they won't be migrated
+  to Cloudinary automatically.
+- No new npm dependency was added — this uses Cloudinary's plain HTTP
+  upload API via `fetch`, which Node already provides.
+
+## Previous update (Sep 2026, round 3) — checkout was never actually wired up
 Before this update the backend (`server.js`) already had a fully working,
 persistent order + M-PESA system: it saved every order to SQLite, reserved
 and released stock, verified the Daraja callback, and let admins update
