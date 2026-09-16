@@ -1974,7 +1974,7 @@
 <section class="showcase">
     <div class="showcase-grid">
 
-        <a class="showcase-tile" href="category.html?category=phones">
+        <a class="showcase-tile" href="category.html?category=phones" data-category="phones">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
@@ -1986,7 +1986,7 @@
             </div>
         </a>
 
-        <a class="showcase-tile" href="category.html?category=computers">
+        <a class="showcase-tile" href="category.html?category=computers" data-category="computers">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
@@ -1998,7 +1998,7 @@
             </div>
         </a>
 
-        <a class="showcase-tile" href="category.html?category=gaming">
+        <a class="showcase-tile" href="category.html?category=gaming" data-category="gaming">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
@@ -2010,7 +2010,7 @@
             </div>
         </a>
 
-        <a class="showcase-tile" href="category.html?category=accessories">
+        <a class="showcase-tile" href="category.html?category=accessories" data-category="accessories">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
@@ -2038,7 +2038,7 @@
 
     <h2><span class="heading-icon"><i class="fa-solid fa-star"></i></span>New Arrivals</h2>
 
-    <a href="#newArrivalsSection" class="view-all">
+    <a href="category.html?category=all" class="view-all">
         View All New Arrivals
     </a>
 
@@ -2119,7 +2119,7 @@
 
     </div>
 
-    <a href="#productsSection" class="view-all">
+    <a href="category.html?category=all" class="view-all">
         View All Deals
     </a>
 
@@ -2356,7 +2356,7 @@
         Home
     </a>
 
-    <a class="mbn-item" href="#categoryNav">
+    <a class="mbn-item" href="categories.html">
         <i class="fa-solid fa-list"></i>
         Category
     </a>
@@ -2560,35 +2560,45 @@
 </script>
 
 <script>
-    // Promo buttons use the store's real category/filter controls.
-    // Clicking Explore Gaming selects Gaming in the existing product store
-    // and brings the matching products into view instead of doing nothing.
+    // Anything styled to look clickable (category bar, category cards,
+    // promo buttons) should actually open a page, not just scroll or
+    // do nothing. Everything below navigates to category.html with the
+    // matching category, the same page the showcase tiles already use.
     document.addEventListener('DOMContentLoaded', function () {
-        var gamingButton = document.getElementById('gamingButton');
-        var gamingNav = document.querySelector('.nav-item[data-category="gaming"]');
 
+        function goToCategory(cat) {
+            // "deals" has no real product category behind it — the Flash
+            // Deals section shows every product, so send it to "all" too.
+            var target = (!cat || cat === 'deals') ? 'all' : cat;
+            window.location.href = 'category.html?category=' + encodeURIComponent(target);
+        }
+
+        // Top category bar (All Categories, Phones & Tablets, Gaming, Deals...)
+        document.querySelectorAll('.nav-item[data-category]').forEach(function (item) {
+            item.addEventListener('click', function () {
+                goToCategory(item.getAttribute('data-category'));
+            });
+        });
+
+        // Homepage category cards (Phones & Tablets, Laptops, Gaming...)
+        document.querySelectorAll('.category[data-category]').forEach(function (item) {
+            item.addEventListener('click', function () {
+                goToCategory(item.getAttribute('data-category'));
+            });
+        });
+
+        // Promo buttons
+        var gamingButton = document.getElementById('gamingButton');
         if (gamingButton) {
             gamingButton.addEventListener('click', function () {
-                if (gamingNav) {
-                    gamingNav.click();
-                }
-
-                var productsSection = document.getElementById('productsSection');
-                if (productsSection) {
-                    setTimeout(function () {
-                        productsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }, 80);
-                }
+                goToCategory('gaming');
             });
         }
 
         var newArrivalsButton = document.getElementById('newArrivalsButton');
         if (newArrivalsButton) {
             newArrivalsButton.addEventListener('click', function () {
-                var newArrivals = document.getElementById('newArrivalsSection');
-                if (newArrivals) {
-                    newArrivals.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
+                goToCategory('all');
             });
         }
     });
