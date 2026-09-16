@@ -221,8 +221,6 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
         <label>SKU<input name="sku" placeholder="Optional SKU"></label>
         <label>Condition<select name="condition"><option>New</option><option>Refurbished</option><option>Used - Excellent</option><option>Used - Good</option></select></label>
         <label>Warranty<select name="warranty"><option>No warranty</option><option>3 months</option><option>6 months</option><option>12 months</option><option>24 months</option></select></label>
-        <label>Ships from (city/area)<input name="dispatchLocation" placeholder="e.g. Nairobi CBD"></label>
-        <label>Return / exchange options<input name="returnPolicy" placeholder="e.g. 7-Day Return, 7-Day Exchange"></label>
         <div class="form-section-title">Product images</div>
         <label style="grid-column:1/-1">Main product image*
           <div class="image-upload">
@@ -244,7 +242,7 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
       </div>
       <label>Description<textarea name="description" rows="4" placeholder="Describe the product, what is included and its condition."></textarea></label>
       <label>Specifications<textarea name="specifications" rows="4" placeholder="Model, storage, RAM, colour, dimensions, warranty…"></textarea></label>
-      <div class="modal-actions"><button type="button" class="secondary" data-close="productModal">Cancel</button><button class="primary small" type="submit">Save product</button></div>
+      <div class="modal-actions"><button type="button" class="secondary" data-close="productModal">Cancel</button><button type="submit" class="secondary small" id="saveAndAddAnotherBtn">Save & add another</button><button class="primary small" type="submit">Save product</button></div>
     </form>
   </div>
 </div>
@@ -277,7 +275,7 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
   }
 
   function showLogin() { $('loginScreen').hidden=false; $('adminApp').hidden=true; }
-  function showApp() { $('loginScreen').hidden=true; $('adminApp').hidden=false; loadOverview(); }
+  function showApp() { $('loginScreen').hidden=true; $('adminApp').hidden=false; loadOverview(); loadCategories(); }
 
   $('loginForm').addEventListener('submit', async e => {
     e.preventDefault(); const btn=$('loginBtn'), msg=$('loginMsg'); btn.disabled=true; btn.textContent='Signing in…'; msg.className='msg';
@@ -352,21 +350,18 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
     } catch(e){toast(e.message,'error');}
   };
 
-  // Fallback list only, used if /api/admin/categories can't be reached.
-  // Kept in sync with the store's real, seeded category names (server.js
-  // DEFAULT_CATEGORIES) - these must match exactly, or products picked
-  // from this dropdown won't match any real category on the site.
   const PRODUCT_CATEGORIES = [
-    'Phones & Tablets','Computers & Laptops','Electronics','Gaming','Clothing & Fashion','Shoes & Bags','Beauty & Personal Care','Home & Garden','Furniture','Appliances','Accessories','Home & Office','Grocery','Health & Wellness','Baby & Kids','Sports & Outdoors','Automotive','Books & Stationery','Jewelry & Watches','Cameras & Photography','Pet Supplies','Industrial & Tools','Services','Other'
+    'Phones & Tablets','Laptops & Computers','Computer Accessories','Gaming Consoles','Gaming Accessories','Gaming Chairs','PC Gaming','Monitors','TVs & Home Theater','Audio & Headphones','Cameras & Photography','Smartwatches & Wearables','Printers & Scanners','Networking & Wi-Fi','Storage & Memory','Power & Charging','Office Equipment','Home Appliances','Smart Home','Drones & RC','Car Electronics','Security & CCTV','Cables & Adapters','Software & Digital','Other Electronics'
   ];
-  function currentCategoryNames(){
-    const live=(categories||[]).map(c=>c.name).filter(Boolean);
-    return live.length?live:PRODUCT_CATEGORIES;
-  }
-  function fillFilterCategories(){ const sel=$('productCategory'); if(!sel)return; const current=sel.value; sel.innerHTML='<option value="">All categories</option>'+currentCategoryNames().map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join(''); if(current)sel.value=current; }
+  // Combines the built-in starter list with whatever categories the
+  // admin has added/exist in the database, so newly added categories
+  // immediately become selectable/filterable — not just visible on
+  // the Categories tab.
+  function allCategoryNames(){ return [...new Set([...PRODUCT_CATEGORIES,...categories.map(c=>c.name).filter(Boolean)])]; }
+  function fillFilterCategories(){ const sel=$('productCategory'); if(!sel)return; const current=sel.value; sel.innerHTML='<option value="">All categories</option>'+allCategoryNames().map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join(''); if(current)sel.value=current; }
   function fillCategorySelect(selected=''){
     const sel=$('productCategorySelect'); if(!sel)return;
-    sel.innerHTML='<option value="">Select category</option>'+currentCategoryNames().map(c=>`<option value="${esc(c)}" ${c===selected?'selected':''}>${esc(c)}</option>`).join('');
+    sel.innerHTML='<option value="">Select category</option>'+allCategoryNames().map(c=>`<option value="${esc(c)}" ${c===selected?'selected':''}>${esc(c)}</option>`).join('');
   }
   function previewFiles(input, target){
     const el=$(target); el.innerHTML='';
@@ -393,6 +388,7 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
   $('addProductBtn').onclick=()=>openProductModal();
   $('productForm').onsubmit=async e=>{
     e.preventDefault();
+    const addAnother = e.submitter && e.submitter.id === 'saveAndAddAnotherBtn';
     const f=e.target, fd=new FormData();
     const id=f.elements.id.value;
     [...f.elements].forEach(el=>{
@@ -404,10 +400,27 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
     fd.append('price',String(Number(f.elements.price.value||0)));
     fd.append('oldPrice',String(Number(f.elements.oldPrice.value||0)));
     fd.append('stock',String(Number(f.elements.stock.value||0)));
+    const submitBtns=[...f.querySelectorAll('button[type=submit]')];
+    submitBtns.forEach(b=>b.disabled=true);
     try {
       const d=await api(id?`/api/admin/products/${id}`:'/api/admin/products',{method:id?'PUT':'POST',body:fd});
-      closeModal('productModal');toast(d.message||'Product saved');loadProducts();
+      toast(d.message||'Product saved');
+      loadProducts();
+      if(addAnother && !id){
+        // Keep category/brand/condition/warranty/tags — sellers usually
+        // list several similar products in a row — but clear everything
+        // that must be unique per product (name, price, stock, images,
+        // description) so the admin can't accidentally duplicate a listing.
+        ['name','price','oldPrice','stock','sku','description','specifications'].forEach(n=>{ if(f.elements[n]) f.elements[n].value = n==='stock' ? 0 : ''; });
+        f.elements.imageFile.value=''; f.elements.imageFile.required=true;
+        f.elements.galleryFiles.value='';
+        $('productImagePreview').innerHTML=''; $('productGalleryPreview').innerHTML='';
+        f.elements.name.focus();
+      } else {
+        closeModal('productModal');
+      }
     } catch(e){toast(e.message,'error');}
+    finally { submitBtns.forEach(b=>b.disabled=false); }
   };
 
   async function loadOrders(){

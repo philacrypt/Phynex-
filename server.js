@@ -211,7 +211,9 @@ function ensureColumn(table, column, definition) {
 
     if (!hasColumn) {
         db.exec("ALTER TABLE " + table + " ADD COLUMN " + column + " " + definition);
+        return true; // column was just added by this run
     }
+    return false;
 }
 
 ensureColumn("products", "media", "TEXT");
@@ -235,7 +237,46 @@ ensureColumn("customers", "google_id", "TEXT");
 ensureColumn("customers", "reset_token", "TEXT");
 ensureColumn("customers", "reset_token_expires", "INTEGER");
 
+// Customer authentication additions: email verification, phone OTP
+// verification and HttpOnly session cookies. Safe to re-run on every
+// startup; ensureColumn() is a no-op once a column already exists.
+const emailVerifiedColumnIsNew = ensureColumn("customers", "email_verified_at", "INTEGER");
+ensureColumn("customers", "email_verification_token_hash", "TEXT");
+ensureColumn("customers", "email_verification_expires", "INTEGER");
+ensureColumn("customers", "phone_verified_at", "INTEGER");
+ensureColumn("customers", "phone_verification_code_hash", "TEXT");
+ensureColumn("customers", "phone_verification_expires", "INTEGER");
+ensureColumn("customers", "phone_verification_attempts", "INTEGER DEFAULT 0");
+ensureColumn("customers", "session_token_hash", "TEXT");
+ensureColumn("customers", "session_expires", "INTEGER");
+
+// One-time backfill: this is the first startup after email verification was
+// added, so accounts that already existed (and could already log in under
+// the old system) are grandfathered in as email-verified. Without this,
+// every pre-existing customer would be locked out on the next deploy.
+if (emailVerifiedColumnIsNew) {
+    db.prepare(
+        "UPDATE customers SET email_verified_at = created_at WHERE email_verified_at IS NULL"
+    ).run();
+}
+
 ensureColumn("reviews", "customer_id", "INTEGER");
+
+// SPEED: the schema had no indexes at all, so every filtered lookup below
+// was a full table scan. These back the exact WHERE/JOIN/ORDER BY columns
+// used throughout the routes above and below. Safe to re-run on startup.
+db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_products_status_created ON products(status, created_at);
+    CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
+    CREATE INDEX IF NOT EXISTS idx_products_seller ON products(seller_id);
+    CREATE INDEX IF NOT EXISTS idx_products_sponsored ON products(sponsored);
+    CREATE INDEX IF NOT EXISTS idx_products_tracking_code ON products(tracking_code);
+    CREATE INDEX IF NOT EXISTS idx_reviews_product_status ON reviews(product_id, status);
+    CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
+    CREATE INDEX IF NOT EXISTS idx_orders_checkout_request ON orders(checkout_request_id);
+    CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+    CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
+`);
 
 // Seed a broad, ready-to-use set of categories the first time the store
 // runs (covers more than just tech so the marketplace isn't tech-only).
@@ -727,7 +768,16 @@ const googleClient = googleConfigured() ? new OAuth2Client(process.env.GOOGLE_CL
 
 // Real rating/review count for a product, computed from actual
 // customer-submitted, admin-approved reviews. No made-up numbers.
-function getRatingSummary(productId) {
+//
+// SPEED: when listing many products, pass a pre-batched ratingsMap (see
+// getRatingSummariesMap/publicProductList below) instead of letting this
+// run one extra query per product — that turns an N-product listing from
+// 1 + N queries into just 2.
+function getRatingSummary(productId, ratingsMap) {
+    if (ratingsMap) {
+        return ratingsMap.get(productId) || { average: null, count: 0 };
+    }
+
     const row = db
         .prepare(
             "SELECT COUNT(*) AS count, AVG(rating) AS average FROM reviews WHERE product_id = ? AND status = 'approved'"
@@ -740,7 +790,42 @@ function getRatingSummary(productId) {
     };
 }
 
-function publicProduct(product) {
+// One query for every product in a list, instead of one query per product.
+function getRatingSummariesMap(productIds) {
+    const map = new Map();
+    const uniqueIds = Array.from(new Set(productIds.filter(function (id) { return id != null; })));
+    if (uniqueIds.length === 0) return map;
+
+    const placeholders = uniqueIds.map(function () { return "?"; }).join(",");
+    const rows = db
+        .prepare(
+            `SELECT product_id, COUNT(*) AS count, AVG(rating) AS average
+             FROM reviews
+             WHERE status = 'approved' AND product_id IN (${placeholders})
+             GROUP BY product_id`
+        )
+        .all(...uniqueIds);
+
+    rows.forEach(function (row) {
+        map.set(row.product_id, {
+            average: row.count > 0 ? Math.round(row.average * 10) / 10 : null,
+            count: row.count || 0
+        });
+    });
+
+    return map;
+}
+
+// Use this instead of `.map(publicProduct)` for any list of products.
+function publicProductList(rows, extra) {
+    const ratingsMap = getRatingSummariesMap(rows.map(function (row) { return row.id; }));
+    return rows.map(function (row) {
+        const mapped = publicProduct(row, ratingsMap);
+        return extra ? extra(mapped, row) : mapped;
+    });
+}
+
+function publicProduct(product, ratingsMap) {
 
     var media = [];
 
@@ -758,7 +843,7 @@ function publicProduct(product) {
         media = [{ url: product.image, type: "image" }];
     }
 
-    const ratingSummary = getRatingSummary(product.id);
+    const ratingSummary = getRatingSummary(product.id, ratingsMap);
 
     return {
         id: product.id,
@@ -1698,7 +1783,7 @@ app.get("/api/seller/products", requireSeller, function (request, response) {
         .prepare("SELECT * FROM products WHERE seller_id = ? ORDER BY created_at DESC")
         .all(request.seller.id);
 
-    response.json({ products: products.map(publicProduct) });
+    response.json({ products: publicProductList(products) });
 });
 
 app.delete("/api/seller/products/:id", requireSeller, function (request, response) {
@@ -1766,7 +1851,7 @@ app.get("/api/products", function (request, response) {
              ORDER BY products.created_at DESC`
         ).all();
 
-    response.json({ products: rows.map(publicProduct) });
+    response.json({ products: publicProductList(rows) });
 });
 
 /* =========================
@@ -2010,15 +2095,16 @@ app.get("/api/admin/dashboard", requireAdmin, function (request, response) {
         .all()
         .map(publicOrder);
 
-    const pendingProductsList = db
+    const pendingProductsListRows = db
         .prepare(
             `SELECT products.*, sellers.business_name, sellers.phone AS seller_phone, sellers.whatsapp AS seller_whatsapp FROM products
              JOIN sellers ON sellers.id = products.seller_id
              WHERE products.status = 'pending'
              ORDER BY products.created_at DESC LIMIT 6`
         )
-        .all()
-        .map(publicProduct);
+        .all();
+
+    const pendingProductsList = publicProductList(pendingProductsListRows);
 
     response.json({
         totalProducts: totalProducts,
@@ -2052,8 +2138,8 @@ app.get("/api/admin/products", requireAdmin, function (request, response) {
         ).all();
 
     response.json({
-        products: rows.map(function (row) {
-            return Object.assign(publicProduct(row), { sellerEmail: row.email });
+        products: publicProductList(rows, function (mapped, row) {
+            return Object.assign(mapped, { sellerEmail: row.email });
         })
     });
 });
@@ -2449,7 +2535,7 @@ app.get("/api/admin/customers", requireAdmin, function (request, response) {
                 name: customer.name,
                 email: customer.email,
                 phone: customer.phone,
-                loggedIn: Boolean(customer.token),
+                loggedIn: Boolean(customer.token) || Boolean(customer.session_token_hash && customer.session_expires > Date.now()),
                 status: "approved",
                 orderCount: orderCountStmt.get(customer.id).c
             };
@@ -2763,28 +2849,70 @@ app.post("/api/mpesa/stkpush", requireCustomer, async function (request, respons
     const payload = request.body || {};
 
     const phone = normalizePhone(payload.mpesaPhone);
-    const amount = Math.round(Number(payload.total));
-
-    const calculatedAmount = Array.isArray(payload.items)
-        ? payload.items.reduce(function (sum, item) {
-            return sum + Number(item.price) * Number(item.quantity);
-        }, 0)
-        : 0;
 
     if (!phone) {
         return response.status(400).json({ message: "Enter a valid Kenyan M-PESA number." });
-    }
-
-    if (!Number.isFinite(amount) || amount < 1) {
-        return response.status(400).json({ message: "The order total must be at least KSh 1." });
     }
 
     if (!Array.isArray(payload.items) || payload.items.length === 0) {
         return response.status(400).json({ message: "Your cart is empty." });
     }
 
-    if (amount !== Math.round(calculatedAmount) + DELIVERY_FEE) {
-        return response.status(400).json({ message: "The order total could not be verified." });
+    if (payload.items.length > 50) {
+        return response.status(400).json({ message: "Too many items in one order." });
+    }
+
+    // SECURITY / ACCURACY: never trust prices, names, images or totals sent
+    // by the browser. Re-resolve every cart line against the current
+    // approved product row so a tampered client can't pay less than the
+    // real price (or "buy" a product that no longer exists/was rejected).
+    const resolvedItems = [];
+    for (const rawItem of payload.items) {
+        const productId = Number(rawItem.id);
+        const quantity = Math.max(1, Math.min(50, Math.round(Number(rawItem.quantity) || 1)));
+
+        if (!Number.isFinite(productId)) {
+            return response.status(400).json({ message: "One of the items in your cart is invalid." });
+        }
+
+        const product = db
+            .prepare("SELECT * FROM products WHERE id = ? AND status = 'approved'")
+            .get(productId);
+
+        if (!product) {
+            return response.status(409).json({ message: "An item in your cart is no longer available. Please refresh your cart." });
+        }
+
+        resolvedItems.push({
+            productId: product.id,
+            sellerId: product.seller_id,
+            name: product.name,
+            image: product.image || "",
+            price: product.price,
+            quantity: quantity
+        });
+    }
+
+    const subtotal = resolvedItems.reduce(function (sum, item) {
+        return sum + item.price * item.quantity;
+    }, 0);
+    const amount = subtotal + DELIVERY_FEE;
+
+    if (!Number.isFinite(amount) || amount < 1) {
+        return response.status(400).json({ message: "The order total must be at least KSh 1." });
+    }
+
+    // ACCURACY: reserve stock atomically (single conditional UPDATE per
+    // item — safe even under concurrent checkouts) before we ever contact
+    // M-PESA, so two customers can't both "successfully" pay for the same
+    // last unit. Anything reserved here is released again if the STK push
+    // fails to send or if the payment is later declined/expires.
+    const reservation = reserveStock(resolvedItems);
+    if (!reservation.ok) {
+        const outOfStockItem = resolvedItems.find(function (item) { return item.productId === reservation.productId; });
+        return response.status(409).json({
+            message: (outOfStockItem ? outOfStockItem.name : "An item") + " doesn't have enough stock for that quantity."
+        });
     }
 
     const customer = request.customer;
@@ -2828,21 +2956,21 @@ app.post("/api/mpesa/stkpush", requireCustomer, async function (request, respons
         const result = await darajaResponse.json();
 
         if (!darajaResponse.ok || !result.CheckoutRequestID) {
+            releaseStock(resolvedItems);
             return response.status(502).json({
                 message: result.errorMessage || result.ResponseDescription || "M-PESA rejected the STK Push request."
             });
         }
 
         const orderNumber = generateOrderNumber();
-        const subtotal = Math.round(calculatedAmount);
 
         const orderResult = db
             .prepare(
                 `INSERT INTO orders
                     (order_number, customer_id, customer_name, customer_email, customer_phone,
                      county, location, address, instructions, subtotal, delivery_fee, total,
-                     payment_method, payment_status, status, checkout_request_id, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'mpesa', 'pending', 'pending', ?, ?)`
+                     payment_method, payment_status, status, checkout_request_id, stock_deducted, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'mpesa', 'pending', 'pending', ?, 1, ?)`
             )
             .run(
                 orderNumber,
@@ -2867,26 +2995,15 @@ app.post("/api/mpesa/stkpush", requireCustomer, async function (request, respons
             "INSERT INTO order_items (order_id, product_id, seller_id, name, image, price, quantity) VALUES (?, ?, ?, ?, ?, ?, ?)"
         );
 
-        payload.items.forEach(function (item) {
-
-            const numericId = Number(item.id);
-            const productId = Number.isFinite(numericId) ? numericId : null;
-
-            let sellerId = null;
-
-            if (productId) {
-                const productRow = db.prepare("SELECT seller_id FROM products WHERE id = ?").get(productId);
-                if (productRow) sellerId = productRow.seller_id;
-            }
-
+        resolvedItems.forEach(function (item) {
             insertItem.run(
                 orderId,
-                productId,
-                sellerId,
-                String(item.name || "").trim(),
-                String(item.image || "").trim(),
-                Math.round(Number(item.price) || 0),
-                Math.max(1, Math.round(Number(item.quantity) || 1))
+                item.productId,
+                item.sellerId,
+                item.name,
+                item.image,
+                item.price,
+                item.quantity
             );
         });
 
@@ -2908,6 +3025,7 @@ app.post("/api/mpesa/stkpush", requireCustomer, async function (request, respons
         });
 
     } catch (error) {
+        releaseStock(resolvedItems);
         return response.status(502).json({ message: error.message || "Unable to reach M-PESA." });
     }
 });
@@ -2925,7 +3043,7 @@ function deductStockForOrder(orderId) {
     const order = db.prepare("SELECT * FROM orders WHERE id = ?").get(orderId);
 
     if (!order || order.stock_deducted) {
-        return; // already paid+deducted before, or order missing — never deduct twice
+        return; // already reserved/deducted before, or order missing — never deduct twice
     }
 
     const items = db.prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?").all(orderId);
@@ -2941,6 +3059,54 @@ function deductStockForOrder(orderId) {
     });
 
     db.prepare("UPDATE orders SET stock_deducted = 1 WHERE id = ?").run(orderId);
+}
+
+// ACCURACY: atomic stock reservation so two concurrent checkouts can never
+// both "win" the last unit of a product. better-sqlite3 runs each
+// statement synchronously/to completion, so a single conditional UPDATE
+// (stock >= requested quantity) is a safe compare-and-swap even under
+// concurrent requests — there's no window for another request to read a
+// stale stock value between the check and the write.
+function reserveStock(items) {
+    const reserved = [];
+    const reserveStmt = db.prepare(
+        "UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?"
+    );
+
+    for (const item of items) {
+        const result = reserveStmt.run(item.quantity, item.productId, item.quantity);
+        if (result.changes !== 1) {
+            releaseStock(reserved);
+            return { ok: false, productId: item.productId };
+        }
+        reserved.push(item);
+    }
+
+    return { ok: true };
+}
+
+function releaseStock(items) {
+    const releaseStmt = db.prepare("UPDATE products SET stock = stock + ? WHERE id = ?");
+    (items || []).forEach(function (item) {
+        if (item.productId) releaseStmt.run(item.quantity, item.productId);
+    });
+}
+
+// Undo a reservation made at STK-push time for an order whose payment
+// ultimately failed or was never completed (declined, cancelled, or the
+// customer simply never entered their M-PESA PIN so no callback arrives).
+function releaseStockForOrder(orderId) {
+    const order = db.prepare("SELECT * FROM orders WHERE id = ?").get(orderId);
+    if (!order || !order.stock_deducted) return;
+
+    const items = db.prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?").all(orderId);
+    releaseStock(
+        items
+            .filter(function (item) { return item.product_id; })
+            .map(function (item) { return { productId: item.product_id, quantity: item.quantity }; })
+    );
+
+    db.prepare("UPDATE orders SET stock_deducted = 0 WHERE id = ?").run(orderId);
 }
 
 app.post("/api/mpesa/callback", function (request, response) {
@@ -2967,7 +3133,9 @@ app.post("/api/mpesa/callback", function (request, response) {
             ).run(paid ? "paid" : "failed", paid ? "paid" : "cancelled", payment.orderId);
 
             if (paid) {
-                deductStockForOrder(payment.orderId);
+                deductStockForOrder(payment.orderId); // no-op safety net; stock was already reserved at checkout
+            } else {
+                releaseStockForOrder(payment.orderId); // payment declined/cancelled — give the stock back
             }
 
             logActivity(
@@ -3116,9 +3284,40 @@ app.get("/api/config", function (_request, response) {
 });
 
 /* =========================
+   STALE RESERVATION SWEEP
+   If a customer abandons the M-PESA prompt (never enters their PIN, or
+   the callback simply never arrives), stock reserved for that order would
+   otherwise stay locked forever and show as falsely out of stock. Every
+   few minutes, release the reservation on any mpesa order that has sat
+   "pending" too long.
+========================= */
+
+const STALE_ORDER_MS = 20 * 60 * 1000; // 20 minutes with no callback
+
+function releaseStaleReservations() {
+    const cutoff = Date.now() - STALE_ORDER_MS;
+    const stale = db
+        .prepare(
+            `SELECT id, order_number FROM orders
+             WHERE payment_method = 'mpesa' AND status = 'pending'
+               AND stock_deducted = 1 AND created_at < ?`
+        )
+        .all(cutoff);
+
+    stale.forEach(function (order) {
+        releaseStockForOrder(order.id);
+        db.prepare("UPDATE orders SET status = 'cancelled', payment_status = 'failed' WHERE id = ?").run(order.id);
+        logActivity("order_expired", "Order " + order.order_number + " expired with no payment confirmation; stock released.");
+    });
+}
+
+setInterval(releaseStaleReservations, 5 * 60 * 1000);
+
+/* =========================
    START SERVER
 ========================= */
 
 app.listen(port, function () {
     console.log("PHYNEX server running at http://localhost:" + port);
+    releaseStaleReservations();
 });
