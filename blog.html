@@ -7,6 +7,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
 <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -52,6 +53,10 @@
     .article p { color: var(--ink-soft); font-size: 13.5px; margin-bottom: 18px; flex: 1; }
     .read-more { display: inline-flex; align-items: center; gap: 6px; color: var(--brand); text-decoration: none; font-size: 13.5px; font-weight: 700; }
     .read-more:hover { gap: 10px; }
+    .article-meta { font-size: 12px; color: #8890a0; margin-bottom: 10px; }
+    .article-share { display: flex; gap: 8px; margin-top: auto; padding-top: 14px; }
+    .article-share button { border: 1px solid var(--line); background: #fbfcfe; color: var(--ink-soft); width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; transition: .15s ease; }
+    .article-share button:hover { background: #eaf0ff; color: var(--brand); border-color: var(--brand-light); }
 
     /* SHARE AN UPDATE */
     .share-panel { background: #fff; border: 1px solid var(--line); border-radius: 14px; margin-bottom: 20px; padding: 34px 38px; box-shadow: 0 16px 30px -22px rgba(11, 63, 174, 0.15); }
@@ -170,7 +175,11 @@
             </div>
             <h2>Share an update</h2>
         </div>
-        <p class="sub">Post a news update to this page. Add photos, or attach a video by uploading a file or pasting a video link.</p>
+        <p class="sub">Post a real, permanent news update to this page — visible to everyone, and sharable to WhatsApp, Facebook and X.</p>
+
+        <div id="signedOutNotice" hidden style="background:#fbfcfe;border:1.5px dashed var(--line);border-radius:10px;padding:18px 20px;font-size:14px;color:var(--ink-soft);">
+            <a href="customer-login.html" style="color:var(--brand);font-weight:700;">Sign in</a> to your PHYNEX account to share an update.
+        </div>
 
         <form class="share-form" id="postForm" onsubmit="publishPost(event)">
 
@@ -196,14 +205,8 @@
             </div>
 
             <div class="field">
-                <label>Photos or video file</label>
-                <div class="media-drop" id="mediaDrop">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 16V4M12 4L7 9M12 4L17 9" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16V18C4 19.1 4.9 20 6 20H18C19.1 20 20 19.1 20 18V16" stroke-width="1.7" stroke-linecap="round"/></svg>
-                    <p><strong>Click to upload</strong> or drag photos / a video here</p>
-                    <input type="file" id="mediaInput" accept="image/*,video/*" multiple>
-                </div>
-                <div class="media-preview" id="mediaPreview"></div>
-                <small>Uploads are previewed in your browser for this demo and are not saved to a server.</small>
+                <label for="postImageUrl">Photo link (optional)</label>
+                <input type="url" id="postImageUrl" placeholder="https://example.com/photo.jpg">
             </div>
 
             <div class="field">
@@ -216,63 +219,13 @@
                 <button type="submit" class="publish-btn">Publish update</button>
                 <p class="publish-status" id="publishStatus"></p>
             </div>
-            <p class="publish-note">Posts appear below immediately. This is a local preview — connect a PHYNEX backend to make posts permanent.</p>
+            <p class="publish-note">Posts are saved to PHYNEX and visible to every visitor of this page.</p>
         </form>
     </section>
 
-    <!-- FRESH POSTS FROM VISITORS -->
-    <section class="fresh-posts" id="freshPosts" hidden>
-        <h2>Just posted</h2>
-        <div class="articles" id="freshPostsGrid"></div>
-    </section>
-
-    <!-- ARTICLES -->
-    <section class="articles">
-
-        <article class="article">
-            <div class="article-image">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 21C12 21 4 15.5 4 9.5C4 6.5 6.2 4.5 9 4.5C10.5 4.5 11.5 5.2 12 6C12.5 5.2 13.5 4.5 15 4.5C17.8 4.5 20 6.5 20 9.5C20 15.5 12 21 12 21Z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </div>
-            <div class="article-content">
-                <div class="article-tag">PHYNEX · News</div>
-                <h2>Welcome to PHYNEX</h2>
-                <p>Learn more about PHYNEX and our goal of creating a simple and convenient online shopping experience.</p>
-                <a href="about.html" class="read-more">Read more →</a>
-            </div>
-        </article>
-
-        <article class="article">
-            <div class="article-image">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M6 8H18L17 20H7L6 8Z" stroke-width="1.6" stroke-linejoin="round"/>
-                    <path d="M9 8V6C9 4.3 10.3 3 12 3C13.7 3 15 4.3 15 6V8" stroke-width="1.6" stroke-linecap="round"/>
-                </svg>
-            </div>
-            <div class="article-content">
-                <div class="article-tag">PHYNEX · Shopping</div>
-                <h2>Things to consider before buying technology online</h2>
-                <p>A practical guide to checking product details, specifications, pricing and delivery information.</p>
-                <a href="blog.html" class="read-more">Read more →</a>
-            </div>
-        </article>
-
-        <article class="article">
-            <div class="article-image">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M13 2L4 14H11L10 22L20 9H13L13 2Z" stroke-width="1.6" stroke-linejoin="round"/>
-                </svg>
-            </div>
-            <div class="article-content">
-                <div class="article-tag">PHYNEX · Updates</div>
-                <h2>What's happening at PHYNEX</h2>
-                <p>Follow PHYNEX for future marketplace updates, new features and announcements.</p>
-                <a href="blog.html" class="read-more">Read more →</a>
-            </div>
-        </article>
-
-    </section>
+    <!-- POSTS FROM PHYNEX & CUSTOMERS -->
+    <section class="articles" id="postsGrid"></section>
+    <p class="empty-state" id="postsEmpty" hidden style="text-align:center;color:var(--ink-soft);padding:30px 0;">No updates yet. Be the first to share one above.</p>
 
     <!-- INFORMATION -->
     <section class="information">
@@ -306,52 +259,34 @@
 </footer>
 
 <script>
-    let uploadedMedia = []; // { url, type: 'image'|'video', name }
+    const CUSTOMER_TOKEN_KEY = 'phynexCustomerToken';
 
-    const mediaDrop = document.getElementById('mediaDrop');
-    const mediaInput = document.getElementById('mediaInput');
-    const mediaPreview = document.getElementById('mediaPreview');
-
-    mediaDrop.addEventListener('click', () => mediaInput.click());
-
-    mediaDrop.addEventListener('dragover', (e) => { e.preventDefault(); mediaDrop.classList.add('dragover'); });
-    mediaDrop.addEventListener('dragleave', () => mediaDrop.classList.remove('dragover'));
-    mediaDrop.addEventListener('drop', (e) => {
-        e.preventDefault();
-        mediaDrop.classList.remove('dragover');
-        handleFiles(e.dataTransfer.files);
-    });
-
-    mediaInput.addEventListener('change', () => handleFiles(mediaInput.files));
-
-    function handleFiles(fileList) {
-        Array.from(fileList).forEach(file => {
-            if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) return;
-            const url = URL.createObjectURL(file);
-            const type = file.type.startsWith('video/') ? 'video' : 'image';
-            uploadedMedia.push({ url, type, name: file.name });
-        });
-        renderMediaPreview();
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str || '';
+        return div.innerHTML;
     }
 
-    function renderMediaPreview() {
-        mediaPreview.innerHTML = '';
-        uploadedMedia.forEach((m, i) => {
-            const thumb = document.createElement('div');
-            thumb.className = 'media-thumb';
-            thumb.innerHTML = m.type === 'video'
-                ? `<video src="${m.url}" muted></video><span class="badge">video</span>`
-                : `<img src="${m.url}" alt="${m.name}">`;
-            const removeBtn = document.createElement('button');
-            removeBtn.textContent = '×';
-            removeBtn.type = 'button';
-            removeBtn.onclick = () => { uploadedMedia.splice(i, 1); renderMediaPreview(); };
-            thumb.appendChild(removeBtn);
-            mediaPreview.appendChild(thumb);
-        });
+    function toEmbedUrl(url) {
+        if (!url) return null;
+        const yt = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([\w-]+)/);
+        if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+        return null;
     }
 
-    // Video URL preview (YouTube embed support)
+    function timeAgo(timestamp) {
+        const seconds = Math.floor((Date.now() - timestamp) / 1000);
+        if (seconds < 60) return 'Just now';
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return minutes + (minutes === 1 ? ' minute ago' : ' minutes ago');
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return hours + (hours === 1 ? ' hour ago' : ' hours ago');
+        const days = Math.floor(hours / 24);
+        if (days < 30) return days + (days === 1 ? ' day ago' : ' days ago');
+        return new Date(timestamp).toLocaleDateString();
+    }
+
+    // Video URL preview (YouTube embed support) while writing a post
     const videoUrlInput = document.getElementById('videoUrl');
     const videoUrlPreview = document.getElementById('videoUrlPreview');
 
@@ -362,73 +297,154 @@
             : '';
     });
 
-    function toEmbedUrl(url) {
-        if (!url) return null;
-        const yt = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([\w-]+)/);
-        if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
-        return null;
+    /* ------------------------------------------------------------
+       SIGN-IN GATE — only a real, signed-in PHYNEX customer can
+       publish. Everyone can still read and share every post.
+       ------------------------------------------------------------ */
+    const isSignedIn = Boolean(localStorage.getItem(CUSTOMER_TOKEN_KEY));
+    document.getElementById('postForm').hidden = !isSignedIn;
+    document.getElementById('signedOutNotice').hidden = isSignedIn;
+
+    /* ------------------------------------------------------------
+       LOAD REAL POSTS
+       ------------------------------------------------------------ */
+    function postShareUrl(post) {
+        return location.origin + location.pathname + '?post=' + post.id;
     }
 
+    function renderPosts(posts) {
+        const grid = document.getElementById('postsGrid');
+        const empty = document.getElementById('postsEmpty');
+
+        if (!posts.length) {
+            grid.innerHTML = '';
+            empty.hidden = false;
+            return;
+        }
+
+        empty.hidden = true;
+
+        grid.innerHTML = posts.map(function (post) {
+            const embed = toEmbedUrl(post.videoUrl);
+            let mediaHtml;
+
+            if (post.imageUrl) {
+                mediaHtml = `<img src="${escapeHtml(post.imageUrl)}" alt="${escapeHtml(post.title)}" loading="lazy">`;
+            } else if (embed) {
+                mediaHtml = `<iframe src="${embed}" style="width:100%;height:100%;border:0;" allowfullscreen></iframe>`;
+            } else {
+                mediaHtml = `<svg viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14H11L10 22L20 9H13L13 2Z" stroke="#0b3fae" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
+            }
+
+            const shareUrl = encodeURIComponent(postShareUrl(post));
+            const shareText = encodeURIComponent(post.title + ' — PHYNEX');
+
+            return `
+                <article class="article">
+                    <div class="article-image">${mediaHtml}</div>
+                    <div class="article-content">
+                        <div class="article-tag">${escapeHtml(post.tag)}</div>
+                        <h2>${escapeHtml(post.title)}</h2>
+                        <p>${escapeHtml(post.body)}</p>
+                        <div class="article-meta">${escapeHtml(post.authorName || 'PHYNEX')} · ${timeAgo(post.createdAt)}</div>
+                        <div class="article-share">
+                            <button type="button" title="Share on WhatsApp" onclick="window.open('https://wa.me/?text=${shareText}%20${shareUrl}','_blank')"><i class="fa-brands fa-whatsapp"></i></button>
+                            <button type="button" title="Share on Facebook" onclick="window.open('https://www.facebook.com/sharer/sharer.php?u=${shareUrl}','_blank')"><i class="fa-brands fa-facebook-f"></i></button>
+                            <button type="button" title="Share on X" onclick="window.open('https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}','_blank')"><i class="fa-brands fa-x-twitter"></i></button>
+                            <button type="button" title="Copy link" onclick="copyPostLink(${post.id}, this)"><i class="fa-solid fa-link"></i></button>
+                        </div>
+                    </div>
+                </article>
+            `;
+        }).join('');
+    }
+
+    function copyPostLink(postId, button) {
+        navigator.clipboard.writeText(location.origin + location.pathname + '?post=' + postId).then(function () {
+            const original = button.innerHTML;
+            button.innerHTML = '<i class="fa-solid fa-check"></i>';
+            setTimeout(function () { button.innerHTML = original; }, 1500);
+        });
+    }
+
+    let allPosts = [];
+
+    function loadPosts() {
+        fetch('/api/blog')
+            .then(function (response) { return response.json(); })
+            .then(function (data) {
+                allPosts = Array.isArray(data.posts) ? data.posts : [];
+                renderPosts(allPosts);
+            })
+            .catch(function (error) {
+                console.error('PHYNEX: Could not load blog posts.', error);
+                document.getElementById('postsEmpty').hidden = false;
+                document.getElementById('postsEmpty').textContent = 'Could not load updates right now. Please try again shortly.';
+            });
+    }
+
+    loadPosts();
+
+    /* ------------------------------------------------------------
+       PUBLISH — real POST to the server, saved permanently.
+       ------------------------------------------------------------ */
     function publishPost(event) {
         event.preventDefault();
+
+        const token = localStorage.getItem(CUSTOMER_TOKEN_KEY);
+        const status = document.getElementById('publishStatus');
+
+        if (!token) {
+            status.textContent = 'Please sign in to publish.';
+            status.classList.remove('success');
+            return;
+        }
 
         const tag = document.getElementById('postTag').value;
         const title = document.getElementById('postTitle').value.trim();
         const body = document.getElementById('postBody').value.trim();
+        const imageUrl = document.getElementById('postImageUrl').value.trim();
         const videoUrl = videoUrlInput.value.trim();
-        const status = document.getElementById('publishStatus');
 
         if (!title || !body) return;
 
-        const freshSection = document.getElementById('freshPosts');
-        const freshGrid = document.getElementById('freshPostsGrid');
-        freshSection.hidden = false;
+        status.textContent = 'Publishing…';
+        status.classList.remove('success');
 
-        const article = document.createElement('article');
-        article.className = 'article';
+        fetch('/api/blog', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ tag, title, body, imageUrl, videoUrl })
+        })
+            .then(function (response) {
+                return response.json().then(function (data) { return { ok: response.ok, data }; });
+            })
+            .then(function (result) {
+                if (!result.ok) {
+                    status.textContent = result.data.message || 'Could not publish. Please try again.';
+                    status.classList.remove('success');
+                    return;
+                }
 
-        let mediaHtml = '';
-        const firstImage = uploadedMedia.find(m => m.type === 'image');
-        const firstVideo = uploadedMedia.find(m => m.type === 'video');
-        const embed = toEmbedUrl(videoUrl);
+                allPosts.unshift(result.data.post);
+                renderPosts(allPosts);
 
-        if (firstVideo) {
-            mediaHtml = `<video src="${firstVideo.url}" controls></video>`;
-        } else if (firstImage) {
-            mediaHtml = `<img src="${firstImage.url}" alt="${title}">`;
-        } else if (embed) {
-            mediaHtml = `<iframe src="${embed}" style="width:100%;height:100%;border:0;"></iframe>`;
-        } else {
-            mediaHtml = `<svg viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14H11L10 22L20 9H13L13 2Z" stroke="#0b3fae" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
-        }
+                status.textContent = 'Update published below.';
+                status.classList.add('success');
 
-        article.innerHTML = `
-            <div class="article-image">${mediaHtml}</div>
-            <div class="article-content">
-                <div class="article-tag">${tag}</div>
-                <h2>${escapeHtml(title)}</h2>
-                <p>${escapeHtml(body)}</p>
-                <a href="#" class="read-more" onclick="return false;">Just now</a>
-            </div>
-        `;
+                document.getElementById('postForm').reset();
+                videoUrlPreview.innerHTML = '';
 
-        freshGrid.prepend(article);
-
-        status.textContent = 'Update published below.';
-        status.classList.add('success');
-
-        document.getElementById('postForm').reset();
-        uploadedMedia = [];
-        renderMediaPreview();
-        videoUrlPreview.innerHTML = '';
-
-        setTimeout(() => { status.textContent = ''; status.classList.remove('success'); }, 4000);
-    }
-
-    function escapeHtml(str) {
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
+                setTimeout(() => { status.textContent = ''; status.classList.remove('success'); }, 4000);
+            })
+            .catch(function (error) {
+                console.error('PHYNEX: Could not publish post.', error);
+                status.textContent = 'Could not publish. Please try again.';
+                status.classList.remove('success');
+            });
     }
 </script>
 

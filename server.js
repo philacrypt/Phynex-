@@ -142,6 +142,18 @@ db.exec(`
         action TEXT NOT NULL,
         created_at INTEGER NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS blog_posts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        tag TEXT,
+        title TEXT NOT NULL,
+        body TEXT NOT NULL,
+        image_url TEXT,
+        video_url TEXT,
+        customer_id INTEGER,
+        author_name TEXT,
+        created_at INTEGER NOT NULL
+    );
 `);
 
 /* =========================
@@ -788,6 +800,24 @@ app.post("/api/customers/register", async function (request, response) {
 
     logLogin("customer", customer, "register");
 
+    // Real email notification: let the new customer know their PHYNEX
+    // account is live. Fire-and-forget so a slow/misconfigured mail
+    // server never blocks or breaks account creation itself.
+    if (contactMailConfigured()) {
+        mailTransporter.sendMail({
+            from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+            to: customer.email,
+            subject: "Welcome to PHYNEX!",
+            text:
+                "Hi " + customer.name + ",\n\n" +
+                "Welcome to PHYNEX! Your account has been created successfully using " + customer.email + ".\n\n" +
+                "You can now sign in any time to shop phones, computers, gaming gear, electronics and more, track orders and save your details for faster checkout.\n\n" +
+                "Thanks for joining us.\nThe PHYNEX Team"
+        }).catch(function (error) {
+            console.error("Welcome email failed to send:", error.message);
+        });
+    }
+
     response.json({ token: token, customer: publicCustomer(customer) });
 });
 
@@ -861,12 +891,14 @@ app.post("/api/customers/google", async function (request, response) {
     const googleId = String(payload.sub);
 
     let customer = db.prepare("SELECT * FROM customers WHERE email = ?").get(email);
+    let isNewCustomer = false;
 
     if (customer) {
         if (!customer.google_id) {
             db.prepare("UPDATE customers SET google_id = ? WHERE id = ?").run(googleId, customer.id);
         }
     } else {
+        isNewCustomer = true;
         const placeholderHash = await bcrypt.hash(crypto.randomBytes(24).toString("hex"), 10);
 
         const result = db
@@ -877,6 +909,21 @@ app.post("/api/customers/google", async function (request, response) {
             .run(name, email, "", placeholderHash, googleId, "", Date.now());
 
         customer = db.prepare("SELECT * FROM customers WHERE id = ?").get(result.lastInsertRowid);
+    }
+
+    if (isNewCustomer && contactMailConfigured()) {
+        mailTransporter.sendMail({
+            from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+            to: customer.email,
+            subject: "Welcome to PHYNEX!",
+            text:
+                "Hi " + customer.name + ",\n\n" +
+                "Welcome to PHYNEX! Your account has been created successfully using " + customer.email + ".\n\n" +
+                "You can now sign in any time to shop phones, computers, gaming gear, electronics and more, track orders and save your details for faster checkout.\n\n" +
+                "Thanks for joining us.\nThe PHYNEX Team"
+        }).catch(function (error) {
+            console.error("Welcome email failed to send:", error.message);
+        });
     }
 
     const token = newToken();
@@ -1435,6 +1482,82 @@ app.post("/api/products/:id/reviews", requireCustomer, function (request, respon
 
     response.json({
         message: "Thanks! Your review has been submitted and will appear once approved."
+    });
+});
+
+/* =========================
+   PUBLIC — BLOG / NEWS
+   Real, persisted posts (replaces the old browser-only demo posts).
+   Anyone can read; only a signed-in customer can publish, so posts
+   are tied to a real account instead of being anonymous/fake.
+========================= */
+
+app.get("/api/blog", function (request, response) {
+
+    const rows = db
+        .prepare("SELECT * FROM blog_posts ORDER BY created_at DESC LIMIT 60")
+        .all();
+
+    response.json({
+        posts: rows.map(function (post) {
+            return {
+                id: post.id,
+                tag: post.tag || "PHYNEX · News",
+                title: post.title,
+                body: post.body,
+                imageUrl: post.image_url,
+                videoUrl: post.video_url,
+                authorName: post.author_name,
+                createdAt: post.created_at
+            };
+        })
+    });
+});
+
+app.post("/api/blog", requireCustomer, function (request, response) {
+
+    const body = request.body || {};
+
+    const tag = String(body.tag || "PHYNEX · News").trim().slice(0, 60);
+    const title = String(body.title || "").trim();
+    const postBody = String(body.body || "").trim();
+    const imageUrl = String(body.imageUrl || "").trim().slice(0, 2000);
+    const videoUrl = String(body.videoUrl || "").trim().slice(0, 2000);
+
+    if (!title || !postBody) {
+        return response.status(400).json({ message: "Add a headline and a story before publishing." });
+    }
+
+    if (title.length > 200) {
+        return response.status(400).json({ message: "Headline is too long." });
+    }
+
+    if (postBody.length > 5000) {
+        return response.status(400).json({ message: "Story is too long." });
+    }
+
+    const result = db
+        .prepare(
+            `INSERT INTO blog_posts (tag, title, body, image_url, video_url, customer_id, author_name, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        )
+        .run(tag, title, postBody, imageUrl || null, videoUrl || null, request.customer.id, request.customer.name, Date.now());
+
+    logActivity("blog_post", request.customer.name + " published a blog update.");
+
+    const post = db.prepare("SELECT * FROM blog_posts WHERE id = ?").get(result.lastInsertRowid);
+
+    response.json({
+        post: {
+            id: post.id,
+            tag: post.tag,
+            title: post.title,
+            body: post.body,
+            imageUrl: post.image_url,
+            videoUrl: post.video_url,
+            authorName: post.author_name,
+            createdAt: post.created_at
+        }
     });
 });
 
