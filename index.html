@@ -1976,9 +1976,9 @@
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
             </div>
-            <img src="images/12.jpeg" alt="Phones & Laptop" loading="lazy" onerror="this.classList.add('broken')">
+            <img src="images/12.jpeg" alt="Phones&Tablets" loading="lazy" onerror="this.classList.add('broken')">
             <div class="showcase-tile-overlay">
-                <strong>Phones & Laptop</strong>
+                <strong>Phones & Tablets</strong>
                 <span>Shop now</span>
             </div>
         </a>
@@ -2104,34 +2104,95 @@
 </div>
 
 
-<div class="section-heading" id="productsSection">
+<!--
+    PRODUCTS — HTML IS THE SOURCE OF TRUTH
+    --------------------------------------
+    Add Product 6, Product 7, Product 8, etc. by copying one .product
+    block below and changing the name, image, price, description,
+    specifications and category. You do NOT need to edit script.js.
+-->
+<div class="products" id="flashDealsGrid">
 
-    <div class="flash-title">
-
-        <h2><span class="heading-icon"><i class="fa-solid fa-bolt"></i></span>Flash Deals</h2>
-
-        <span class="timer" id="flashDealsTimer">
-            <i class="fa-regular fa-clock"></i> Ends in: 03 : 00 : 00
-        </span>
-
+    <!-- PRODUCT 1 -->
+    <div class="product" data-product-id="html-product-1" data-category="computers laptops home-office deals new" data-description="A dependable Dell laptop for work, study and everyday productivity." data-specifications="Intel Core i7 11th Gen | 8GB RAM | 400GB SSD">
+        <div class="product-image"><img src="images/13.jpeg" alt="Dell Vostro 15 3500 i7 11th Gen 8GB 400GB SSD" loading="lazy"></div>
+        <div class="product-info">
+            <div class="product-name">Dell Vostro 15 3500 i7 11th Gen 8GB 400GB SSD</div>
+            <div class="rating">★★★★★ (24)</div>
+            <div class="price">KSh 35,000 <span class="old-price">KSh 40,000</span></div>
+            <div class="express">PHYNEX EXPRESS</div>
+            <div class="stock-status">In stock</div>
+            <div class="product-actions"><button type="button" class="cart-btn" onclick="addToCart(this)">Add to Cart</button><button type="button" class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button></div>
+        </div>
     </div>
 
-    <a href="category.html?category=all" class="view-all">
-        View All Deals
-    </a>
+    <!-- PRODUCT 2 -->
+    <div class="product" data-product-id="html-product-2" data-category="computers desktops home-office deals new" data-description="A professionally refurbished HP desktop with responsive performance for office and home use." data-specifications="Intel Core i5 8th Gen | 8GB RAM | 256GB SSD">
+        <div class="product-image"><img src="images/18.jpeg" alt="HP EliteDesk 830 G5 i5 8th Gen 8GB 256GB SSD" loading="lazy"></div>
+        <div class="product-info">
+            <div class="product-name">HP EliteDesk 830 G5 i5 8th Gen 8GB 256GB SSD</div>
+            <div class="rating">★★★★★ (18)</div>
+            <div class="price">KSh 32,500 <span class="old-price">KSh 36,000</span></div>
+            <div class="express">PHYNEX EXPRESS</div>
+            <div class="stock-status">In stock</div>
+            <div class="product-actions"><button type="button" class="cart-btn" onclick="addToCart(this)">Add to Cart</button><button type="button" class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button></div>
+        </div>
+    </div>
+
+    <!-- PRODUCT 3 -->
+    <div class="product" data-product-id="html-product-3" data-category="electronics audio accessories deals" data-description="A portable Bluetooth speaker with clear sound for music, calls and everyday entertainment." data-specifications="Bluetooth wireless audio | Portable design | Rechargeable battery">
+        <div class="product-image"><img src="images/19.jpeg" alt="BT Speaker HF226" loading="lazy"></div>
+        <div class="product-info">
+            <div class="product-name">BT Speaker HF226</div>
+            <div class="rating">★★★★★ (12)</div>
+            <div class="price">KSh 2,000 <span class="old-price">KSh 2,500</span></div>
+            <div class="express">PHYNEX EXPRESS</div>
+            <div class="stock-status">In stock</div>
+            <div class="product-actions"><button type="button" class="cart-btn" onclick="addToCart(this)">Add to Cart</button><button type="button" class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button></div>
+        </div>
+    </div>
+
+    <!-- PRODUCT 4 -->
+    <div class="product" data-product-id="html-product-4" data-category="computers laptops home-office deals new" data-description="A compact MacBook with a sharp display and reliable performance for everyday computing." data-specifications="Intel Core i5 | 8GB RAM | 256GB SSD">
+        <div class="product-image"><img src="images/17.jpeg" alt="MacBook Air i5 2017 256GB SSD 8GB RAM" loading="lazy"></div>
+        <div class="product-info">
+            <div class="product-name">MacBook Air i5 2017 256GB SSD 8GB RAM</div>
+            <div class="rating">★★★★★ (16)</div>
+            <div class="price">KSh 20,500 <span class="old-price">KSh 35,000</span></div>
+            <div class="express">PHYNEX EXPRESS</div>
+            <div class="stock-status">In stock</div>
+            <div class="product-actions"><button type="button" class="cart-btn" onclick="addToCart(this)">Add to Cart</button><button type="button" class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button></div>
+        </div>
+    </div>
+
+    <!-- PRODUCT 5 -->
+    <div class="product" data-product-id="html-product-5" data-category="computers laptops home-office deals" data-description="A durable Lenovo ThinkPad with a comfortable keyboard and fast SSD storage for work on the go." data-specifications="Intel Core i5 | 8GB RAM | 256GB SSD">
+        <div class="product-image"><img src="images/20.jpeg" alt="Lenovo Thinkpad T460 256GB SSD 8GB RAM" loading="lazy"></div>
+        <div class="product-info">
+            <div class="product-name">Lenovo Thinkpad T460 256GB SSD 8GB RAM</div>
+            <div class="rating">★★★★★ (14)</div>
+            <div class="price">KSh 23,000 <span class="old-price">KSh 25,000</span></div>
+            <div class="express">PHYNEX EXPRESS</div>
+            <div class="stock-status">In stock</div>
+            <div class="product-actions"><button type="button" class="cart-btn" onclick="addToCart(this)">Add to Cart</button><button type="button" class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button></div>
+        </div>
+    </div>
+
+    <!-- PRODUCT 6 — COPY THIS BLOCK TO ADD PRODUCT 7, 8, 9... -->
+    <div class="product" data-product-id="html-product-6" data-category="electronics deals" data-description="Write your product description here." data-specifications="Write product specifications here.">
+        <div class="product-image"><img src="images/product-6.jpg" alt="Product 6" loading="lazy"></div>
+        <div class="product-info">
+            <div class="product-name">Product 6 Name</div>
+            <div class="rating">No reviews yet</div>
+            <div class="price">KSh 0 <span class="old-price">KSh 0</span></div>
+            <div class="express">PHYNEX EXPRESS</div>
+            <div class="stock-status">In stock</div>
+            <div class="product-actions"><button type="button" class="cart-btn" onclick="addToCart(this)">Add to Cart</button><button type="button" class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button></div>
+        </div>
+    </div>
 
 </div>
 
-
-<!--
-    These 5 products used to be hardcoded, non-purchasable sample
-    markup here. They are now real, approved products in the
-    database (see seedFlashDealProducts() in server.js), so
-    loadMarketplaceProducts() in script.js fills this grid in
-    live from /api/products — real id, real stock, real checkout,
-    real reviews. Nothing to hardcode here anymore.
--->
-<div class="products" id="flashDealsGrid"></div>
 <p id="searchMessage" hidden style="padding:24px;text-align:center;color:#687083;background:white;border:1px solid #e1e4e8;">No products found.</p>
 
 
