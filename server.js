@@ -353,6 +353,8 @@ ensureColumn("orders", "reservation_expires", "INTEGER");
 ensureColumn("products", "reserved_stock", "INTEGER DEFAULT 0");
 ensureColumn("products", "dispatch_location", "TEXT");
 ensureColumn("products", "return_policy", "TEXT");
+ensureColumn("reviews", "customer_id", "INTEGER");
+ensureColumn("reviews", "order_id", "INTEGER");
 
 const DEFAULT_CATEGORIES = [
     ["Phones & Tablets","phones-tablets","Mobile phones, tablets and accessories"],
@@ -1553,6 +1555,72 @@ app.get("/api/products/:id/reviews", function (request, response) {
         averageRating: average,
         count: count
     });
+});
+
+/* =========================
+   CUSTOMER — SUBMIT A PRODUCT REVIEW
+   Only allowed if this customer has a PAID order that contains this
+   product ("verified purchase"). Goes in as 'pending' so it shows up
+   in the existing admin review-approval queue, same as before.
+========================= */
+
+app.post("/api/products/:id/reviews", requireCustomer, function (request, response) {
+
+    const productId = request.params.id;
+    const body = request.body || {};
+    const rating = Math.round(Number(body.rating));
+    const comment = String(body.comment || "").trim().slice(0, 1000);
+
+    if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+        return response.status(400).json({ message: "Please choose a rating from 1 to 5 stars." });
+    }
+
+    const product = db.prepare("SELECT id, name FROM products WHERE id = ?").get(productId);
+
+    if (!product) {
+        return response.status(404).json({ message: "Product not found." });
+    }
+
+    // Verified-purchase check: this customer must have a paid order that
+    // included this exact product.
+    const purchase = db
+        .prepare(
+            `SELECT orders.id AS order_id FROM orders
+             JOIN order_items ON order_items.order_id = orders.id
+             WHERE orders.customer_id = ? AND order_items.product_id = ? AND orders.payment_status = 'paid'
+             ORDER BY orders.created_at DESC LIMIT 1`
+        )
+        .get(request.customer.id, productId);
+
+    if (!purchase) {
+        return response.status(403).json({ message: "You can review a product after you've bought and paid for it." });
+    }
+
+    const existing = db
+        .prepare("SELECT id FROM reviews WHERE customer_id = ? AND product_id = ?")
+        .get(request.customer.id, productId);
+
+    if (existing) {
+        return response.status(409).json({ message: "You've already reviewed this product." });
+    }
+
+    db.prepare(
+        `INSERT INTO reviews (product_id, product_name, customer_name, customer_id, order_id, rating, comment, status, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)`
+    ).run(
+        productId,
+        product.name,
+        request.customer.name || "Customer",
+        request.customer.id,
+        purchase.order_id,
+        rating,
+        comment,
+        Date.now()
+    );
+
+    logActivity("review_submitted", request.customer.name + " reviewed \"" + product.name + "\" (pending approval).");
+
+    response.json({ message: "Thanks! Your review has been submitted and will appear once approved." });
 });
 
 /* =========================

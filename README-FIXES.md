@@ -1,6 +1,56 @@
 # PHYNEX marketplace fixes
 
-## Latest update (Sep 2026, round 4) — product images now go to Cloudinary
+## Latest update (Sep 2026, round 5) — real product reviews + delivery location dropdowns
+Two separate fixes bundled together:
+
+**1. Product reviews were fake — now they're real.**
+The homepage's 5 static demo product cards showed hardcoded, made-up star
+ratings (e.g. "★★★★★ (24)") that were never connected to any real
+customer feedback. Meanwhile, the product popup's Reviews tab could
+*display* real approved reviews, but there was no way for a customer to
+actually submit one — the "Leave a review" flow didn't exist.
+
+- Removed the fake star ratings from all 5 static homepage cards.
+- The product popup's top rating badge no longer echoes stray leftover
+  text (previously it sometimes showed the fake stars, sometimes "Sell by
+  [seller]") — it now shows the real average rating (e.g. "★★★★☆ 4.2 (12
+  reviews)") or "No reviews yet".
+- Added a working star-picker + comment form inside the product popup's
+  Reviews tab.
+- Added a new endpoint, `POST /api/products/:id/reviews`, which:
+  - requires the customer to be logged in,
+  - only accepts the review if that customer has a **paid order
+    containing that exact product** (a real verified-purchase check —
+    this was one of the known gaps),
+  - blocks a customer from reviewing the same product twice,
+  - saves the review as `pending`, which flows into the existing admin
+    Reviews tab for approval exactly like before.
+- Two new columns were added to the `reviews` table (`customer_id`,
+  `order_id`) via the existing safe `ensureColumn` migration, so no
+  manual database changes are needed on deploy.
+- **Note:** because this is tied to real paid orders, no reviews will
+  appear on a fresh/low-traffic store until real customers with paid
+  orders start submitting them — that's intentional, not a bug.
+
+**2. Checkout delivery location was two free-text fields — now real dropdowns.**
+`checkout.html`'s "County" and "Town or city" fields used to be plain
+text inputs, so a customer could type anything (typos, made-up places,
+inconsistent naming), which made delivery routing unreliable.
+
+- Added `kenya-locations.js`, a new static file containing all 47 Kenya
+  counties and their 295 sub-counties.
+- `checkout.html` now shows a County dropdown and a Sub-county/Town
+  dropdown that cascades from it, instead of free text. The delivery
+  address free-text field (estate/street/landmark) was kept, since Kenya
+  has no standard dataset below sub-county level.
+- The dropdowns use the exact same field IDs (`deliveryCounty`,
+  `deliveryLocation`) the existing checkout JS and backend already
+  expected, so no other code needed to change.
+- **Deploy note:** `kenya-locations.js` must be placed in the project
+  root (same level as `checkout.html`/`script.js`) so Express's existing
+  `express.static(__dirname)` can serve it.
+
+## Previous update (Sep 2026, round 4) — product images now go to Cloudinary
 Uploaded product images/videos are now uploaded straight to Cloudinary (a
 free external image host) instead of being saved to local disk, so they
 survive server restarts/redeploys no matter which host runs this app or
@@ -134,7 +184,10 @@ local demo."
 1. Create/attach a Render Persistent Disk to the web service.
 2. Mount it at `/data`.
 3. Add environment variable `PHYNEX_DATA_DIR=/data`.
-4. Deploy.
-5. Keep your existing M-PESA, email, Google and admin environment variables. Do not commit `.env`.
+4. (Optional but recommended) Add `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`
+   and `CLOUDINARY_API_SECRET` from a free cloudinary.com account, so
+   product images survive even without a persistent disk.
+5. Deploy.
+6. Keep your existing M-PESA, email, Google and admin environment variables. Do not commit `.env`.
 
 The delivered archive intentionally excludes the existing `.env` file because it can contain secrets.

@@ -882,8 +882,7 @@
         }
 
         if (rating) {
-            rating.textContent =
-                product.rating || '';
+            rating.textContent = '';
         }
 
         if (description) {
@@ -962,6 +961,7 @@
            --------------------------------------------- */
 
         loadProductReviews(product.id);
+        renderReviewForm(product.id);
 
         /* ---------------------------------------------
            TRACKING CODE
@@ -1087,6 +1087,7 @@
         const summary = document.getElementById('modalReviewsSummary');
         const list = document.getElementById('modalReviewsList');
         const empty = document.getElementById('modalReviewsEmpty');
+        const topRating = document.getElementById('modalProductRating');
 
         if (!summary || !list || !empty) return;
 
@@ -1108,7 +1109,15 @@
 
             if (!reviews.length) {
                 empty.style.display = '';
+                if (topRating) topRating.textContent = 'No reviews yet';
                 return;
+            }
+
+            if (topRating) {
+                topRating.textContent =
+                    '★'.repeat(Math.round(data.averageRating)) +
+                    '☆'.repeat(5 - Math.round(data.averageRating)) +
+                    ' ' + data.averageRating + ' (' + data.count + (data.count === 1 ? ' review)' : ' reviews)');
             }
 
             summary.innerHTML =
@@ -1128,6 +1137,116 @@
         } catch (error) {
             console.error('PHYNEX: Could not load reviews.', error);
             empty.style.display = '';
+        }
+    }
+
+    /* ---------------------------------------------
+       LEAVE A REVIEW
+       Renders a rating + comment form inside the Reviews tab.
+       The backend only accepts the submission if this customer
+       has a paid order containing this product, so the form is
+       shown to everyone but the result message reflects whatever
+       the server actually decided.
+       --------------------------------------------- */
+
+    let selectedReviewRating = 0;
+
+    function renderReviewForm(productId) {
+
+        const container = document.getElementById('modalReviewFormWrap');
+        if (!container) return;
+
+        selectedReviewRating = 0;
+
+        const loggedIn = !!localStorage.getItem(CUSTOMER_TOKEN_KEY);
+
+        if (!loggedIn) {
+            container.innerHTML =
+                '<p class="pp-review-login-note">' +
+                '<a href="customer-login.html">Log in</a> to leave a rating and review after your order.' +
+                '</p>';
+            return;
+        }
+
+        container.innerHTML =
+            '<div class="pp-review-form">' +
+                '<span class="pp-review-form-label">Leave a review</span>' +
+                '<div class="pp-star-picker" id="ppStarPicker">' +
+                    [1, 2, 3, 4, 5].map(function (n) {
+                        return '<button type="button" class="pp-star-btn" data-star="' + n + '" aria-label="' + n + ' star">☆</button>';
+                    }).join('') +
+                '</div>' +
+                '<textarea id="ppReviewComment" placeholder="Optional: say what you liked or didn\'t (optional)" maxlength="1000"></textarea>' +
+                '<button type="button" class="pp-review-submit" id="ppReviewSubmit">Submit review</button>' +
+                '<p class="pp-review-message" id="ppReviewMessage"></p>' +
+            '</div>';
+
+        const starButtons = container.querySelectorAll('.pp-star-btn');
+
+        function paintStars(upTo) {
+            starButtons.forEach(function (button) {
+                const value = Number(button.dataset.star);
+                button.textContent = value <= upTo ? '★' : '☆';
+                button.classList.toggle('selected', value <= upTo);
+            });
+        }
+
+        starButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                selectedReviewRating = Number(button.dataset.star);
+                paintStars(selectedReviewRating);
+            });
+        });
+
+        const submitButton = document.getElementById('ppReviewSubmit');
+        const messageEl = document.getElementById('ppReviewMessage');
+
+        if (submitButton) {
+            submitButton.addEventListener('click', async function () {
+
+                if (!selectedReviewRating) {
+                    messageEl.textContent = 'Please pick a star rating first.';
+                    return;
+                }
+
+                submitButton.disabled = true;
+                submitButton.textContent = 'Submitting...';
+                messageEl.textContent = '';
+
+                const comment = document.getElementById('ppReviewComment').value.trim();
+                const token = localStorage.getItem(CUSTOMER_TOKEN_KEY);
+
+                try {
+
+                    const response = await fetch('/api/products/' + encodeURIComponent(productId) + '/reviews', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + token
+                        },
+                        body: JSON.stringify({ rating: selectedReviewRating, comment: comment })
+                    });
+
+                    const data = await response.json().catch(function () { return {}; });
+
+                    if (!response.ok) {
+                        messageEl.textContent = data.message || 'Could not submit your review.';
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Submit review';
+                        return;
+                    }
+
+                    messageEl.textContent = data.message || 'Thanks! Your review has been submitted.';
+                    submitButton.remove();
+                    document.getElementById('ppReviewComment').setAttribute('disabled', 'disabled');
+                    starButtons.forEach(function (button) { button.disabled = true; });
+
+                } catch (error) {
+                    messageEl.textContent = 'Network error — please try again.';
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Submit review';
+                }
+            });
         }
     }
 

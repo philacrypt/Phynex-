@@ -1401,6 +1401,83 @@
             line-height: 1.5;
         }
 
+        #modalReviewFormWrap {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #eef0f4;
+        }
+
+        .pp-review-login-note {
+            font-size: 13px;
+            color: #687083;
+            margin: 0;
+        }
+
+        .pp-review-login-note a {
+            color: #0b3fae;
+            font-weight: 700;
+        }
+
+        .pp-review-form {
+            display: grid;
+            gap: 10px;
+        }
+
+        .pp-review-form-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #172033;
+        }
+
+        .pp-star-picker {
+            display: flex;
+            gap: 4px;
+        }
+
+        .pp-star-btn {
+            border: 0;
+            background: transparent;
+            font-size: 24px;
+            line-height: 1;
+            color: #ffa41c;
+            cursor: pointer;
+            padding: 2px;
+        }
+
+        .pp-review-form textarea {
+            width: 100%;
+            min-height: 70px;
+            border: 1.5px solid #e1e4e8;
+            border-radius: 7px;
+            padding: 10px;
+            font: inherit;
+            resize: vertical;
+        }
+
+        .pp-review-submit {
+            justify-self: start;
+            border: 0;
+            border-radius: 7px;
+            padding: 10px 16px;
+            background: #0b3fae;
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+            font: inherit;
+        }
+
+        .pp-review-submit:disabled {
+            opacity: .65;
+            cursor: wait;
+        }
+
+        .pp-review-message {
+            margin: 0;
+            font-size: 13px;
+            color: #157a45;
+            min-height: 16px;
+        }
+
         .pp-section {
             padding: 16px 18px;
             border-top: 8px solid #f7f8fa;
@@ -2198,9 +2275,7 @@
                 Dell Vostro 15 3500 i7 11th Gen 8GB 400GB SSD
             </div>
 
-            <div class="rating">
-                ★★★★★ (24)
-            </div>
+            <div class="rating"></div>
 
             <div class="price">
                 KSh 35,000
@@ -2236,9 +2311,7 @@
                 HP EliteDesk 830 G5 i5 8th Gen 8GB 256GB SSD
             </div>
 
-            <div class="rating">
-                ★★★★★ (18)
-            </div>
+            <div class="rating"></div>
 
             <div class="price">
                 KSh 32,500
@@ -2274,9 +2347,7 @@
                 BT Speaker HF226
             </div>
 
-            <div class="rating">
-                ★★★★★ (31)
-            </div>
+            <div class="rating"></div>
 
             <div class="price">
                 KSh 2,000
@@ -2312,9 +2383,7 @@
                 MacBook Air i5 2017 256GB SSD 8GB RAM
             </div>
 
-            <div class="rating">
-                ★★★★★ (15)
-            </div>
+            <div class="rating"></div>
 
             <div class="price">
                 KSh 20,500
@@ -2350,9 +2419,7 @@
              Lenovo Thinkpad T460 256GB SSD 8GB RAM   
             </div>
 
-            <div class="rating">
-                ★★★★★ (41)
-            </div>
+            <div class="rating"></div>
 
             <div class="price">
                 KSh 23,000
@@ -2522,6 +2589,7 @@
             <div id="modalReviewsSummary"></div>
             <div id="modalReviewsList"></div>
             <p class="pp-reviews-empty" id="modalReviewsEmpty">No reviews yet for this product. Be the first to leave one after your order.</p>
+            <div id="modalReviewFormWrap"></div>
         </div>
 
         <div class="pp-section" id="modalDispatchSection">
