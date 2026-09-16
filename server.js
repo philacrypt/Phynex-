@@ -1,12 +1,10 @@
 const express = require("express");
 const path = require("path");
-const fs = require("fs");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
 const Database = require("better-sqlite3");
 const { OAuth2Client } = require("google-auth-library");
-const { suggestCategory } = require("./lib/categorizer");
 require("dotenv").config();
 
 const app = express();
@@ -14,174 +12,14 @@ const port = Number(process.env.PORT) || 3000;
 
 const payments = new Map();
 
-function escapeEmailHtml(text) {
-    return String(text || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-}
-
-function moneyKsh(amount) {
-    return "KSh " + Number(amount || 0).toLocaleString("en-KE");
-}
-
-// Sends the "your order is confirmed / paid" email. Called once, right
-// after an M-PESA callback marks an order as paid. Never throws — a
-// failed email must not affect payment processing or the customer's
-// order status, so failures are only logged server-side.
-async function sendOrderConfirmationEmail(order, items) {
-    if (!mailTransporter || !order || !order.customer_email) return;
-
-    const itemsText = (items || [])
-        .map(function (item) {
-            return "- " + item.name + " x " + item.quantity + " (" + moneyKsh(item.price * item.quantity) + ")";
-        })
-        .join("\n");
-
-    const itemsHtml = (items || [])
-        .map(function (item) {
-            return "<tr>" +
-                "<td style=\"padding:6px 10px;border-bottom:1px solid #eee;\">" + escapeEmailHtml(item.name) + "</td>" +
-                "<td style=\"padding:6px 10px;border-bottom:1px solid #eee;text-align:center;\">" + Number(item.quantity) + "</td>" +
-                "<td style=\"padding:6px 10px;border-bottom:1px solid #eee;text-align:right;\">" + moneyKsh(item.price * item.quantity) + "</td>" +
-                "</tr>";
-        })
-        .join("");
-
-    try {
-        await mailTransporter.sendMail({
-            from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-            to: order.customer_email,
-            subject: "PHYNEX order " + order.order_number + " confirmed",
-            text:
-                "Hi " + (order.customer_name || "there") + ",\n\n" +
-                "We've received your M-PESA payment and your order is confirmed.\n\n" +
-                "Order number: " + order.order_number + "\n" +
-                "Items:\n" + itemsText + "\n\n" +
-                "Subtotal: " + moneyKsh(order.subtotal) + "\n" +
-                "Delivery fee: " + moneyKsh(order.delivery_fee) + "\n" +
-                "Total paid: " + moneyKsh(order.total) + "\n\n" +
-                "Delivery address: " + [order.address, order.location, order.county].filter(Boolean).join(", ") + "\n\n" +
-                "We'll email you again as your order is dispatched and delivered.\n\n" +
-                "Thank you for shopping with PHYNEX!\nThe PHYNEX Team",
-            html:
-                "<p>Hi " + escapeEmailHtml(order.customer_name || "there") + ",</p>" +
-                "<p>We've received your M-PESA payment and your order is <strong>confirmed</strong>.</p>" +
-                "<p><strong>Order number:</strong> " + escapeEmailHtml(order.order_number) + "</p>" +
-                "<table style=\"border-collapse:collapse;width:100%;max-width:480px;\">" +
-                "<thead><tr>" +
-                "<th style=\"text-align:left;padding:6px 10px;border-bottom:2px solid #071a49;\">Item</th>" +
-                "<th style=\"padding:6px 10px;border-bottom:2px solid #071a49;\">Qty</th>" +
-                "<th style=\"text-align:right;padding:6px 10px;border-bottom:2px solid #071a49;\">Amount</th>" +
-                "</tr></thead><tbody>" + itemsHtml + "</tbody></table>" +
-                "<p><strong>Subtotal:</strong> " + moneyKsh(order.subtotal) + "<br>" +
-                "<strong>Delivery fee:</strong> " + moneyKsh(order.delivery_fee) + "<br>" +
-                "<strong>Total paid:</strong> " + moneyKsh(order.total) + "</p>" +
-                "<p><strong>Delivery address:</strong> " + escapeEmailHtml([order.address, order.location, order.county].filter(Boolean).join(", ")) + "</p>" +
-                "<p>We'll email you again as your order is dispatched and delivered.</p>" +
-                "<p>Thank you for shopping with PHYNEX!<br>The PHYNEX Team</p>"
-        });
-    } catch (error) {
-        console.error("Order confirmation email failed for order " + order.order_number + ":", error.message);
-    }
-}
-
-// Lightweight status-change email for later stages (dispatched/delivered).
-// Same never-throw guarantee as sendOrderConfirmationEmail above.
-async function sendOrderStatusEmail(order, status) {
-    if (!mailTransporter || !order || !order.customer_email) return;
-
-    const labels = {
-        processing: "is now being processed",
-        shipped: "has been dispatched for delivery",
-        delivered: "has been delivered",
-        cancelled: "has been cancelled"
-    };
-
-    const label = labels[status];
-    if (!label) return; // no email for statuses we don't have copy for (e.g. "pending", "paid")
-
-    try {
-        await mailTransporter.sendMail({
-            from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-            to: order.customer_email,
-            subject: "PHYNEX order " + order.order_number + " update",
-            text: "Hi " + (order.customer_name || "there") + ",\n\nYour order " + order.order_number + " " + label + ".\n\nThe PHYNEX Team",
-            html: "<p>Hi " + escapeEmailHtml(order.customer_name || "there") + ",</p>" +
-                "<p>Your order <strong>" + escapeEmailHtml(order.order_number) + "</strong> " + label + ".</p>" +
-                "<p>The PHYNEX Team</p>"
-        });
-    } catch (error) {
-        console.error("Order status email failed for order " + order.order_number + ":", error.message);
-    }
-}
-
-async function sendWelcomeEmail(toEmail, toName) {
-    if (!mailTransporter || !toEmail) return;
-
-    try {
-        await mailTransporter.sendMail({
-            from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-            to: toEmail,
-            subject: "Welcome to PHYNEX!",
-            text: "Hi " + (toName || "there") + ",\n\n" +
-                "Welcome to PHYNEX! Your account has been created and you're all set to start shopping " +
-                "for great deals from trusted sellers.\n\n" +
-                "Happy shopping!\nThe PHYNEX Team",
-            html: "<p>Hi " + escapeEmailHtml(toName || "there") + ",</p>" +
-                "<p>Welcome to <strong>PHYNEX</strong>! Your account has been created and you're all set to start " +
-                "shopping for great deals from trusted sellers.</p>" +
-                "<p>Happy shopping!<br>The PHYNEX Team</p>"
-        });
-    } catch (error) {
-        // Don't fail signup if the welcome email can't be sent — just log it.
-        console.error("Welcome email failed:", error.message);
-    }
-}
-
 app.use(express.json({ limit: "100kb" }));
-
-// If the request body isn't valid JSON (or is too large), express.json()
-// throws before any route handler runs. Without this, Express's default
-// error page (HTML) would be sent back to a fetch() call expecting JSON,
-// causing the browser-side "Unexpected token '<' ... is not valid JSON"
-// error. Catch it here and always answer API-style requests in JSON.
-app.use(function (error, request, response, next) {
-    if (error && error.type === "entity.parse.failed") {
-        return response.status(400).json({ message: "Malformed request body." });
-    }
-    if (error && error.type === "entity.too.large") {
-        return response.status(413).json({ message: "Request body is too large." });
-    }
-    next(error);
-});
-
 app.use(express.static(__dirname));
 
 /* =========================
    DATABASE
 ========================= */
 
-const DATA_DIR = process.env.PHYNEX_DATA_DIR || __dirname;
-fs.mkdirSync(DATA_DIR, { recursive: true });
-
-if (!process.env.PHYNEX_DATA_DIR) {
-    console.warn(
-        "\n*** PHYNEX WARNING ***\n" +
-        "PHYNEX_DATA_DIR is not set, so the database and uploaded images are\n" +
-        "being stored inside the app's own code folder. On Render (and most\n" +
-        "hosts) this folder is WIPED on every redeploy/restart, which means\n" +
-        "every product, order, seller and image will be permanently lost the\n" +
-        "next time this service redeploys or restarts.\n" +
-        "Fix: attach a Persistent Disk to this service in the Render\n" +
-        "dashboard (Settings -> Disks), mount it at e.g. /data, and set the\n" +
-        "environment variable PHYNEX_DATA_DIR=/data. See README-FIXES.md.\n" +
-        "***********************\n"
-    );
-}
-
-const db = new Database(path.join(DATA_DIR, "phynex.db"));
+const db = new Database(path.join(__dirname, "phynex.db"));
 db.pragma("journal_mode = WAL");
 
 db.exec(`
@@ -304,12 +142,6 @@ db.exec(`
         action TEXT NOT NULL,
         created_at INTEGER NOT NULL
     );
-
-    CREATE TABLE IF NOT EXISTS newsletter_subscribers (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        email TEXT NOT NULL UNIQUE,
-        created_at INTEGER NOT NULL
-    );
 `);
 
 /* =========================
@@ -345,138 +177,212 @@ ensureColumn("orders", "stock_deducted", "INTEGER DEFAULT 0");
 ensureColumn("customers", "google_id", "TEXT");
 ensureColumn("customers", "reset_token", "TEXT");
 ensureColumn("customers", "reset_token_expires", "INTEGER");
-ensureColumn("customers", "token_expires", "INTEGER");
-ensureColumn("sellers", "token_expires", "INTEGER");
-ensureColumn("products", "deleted_at", "INTEGER");
-ensureColumn("orders", "updated_at", "INTEGER");
-ensureColumn("orders", "reservation_expires", "INTEGER");
-ensureColumn("products", "reserved_stock", "INTEGER DEFAULT 0");
-ensureColumn("products", "dispatch_location", "TEXT");
-ensureColumn("products", "return_policy", "TEXT");
+
 ensureColumn("reviews", "customer_id", "INTEGER");
-ensureColumn("reviews", "order_id", "INTEGER");
 
-const DEFAULT_CATEGORIES = [
-    ["Phones & Tablets","phones-tablets","Mobile phones, tablets and accessories"],
-    ["Computers & Laptops","computers-laptops","Laptops, desktops, monitors and computer accessories"],
-    ["Electronics","electronics","TVs, audio, smart devices and electronics"],
-    ["Gaming","gaming","Consoles, games, controllers and gaming accessories"],
-    ["Clothing & Fashion","clothing-fashion","Clothing, fashion wear and style accessories"],
-    ["Shoes & Bags","shoes-bags","Shoes, handbags, backpacks and travel bags"],
-    ["Beauty & Personal Care","beauty-personal-care","Beauty, cosmetics and personal-care products"],
-    ["Home & Garden","home-garden","Home improvement, decor, garden and outdoor home items"],
-    ["Furniture","furniture","Beds, sofas, tables, chairs and storage"],
-    ["Appliances","appliances","Kitchen, laundry, cooling and household appliances"],
-    ["Accessories","accessories","General accessories that don't belong to one specific department"],
-    ["Home & Office","home-office","Home organization, office supplies and small home/office essentials"],
-    ["Grocery","grocery","Food, beverages and everyday household consumables"],
-    ["Health & Wellness","health-wellness","Wellness and non-prescription health products"],
-    ["Baby & Kids","baby-kids","Baby products, toys, kids clothing and essentials"],
-    ["Sports & Outdoors","sports-outdoors","Sports equipment, fitness and outdoor gear"],
-    ["Automotive","automotive","Car, motorcycle and vehicle parts and accessories"],
-    ["Books & Stationery","books-stationery","Books, school, office and stationery supplies"],
-    ["Jewelry & Watches","jewelry-watches","Jewelry, watches and accessories"],
-    ["Cameras & Photography","cameras-photography","Cameras, lenses and photography equipment"],
-    ["Pet Supplies","pet-supplies","Pet food, accessories and supplies"],
-    ["Industrial & Tools","industrial-tools","Tools, hardware, machinery and business equipment"],
-    ["Services","services","Local and professional services"],
-    ["Vehicles","vehicles","Cars, motorbikes, trucks and other vehicles for sale"],
-    ["Musical Instruments","musical-instruments","Guitars, keyboards, drums and other musical instruments"],
-    ["Solar & Power Equipment","solar-power","Solar panels, inverters, solar batteries and backup power equipment"],
-    ["Agriculture & Farm Supplies","agriculture-farm-supplies","Farm equipment, animal feed, fertilizer and agricultural supplies"],
-    ["Building & Construction Materials","building-construction","Cement, roofing, tiles, timber and other construction materials"],
-    ["Party & Event Supplies","party-event-supplies","Decorations, tents and supplies for parties, weddings and events"],
-    ["Security & Safety Equipment","security-safety","CCTV, alarms, fire safety and personal safety equipment"],
-    ["Lighting & Electrical","lighting-electrical","Bulbs, fittings, cables and electrical accessories"],
-    ["Kitchenware & Dining","kitchenware-dining","Cookware, cutlery, dinner sets and kitchen essentials"],
-    ["Bedding & Linen","bedding-linen","Bed sheets, mosquito nets, towels and household linen"],
-    ["Wedding & Bridal","wedding-bridal","Wedding gowns, bridal wear and bridal party attire"],
-    ["Underwear & Lingerie","underwear-lingerie","Underwear, lingerie and intimate apparel"],
-    ["Maternity & Nursing","maternity-nursing","Maternity wear and nursing essentials for expecting and new mothers"],
-    ["Digital Products & Gift Cards","digital-gift-cards","Gift cards, airtime vouchers, software licenses and digital codes"],
-    ["Other","other","Other products that do not fit another category"]
-];
+// Seed a broad, ready-to-use set of categories the first time the store
+// runs (covers more than just tech so the marketplace isn't tech-only).
+// This only runs once — if the admin has already added/removed categories,
+// we leave their list alone.
+(function seedDefaultCategories() {
+    const count = db.prepare("SELECT COUNT(*) AS c FROM categories").get().c;
+    if (count > 0) return;
 
-const seedCategory = db.prepare(
-    "INSERT OR IGNORE INTO categories (name, slug, description, created_at) VALUES (?, ?, ?, ?)"
-);
-for (const category of DEFAULT_CATEGORIES) {
-    seedCategory.run(category[0], category[1], category[2], Date.now());
-}
+    const defaults = [
+        ["Phones & Tablets", "Mobile phones, tablets and accessories."],
+        ["Computers & Laptops", "Desktops, laptops, monitors and computer parts."],
+        ["Electronics", "TVs, audio, cameras and general electronics."],
+        ["Gaming", "Consoles, games and gaming accessories."],
+        ["Fashion & Clothing", "Men's, women's and kids' clothing."],
+        ["Shoes & Footwear", "Sneakers, official shoes, sandals and boots."],
+        ["Beauty & Personal Care", "Skincare, makeup, haircare and grooming."],
+        ["Health & Wellness", "Supplements, fitness and wellness products."],
+        ["Home & Living", "Furniture, decor, bedding and storage."],
+        ["Kitchen & Appliances", "Cookware, small appliances and kitchen tools."],
+        ["Groceries & Food", "Packaged foods, snacks and household groceries."],
+        ["Baby & Kids", "Baby gear, toys and kids' essentials."],
+        ["Toys & Games", "Toys, board games and hobby items."],
+        ["Sports & Outdoors", "Fitness gear, camping and outdoor equipment."],
+        ["Automotive", "Car accessories, parts and tools."],
+        ["Books & Stationery", "Books, office and school supplies."],
+        ["Jewelry & Watches", "Jewelry, watches and fashion accessories."],
+        ["Pet Supplies", "Food, toys and accessories for pets."],
+        ["Garden & Outdoor Living", "Garden tools, plants and outdoor furniture."],
+        ["Other", "Anything that doesn't fit another category."]
+    ];
 
-/* One-time rename: the "Fashion" category was renamed to "Clothing &
-   Fashion" so it clearly matches what sellers/customers actually call
-   it ("clothing"). This updates any already-seeded category row and
-   any products already saved under the old name, so nothing already
-   listed as "Fashion" silently disappears from its category page. */
-db.prepare(
-    "UPDATE categories SET name = 'Clothing & Fashion', slug = 'clothing-fashion', description = 'Clothing, fashion wear and style accessories' WHERE name = 'Fashion'"
-).run();
-db.prepare(
-    "UPDATE products SET category = 'Clothing & Fashion' WHERE category = 'Fashion'"
-).run();
+    const insert = db.prepare(
+        "INSERT INTO categories (name, slug, description, created_at) VALUES (?, ?, ?, ?)"
+    );
+
+    const now = Date.now();
+
+    defaults.forEach(function (entry) {
+        const name = entry[0];
+        const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+        try {
+            insert.run(name, slug, entry[1], now);
+        } catch (error) {
+            // Ignore duplicates — safe to re-run.
+        }
+    });
+})();
+
+// Turn the old static "Flash Deals" showcase cards (which used to be
+// hardcoded, non-purchasable HTML) into real, approved products owned
+// by an official PHYNEX store account. This makes them behave exactly
+// like any seller's product: real id, real stock, real checkout/order
+// records, and eligible for real customer reviews. Runs once — if this
+// store account already exists we leave everything alone.
+(function seedFlashDealProducts() {
+
+    const STORE_EMAIL = "store@phynextech.co.ke";
+
+    let store = db.prepare("SELECT * FROM sellers WHERE email = ?").get(STORE_EMAIL);
+
+    if (!store) {
+        const passwordHash = bcrypt.hashSync(crypto.randomBytes(24).toString("hex"), 10);
+        const result = db
+            .prepare(
+                `INSERT INTO sellers (business_name, email, phone, password_hash, status, created_at)
+                 VALUES (?, ?, ?, ?, 'approved', ?)`
+            )
+            .run("PHYNEX Official Store", STORE_EMAIL, "", passwordHash, Date.now());
+        store = db.prepare("SELECT * FROM sellers WHERE id = ?").get(result.lastInsertRowid);
+    }
+
+    const existingCount = db
+        .prepare("SELECT COUNT(*) AS c FROM products WHERE seller_id = ?")
+        .get(store.id).c;
+
+    if (existingCount > 0) return;
+
+    const items = [
+        {
+            name: "Dell Vostro 15 3500 i7 11th Gen 8GB 400GB SSD",
+            description: "A dependable Dell laptop for work, study and everyday productivity.",
+            specifications: "Intel Core i7 11th Gen | 8GB RAM | 400GB SSD",
+            price: 35000,
+            oldPrice: 40000,
+            category: "Computers & Laptops",
+            image: "images/13.jpeg",
+            stock: 6
+        },
+        {
+            name: "HP EliteDesk 830 G5 i5 8th Gen 8GB 256GB SSD",
+            description: "A professionally refurbished HP desktop with responsive performance for office and home use.",
+            specifications: "Intel Core i5 8th Gen | 8GB RAM | 256GB SSD",
+            price: 32500,
+            oldPrice: 36000,
+            category: "Computers & Laptops",
+            image: "images/18.jpeg",
+            stock: 5
+        },
+        {
+            name: "BT Speaker HF226",
+            description: "A portable Bluetooth speaker with clear sound for music, calls and everyday entertainment.",
+            specifications: "Bluetooth wireless audio | Portable design | Rechargeable battery",
+            price: 2000,
+            oldPrice: 2500,
+            category: "Electronics",
+            image: "images/19.jpeg",
+            stock: 20
+        },
+        {
+            name: "MacBook Air i5 2017 256GB SSD 8GB RAM",
+            description: "A compact MacBook with a sharp display and reliable performance for everyday computing.",
+            specifications: "Intel Core i5 | 8GB RAM | 256GB SSD",
+            price: 20500,
+            oldPrice: 35000,
+            category: "Computers & Laptops",
+            image: "images/17.jpeg",
+            stock: 4
+        },
+        {
+            name: "Lenovo Thinkpad T460 256GB SSD 8GB RAM",
+            description: "A durable Lenovo ThinkPad with a comfortable keyboard and fast SSD storage for work on the go.",
+            specifications: "Intel Core i5 | 8GB RAM | 256GB SSD",
+            price: 23000,
+            oldPrice: 25000,
+            category: "Computers & Laptops",
+            image: "images/20.jpeg",
+            stock: 7
+        }
+    ];
+
+    const insertProduct = db.prepare(
+        `INSERT INTO products
+            (seller_id, name, description, specifications, price, old_price, category, image, media, status, sponsored, tracking_code, stock, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', 0, ?, ?, ?)`
+    );
+
+    const now = Date.now();
+
+    items.forEach(function (item, index) {
+        const media = JSON.stringify([{ url: item.image, type: "image" }]);
+        const trackingCode = generateTrackingCode();
+        insertProduct.run(
+            store.id, item.name, item.description, item.specifications,
+            item.price, item.oldPrice, item.category, item.image, media,
+            trackingCode, item.stock, now - (items.length - index)
+        );
+    });
+})();
 
 /* =========================
-   AI AUTO-CATEGORIZATION
-   Suggests a category (and subcategory, where relevant) for a
-   product from its name/description/specifications so listings
-   land in the right place automatically - e.g. any laptop ends
-   up under "Computers & Laptops" even if the seller picked the
-   wrong category or left it blank. It only overrides a clear,
-   high-confidence match (like "laptop"); for everything else it
-   only fills in a category the seller left empty, so it never
-   fights a seller's deliberate choice for products that don't
-   have to live in a specific category.
+   LOGIN RATE LIMITING (brute-force protection)
+   Tracks failed sign-in attempts per IP + account identifier. After too
+   many failures in a short window, further attempts are blocked for a
+   cooldown period. Successful logins reset the counter.
 ========================= */
 
-function getCategoryNames() {
-    return db.prepare("SELECT name FROM categories").all().map(function (row) { return row.name; });
+const LOGIN_MAX_ATTEMPTS = 6;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const loginAttempts = new Map(); // key -> { count, firstAttempt, lockedUntil }
+
+function loginRateLimitKey(request, identifier) {
+    return request.ip + ":" + String(identifier || "").toLowerCase();
 }
 
-function applyAutoCategory(input) {
+function checkLoginRateLimit(request, identifier) {
+    const key = loginRateLimitKey(request, identifier);
+    const entry = loginAttempts.get(key);
 
-    const chosenCategory = String(input.category || "").trim();
-    const chosenSubcategory = String(input.subcategory || "").trim();
+    if (!entry) return null;
 
-    let suggestion = null;
-
-    try {
-        suggestion = suggestCategory(
-            {
-                name: input.name,
-                description: input.description,
-                specifications: input.specifications,
-                brand: input.brand,
-                tags: input.tags
-            },
-            getCategoryNames()
-        );
-    } catch (error) {
-        suggestion = null;
+    if (entry.lockedUntil && entry.lockedUntil > Date.now()) {
+        const minutesLeft = Math.ceil((entry.lockedUntil - Date.now()) / 60000);
+        return "Too many failed sign-in attempts. Please try again in " + minutesLeft + " minute" + (minutesLeft === 1 ? "" : "s") + ".";
     }
 
-    if (!suggestion) {
-        return { category: chosenCategory, subcategory: chosenSubcategory };
+    if (entry.lockedUntil && entry.lockedUntil <= Date.now()) {
+        loginAttempts.delete(key);
     }
 
-    if (suggestion.confidence === "high") {
-        // Confident match (e.g. "laptop") - always route it correctly.
-        return {
-            category: suggestion.category,
-            subcategory: suggestion.subcategory || chosenSubcategory
-        };
+    return null;
+}
+
+function recordLoginFailure(request, identifier) {
+    const key = loginRateLimitKey(request, identifier);
+    const now = Date.now();
+    const entry = loginAttempts.get(key) || { count: 0, firstAttempt: now };
+
+    if (now - entry.firstAttempt > LOGIN_WINDOW_MS) {
+        entry.count = 0;
+        entry.firstAttempt = now;
     }
 
-    // Lower-confidence match - only use it if the seller/admin didn't
-    // already choose a category themselves.
-    if (!chosenCategory) {
-        return {
-            category: suggestion.category,
-            subcategory: chosenSubcategory || suggestion.subcategory || ""
-        };
+    entry.count += 1;
+
+    if (entry.count >= LOGIN_MAX_ATTEMPTS) {
+        entry.lockedUntil = now + LOGIN_WINDOW_MS;
     }
 
-    return { category: chosenCategory, subcategory: chosenSubcategory };
+    loginAttempts.set(key, entry);
+}
+
+function clearLoginFailures(request, identifier) {
+    loginAttempts.delete(loginRateLimitKey(request, identifier));
 }
 
 /* =========================
@@ -566,7 +472,7 @@ const DEFAULT_SETTINGS = {
     supportPhone: "",
     description: "",
     currency: "KES (KSh)",
-    deliveryFee: 0,
+    deliveryFee: 300,
     lowStockThreshold: 5,
     sellerListings: true,
     requireApproval: true,
@@ -626,6 +532,21 @@ function googleConfigured() {
 
 const googleClient = googleConfigured() ? new OAuth2Client(process.env.GOOGLE_CLIENT_ID) : null;
 
+// Real rating/review count for a product, computed from actual
+// customer-submitted, admin-approved reviews. No made-up numbers.
+function getRatingSummary(productId) {
+    const row = db
+        .prepare(
+            "SELECT COUNT(*) AS count, AVG(rating) AS average FROM reviews WHERE product_id = ? AND status = 'approved'"
+        )
+        .get(productId);
+
+    return {
+        average: row.count > 0 ? Math.round(row.average * 10) / 10 : null,
+        count: row.count || 0
+    };
+}
+
 function publicProduct(product) {
 
     var media = [];
@@ -644,8 +565,12 @@ function publicProduct(product) {
         media = [{ url: product.image, type: "image" }];
     }
 
+    const ratingSummary = getRatingSummary(product.id);
+
     return {
         id: product.id,
+        rating: ratingSummary.average,
+        reviewCount: ratingSummary.count,
         sellerId: product.seller_id,
         sellerName: product.business_name || undefined,
         sellerPhone: product.seller_phone || undefined,
@@ -660,12 +585,10 @@ function publicProduct(product) {
         subcategory: product.subcategory || "",
         condition: product.condition_label || "",
         warranty: product.warranty || "",
-        dispatchLocation: product.dispatch_location || "",
-        returnPolicy: product.return_policy || "",
         tags: product.tags || "",
         featured: Boolean(product.featured),
         sku: product.sku || "",
-        stock: product.stock != null ? Math.max(0, Number(product.stock) - Number(product.reserved_stock || 0)) : 0,
+        stock: product.stock != null ? product.stock : 0,
         lowStockThreshold: product.low_stock_threshold != null ? product.low_stock_threshold : 5,
         image: (media[0] && media[0].url) || product.image || "",
         images: media.filter(function (m) { return m.type === "image"; }).map(function (m) { return m.url; }),
@@ -714,8 +637,8 @@ function requireSeller(request, response, next) {
     }
 
     const seller = db
-        .prepare("SELECT * FROM sellers WHERE token = ? AND (token_expires IS NULL OR token_expires > ?)")
-        .get(token, Date.now());
+        .prepare("SELECT * FROM sellers WHERE token = ?")
+        .get(token);
 
     if (!seller) {
         return response.status(401).json({ message: "Your session has expired. Please log in again." });
@@ -760,28 +683,9 @@ function requireAdmin(request, response, next) {
     next();
 }
 
-const authAttempts = new Map();
-const AUTH_WINDOW_MS = 15 * 60 * 1000;
-const AUTH_MAX_ATTEMPTS = 8;
-function authRateLimited(request, identity) {
-    const key = String(request.ip || "unknown") + ":" + String(identity || "").toLowerCase();
-    const now = Date.now();
-    const row = authAttempts.get(key);
-    if (!row || now - row.startedAt > AUTH_WINDOW_MS) {
-        authAttempts.set(key, { startedAt: now, count: 1 });
-        return false;
-    }
-    row.count += 1;
-    return row.count > AUTH_MAX_ATTEMPTS;
-}
-
 app.post("/api/admin/login", function (request, response) {
 
     const password = String((request.body || {}).password || "");
-
-    if (authRateLimited(request, "admin")) {
-        return response.status(429).json({ message: "Too many login attempts. Please try again in 15 minutes." });
-    }
 
     if (!process.env.ADMIN_PASSWORD) {
         return response.status(503).json({
@@ -789,9 +693,24 @@ app.post("/api/admin/login", function (request, response) {
         });
     }
 
-    if (password !== process.env.ADMIN_PASSWORD) {
+    const lockMessage = checkLoginRateLimit(request, "admin");
+    if (lockMessage) {
+        return response.status(429).json({ message: lockMessage });
+    }
+
+    const expected = Buffer.from(process.env.ADMIN_PASSWORD);
+    const supplied = Buffer.from(password);
+
+    const valid =
+        expected.length === supplied.length &&
+        crypto.timingSafeEqual(expected, supplied);
+
+    if (!valid) {
+        recordLoginFailure(request, "admin");
         return response.status(401).json({ message: "Incorrect admin password." });
     }
+
+    clearLoginFailures(request, "admin");
 
     const token = newToken();
     adminTokens.add(token);
@@ -813,8 +732,8 @@ function requireCustomer(request, response, next) {
     }
 
     const customer = db
-        .prepare("SELECT * FROM customers WHERE token = ? AND (token_expires IS NULL OR token_expires > ?)")
-        .get(token, Date.now());
+        .prepare("SELECT * FROM customers WHERE token = ?")
+        .get(token);
 
     if (!customer) {
         return response.status(401).json({ message: "Your session has expired. Please log in again." });
@@ -845,8 +764,8 @@ app.post("/api/customers/register", async function (request, response) {
         return response.status(400).json({ message: "Enter a valid email address." });
     }
 
-    if (password.length < 8) {
-        return response.status(400).json({ message: "Password must be at least 8 characters." });
+    if (password.length < 6) {
+        return response.status(400).json({ message: "Password must be at least 6 characters." });
     }
 
     const existing = db.prepare("SELECT id FROM customers WHERE email = ?").get(email);
@@ -860,16 +779,14 @@ app.post("/api/customers/register", async function (request, response) {
 
     const result = db
         .prepare(
-            `INSERT INTO customers (name, email, phone, password_hash, token, token_expires, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`
+            `INSERT INTO customers (name, email, phone, password_hash, token, created_at)
+             VALUES (?, ?, ?, ?, ?, ?)`
         )
-        .run(name, email, phone, passwordHash, token, Date.now() + 7 * 24 * 60 * 60 * 1000, Date.now());
+        .run(name, email, phone, passwordHash, token, Date.now());
 
     const customer = db.prepare("SELECT * FROM customers WHERE id = ?").get(result.lastInsertRowid);
 
     logLogin("customer", customer, "register");
-
-    sendWelcomeEmail(customer.email, customer.name);
 
     response.json({ token: token, customer: publicCustomer(customer) });
 });
@@ -881,25 +798,30 @@ app.post("/api/customers/login", async function (request, response) {
     const email = String(body.email || "").trim().toLowerCase();
     const password = String(body.password || "");
 
-    if (authRateLimited(request, email)) {
-        return response.status(429).json({ message: "Too many login attempts. Please try again in 15 minutes." });
+    const lockMessage = checkLoginRateLimit(request, email);
+    if (lockMessage) {
+        return response.status(429).json({ message: lockMessage });
     }
 
     const customer = db.prepare("SELECT * FROM customers WHERE email = ?").get(email);
 
     if (!customer) {
+        recordLoginFailure(request, email);
         return response.status(401).json({ message: "Incorrect email or password." });
     }
 
     const valid = await bcrypt.compare(password, customer.password_hash);
 
     if (!valid) {
+        recordLoginFailure(request, email);
         return response.status(401).json({ message: "Incorrect email or password." });
     }
 
+    clearLoginFailures(request, email);
+
     const token = newToken();
 
-    db.prepare("UPDATE customers SET token = ?, token_expires = ? WHERE id = ?").run(token, Date.now() + 7 * 24 * 60 * 60 * 1000, customer.id);
+    db.prepare("UPDATE customers SET token = ? WHERE id = ?").run(token, customer.id);
 
     logLogin("customer", customer, "login");
 
@@ -939,7 +861,6 @@ app.post("/api/customers/google", async function (request, response) {
     const googleId = String(payload.sub);
 
     let customer = db.prepare("SELECT * FROM customers WHERE email = ?").get(email);
-    let isNewCustomer = false;
 
     if (customer) {
         if (!customer.google_id) {
@@ -956,20 +877,15 @@ app.post("/api/customers/google", async function (request, response) {
             .run(name, email, "", placeholderHash, googleId, "", Date.now());
 
         customer = db.prepare("SELECT * FROM customers WHERE id = ?").get(result.lastInsertRowid);
-        isNewCustomer = true;
     }
 
     const token = newToken();
 
-    db.prepare("UPDATE customers SET token = ?, token_expires = ? WHERE id = ?").run(token, Date.now() + 7 * 24 * 60 * 60 * 1000, customer.id);
+    db.prepare("UPDATE customers SET token = ? WHERE id = ?").run(token, customer.id);
 
     customer = db.prepare("SELECT * FROM customers WHERE id = ?").get(customer.id);
 
     logLogin("customer", customer, "google");
-
-    if (isNewCustomer) {
-        sendWelcomeEmail(customer.email, customer.name);
-    }
 
     response.json({ token: token, customer: publicCustomer(customer) });
 });
@@ -1033,8 +949,8 @@ app.post("/api/customers/reset-password", async function (request, response) {
         return response.status(400).json({ message: "Missing or invalid reset link." });
     }
 
-    if (password.length < 8) {
-        return response.status(400).json({ message: "Password must be at least 8 characters." });
+    if (password.length < 6) {
+        return response.status(400).json({ message: "Password must be at least 6 characters." });
     }
 
     const customer = db.prepare(
@@ -1069,23 +985,6 @@ app.post("/api/customers/logout", requireCustomer, function (request, response) 
     response.json({ ok: true });
 });
 
-app.get("/api/customers/orders", requireCustomer, function (request, response) {
-
-    const rows = db
-        .prepare("SELECT * FROM orders WHERE customer_id = ? ORDER BY created_at DESC")
-        .all(request.customer.id);
-
-    const orders = rows.map(function (order) {
-        const items = db
-            .prepare("SELECT id, product_id AS productId, name, image, price, quantity FROM order_items WHERE order_id = ?")
-            .all(order.id);
-
-        return Object.assign(publicOrder(order), { items: items });
-    });
-
-    response.json({ orders: orders });
-});
-
 /* =========================
    SELLER REGISTER / LOGIN
 ========================= */
@@ -1116,8 +1015,8 @@ app.post("/api/sellers/register", async function (request, response) {
         return response.status(400).json({ message: "Enter a valid email address." });
     }
 
-    if (password.length < 8) {
-        return response.status(400).json({ message: "Password must be at least 8 characters." });
+    if (password.length < 6) {
+        return response.status(400).json({ message: "Password must be at least 6 characters." });
     }
 
     const existing = db.prepare("SELECT id FROM sellers WHERE email = ?").get(email);
@@ -1131,17 +1030,15 @@ app.post("/api/sellers/register", async function (request, response) {
 
     const result = db
         .prepare(
-            `INSERT INTO sellers (business_name, email, phone, whatsapp, password_hash, token, token_expires, status, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'approved', ?)`
+            `INSERT INTO sellers (business_name, email, phone, whatsapp, password_hash, token, status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, 'approved', ?)`
         )
-        .run(businessName, email, phone, whatsapp, passwordHash, token, Date.now() + 7 * 24 * 60 * 60 * 1000, Date.now());
+        .run(businessName, email, phone, whatsapp, passwordHash, token, Date.now());
 
     const seller = db.prepare("SELECT * FROM sellers WHERE id = ?").get(result.lastInsertRowid);
 
     logActivity("seller_registered", businessName + " created a seller account.");
     logLogin("seller", seller, "register");
-
-    sendWelcomeEmail(seller.email, seller.business_name);
 
     response.json({ token: token, seller: publicSeller(seller) });
 });
@@ -1153,21 +1050,26 @@ app.post("/api/sellers/login", async function (request, response) {
     const email = String(body.email || "").trim().toLowerCase();
     const password = String(body.password || "");
 
-    if (authRateLimited(request, email)) {
-        return response.status(429).json({ message: "Too many login attempts. Please try again in 15 minutes." });
+    const lockMessage = checkLoginRateLimit(request, email);
+    if (lockMessage) {
+        return response.status(429).json({ message: lockMessage });
     }
 
     const seller = db.prepare("SELECT * FROM sellers WHERE email = ?").get(email);
 
     if (!seller) {
+        recordLoginFailure(request, email);
         return response.status(401).json({ message: "Incorrect email or password." });
     }
 
     const valid = await bcrypt.compare(password, seller.password_hash);
 
     if (!valid) {
+        recordLoginFailure(request, email);
         return response.status(401).json({ message: "Incorrect email or password." });
     }
+
+    clearLoginFailures(request, email);
 
     if (seller.status === "suspended") {
         return response.status(403).json({ message: "Your seller account has been suspended. Contact PHYNEX support." });
@@ -1175,7 +1077,7 @@ app.post("/api/sellers/login", async function (request, response) {
 
     const token = newToken();
 
-    db.prepare("UPDATE sellers SET token = ?, token_expires = ? WHERE id = ?").run(token, Date.now() + 7 * 24 * 60 * 60 * 1000, seller.id);
+    db.prepare("UPDATE sellers SET token = ? WHERE id = ?").run(token, seller.id);
 
     logLogin("seller", seller, "login");
 
@@ -1213,21 +1115,10 @@ app.put("/api/sellers/me", requireSeller, function (request, response) {
    MEDIA UPLOAD (images + short videos)
 ========================= */
 
+const fs = require("fs");
 const multer = require("multer");
 
-// Product images/videos are uploaded to Cloudinary (a free external image
-// host) so they survive server restarts/redeploys no matter what host this
-// runs on or whether that host has a persistent disk. Set CLOUDINARY_CLOUD_NAME,
-// CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET (free at cloudinary.com) to
-// enable this. Without them, uploads fall back to local disk under DATA_DIR,
-// which only survives restarts if DATA_DIR itself is on a persistent disk -
-// see the PHYNEX_DATA_DIR warning above.
-const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
-const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY;
-const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET;
-const CLOUDINARY_ENABLED = !!(CLOUDINARY_CLOUD_NAME && CLOUDINARY_API_KEY && CLOUDINARY_API_SECRET);
-
-const uploadsDir = path.join(DATA_DIR, "uploads");
+const uploadsDir = path.join(__dirname, "uploads");
 
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
@@ -1235,79 +1126,16 @@ if (!fs.existsSync(uploadsDir)) {
 
 app.use("/uploads", express.static(uploadsDir));
 
-if (!CLOUDINARY_ENABLED) {
-    console.warn(
-        "\n*** PHYNEX WARNING ***\n" +
-        "CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET are not\n" +
-        "set, so uploaded product images/videos are being saved to local disk\n" +
-        "(" + uploadsDir + ") instead of Cloudinary. Unless DATA_DIR is on a\n" +
-        "persistent disk, this folder is wiped on every restart/redeploy and\n" +
-        "uploaded images will disappear again. Sign up free at cloudinary.com and\n" +
-        "set those three environment variables to fix this permanently.\n" +
-        "***********************\n"
-    );
-}
-
-// Signs and uploads one file's buffer to Cloudinary, returns its permanent
-// secure URL. Uses Cloudinary's plain HTTP upload API via fetch, so no
-// extra npm dependency is needed.
-async function uploadBufferToCloudinary(buffer, originalName, resourceType) {
-    const timestamp = Math.floor(Date.now() / 1000);
-    const folder = "phynex";
-    const paramsToSign = "folder=" + folder + "&timestamp=" + timestamp;
-    const signature = crypto
-        .createHash("sha1")
-        .update(paramsToSign + CLOUDINARY_API_SECRET)
-        .digest("hex");
-
-    const form = new FormData();
-    form.append("file", new Blob([buffer]), originalName || "upload");
-    form.append("api_key", CLOUDINARY_API_KEY);
-    form.append("timestamp", String(timestamp));
-    form.append("signature", signature);
-    form.append("folder", folder);
-
-    const uploadUrl =
-        "https://api.cloudinary.com/v1_1/" + CLOUDINARY_CLOUD_NAME + "/" +
-        (resourceType === "video" ? "video" : "image") + "/upload";
-
-    const uploadResponse = await fetch(uploadUrl, { method: "POST", body: form });
-    const data = await uploadResponse.json();
-
-    if (!uploadResponse.ok) {
-        throw new Error((data && data.error && data.error.message) || "Cloudinary upload failed.");
+const mediaStorage = multer.diskStorage({
+    destination: function (request, file, callback) {
+        callback(null, uploadsDir);
+    },
+    filename: function (request, file, callback) {
+        const ext = path.extname(file.originalname || "");
+        const unique = Date.now() + "-" + crypto.randomBytes(6).toString("hex");
+        callback(null, unique + ext);
     }
-
-    return data.secure_url;
-}
-
-// Stores a list of multer files (Cloudinary if configured, else local disk
-// as a fallback) and returns [{ url, type }] in the same order given.
-async function storeMediaFiles(files) {
-    const results = [];
-
-    for (const file of files) {
-        const type = file.mimetype.indexOf("video/") === 0 ? "video" : "image";
-
-        if (CLOUDINARY_ENABLED) {
-            const url = await uploadBufferToCloudinary(file.buffer, file.originalname, type);
-            results.push({ url: url, type: type });
-        } else {
-            const ext = path.extname(file.originalname || "");
-            const unique = Date.now() + "-" + crypto.randomBytes(6).toString("hex");
-            const filename = unique + ext;
-            fs.writeFileSync(path.join(uploadsDir, filename), file.buffer);
-            results.push({ url: "/uploads/" + filename, type: type });
-        }
-    }
-
-    return results;
-}
-
-// Files are held in memory just long enough to upload to Cloudinary (or
-// write to local disk as a fallback) - never written to disk by multer
-// itself, so no temp files are left behind.
-const mediaStorage = multer.memoryStorage();
+});
 
 const mediaFileFilter = function (request, file, callback) {
     if (/^image\/|^video\//.test(file.mimetype)) {
@@ -1364,7 +1192,7 @@ app.post("/api/products", requireSeller, function (request, response, next) {
         next();
     });
 
-}, async function (request, response) {
+}, function (request, response) {
 
     const body = request.body || {};
 
@@ -1373,33 +1201,21 @@ app.post("/api/products", requireSeller, function (request, response, next) {
     const specifications = String(body.specifications || "").trim();
     const price = Math.round(Number(body.price));
     const oldPrice = body.oldPrice ? Math.round(Number(body.oldPrice)) : null;
+    const category = String(body.category || "").trim();
     const stock = body.stock != null && body.stock !== "" ? Math.max(0, Math.round(Number(body.stock))) : 0;
 
     if (!name || !Number.isFinite(price) || price < 1) {
         return response.status(400).json({ message: "Product name and a valid price are required." });
     }
 
-    const autoCategory = applyAutoCategory({
-        name: name,
-        description: description,
-        specifications: specifications,
-        category: body.category,
-        subcategory: body.subcategory
-    });
-
-    const category = autoCategory.category;
-    const warranty = String(body.warranty || "").trim();
-    const dispatchLocation = String(body.dispatchLocation || "").trim();
-    const returnPolicy = String(body.returnPolicy || "").trim();
-
     const files = request.files || [];
 
-    let media;
-    try {
-        media = await storeMediaFiles(files);
-    } catch (error) {
-        return response.status(502).json({ message: error.message || "Could not upload images." });
-    }
+    const media = files.map(function (file) {
+        return {
+            url: "/uploads/" + file.filename,
+            type: file.mimetype.indexOf("video/") === 0 ? "video" : "image"
+        };
+    });
 
     const mediaJson = JSON.stringify(media);
     const firstImage = (media.find(function (m) { return m.type === "image"; }) || media[0] || {}).url || "";
@@ -1408,13 +1224,12 @@ app.post("/api/products", requireSeller, function (request, response, next) {
     const result = db
         .prepare(
             `INSERT INTO products
-                (seller_id, name, description, specifications, price, old_price, category, subcategory, image, media, status, sponsored, tracking_code, stock, warranty, dispatch_location, return_policy, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, ?, ?, ?, ?, ?, ?)`
+                (seller_id, name, description, specifications, price, old_price, category, image, media, status, sponsored, tracking_code, stock, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, ?, ?, ?)`
         )
         .run(
             request.seller.id, name, description, specifications, price,
-            oldPrice, category, autoCategory.subcategory || "", firstImage, mediaJson, trackingCode, stock,
-            warranty, dispatchLocation, returnPolicy, Date.now()
+            oldPrice, category, firstImage, mediaJson, trackingCode, stock, Date.now()
         );
 
     const product = db.prepare("SELECT * FROM products WHERE id = ?").get(result.lastInsertRowid);
@@ -1446,6 +1261,34 @@ app.delete("/api/seller/products/:id", requireSeller, function (request, respons
     db.prepare("DELETE FROM products WHERE id = ?").run(product.id);
 
     response.json({ ok: true });
+});
+
+/* =========================
+   PUBLIC — CATEGORIES
+   Lets the storefront (homepage tiles, category browsing, the seller's
+   "add product" category list) always match whatever the admin has
+   configured, instead of a hardcoded list baked into each page.
+========================= */
+
+app.get("/api/categories", function (request, response) {
+
+    const rows = db.prepare("SELECT * FROM categories ORDER BY name ASC").all();
+
+    const countStmt = db.prepare(
+        "SELECT COUNT(*) AS c FROM products WHERE category = ? AND status = 'approved'"
+    );
+
+    response.json({
+        categories: rows.map(function (category) {
+            return {
+                id: category.id,
+                name: category.name,
+                slug: category.slug,
+                description: category.description,
+                productCount: countStmt.get(category.name).c
+            };
+        })
+    });
 });
 
 /* =========================
@@ -1497,6 +1340,105 @@ app.get("/api/products/:id", function (request, response) {
 });
 
 /* =========================
+   PUBLIC — PRODUCT REVIEWS
+   Anyone can read approved reviews. Only a logged-in customer who
+   actually paid for that product can submit one — this is what makes
+   the ratings real instead of the old hardcoded "★★★★★ (24)" text.
+========================= */
+
+app.get("/api/products/:id/reviews", function (request, response) {
+
+    const productId = Number(request.params.id);
+
+    if (!Number.isFinite(productId)) {
+        return response.status(400).json({ message: "Invalid product id." });
+    }
+
+    const reviews = db
+        .prepare(
+            "SELECT id, customer_name, rating, comment, created_at FROM reviews WHERE product_id = ? AND status = 'approved' ORDER BY created_at DESC"
+        )
+        .all(productId);
+
+    const summary = getRatingSummary(productId);
+
+    response.json({
+        rating: summary.average,
+        reviewCount: summary.count,
+        reviews: reviews.map(function (review) {
+            return {
+                id: review.id,
+                customerName: review.customer_name,
+                rating: review.rating,
+                comment: review.comment,
+                createdAt: review.created_at
+            };
+        })
+    });
+});
+
+app.post("/api/products/:id/reviews", requireCustomer, function (request, response) {
+
+    const productId = Number(request.params.id);
+
+    if (!Number.isFinite(productId)) {
+        return response.status(400).json({ message: "Invalid product id." });
+    }
+
+    const product = db.prepare("SELECT id FROM products WHERE id = ? AND status = 'approved'").get(productId);
+
+    if (!product) {
+        return response.status(404).json({ message: "Product not found." });
+    }
+
+    const body = request.body || {};
+    const rating = Math.round(Number(body.rating));
+    const comment = String(body.comment || "").trim();
+
+    if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+        return response.status(400).json({ message: "Please choose a rating from 1 to 5 stars." });
+    }
+
+    // Verified-purchase check: the customer must have a paid order that
+    // actually contains this product.
+    const purchased = db
+        .prepare(
+            `SELECT 1 FROM order_items
+             JOIN orders ON orders.id = order_items.order_id
+             WHERE order_items.product_id = ? AND orders.customer_id = ? AND orders.payment_status = 'paid'
+             LIMIT 1`
+        )
+        .get(productId, request.customer.id);
+
+    if (!purchased) {
+        return response.status(403).json({
+            message: "You can only review products you've actually bought and paid for."
+        });
+    }
+
+    const existing = db
+        .prepare("SELECT id FROM reviews WHERE product_id = ? AND customer_id = ?")
+        .get(productId, request.customer.id);
+
+    if (existing) {
+        db.prepare(
+            "UPDATE reviews SET rating = ?, comment = ?, status = 'pending', created_at = ? WHERE id = ?"
+        ).run(rating, comment, Date.now(), existing.id);
+    } else {
+        db.prepare(
+            `INSERT INTO reviews (product_id, product_name, customer_id, customer_name, rating, comment, status, created_at)
+             VALUES (?, (SELECT name FROM products WHERE id = ?), ?, ?, ?, ?, 'pending', ?)`
+        ).run(productId, productId, request.customer.id, request.customer.name, rating, comment, Date.now());
+    }
+
+    logActivity("review_submitted", request.customer.name + " reviewed a product (awaiting approval).");
+
+    response.json({
+        message: "Thanks! Your review has been submitted and will appear once approved."
+    });
+});
+
+/* =========================
    PUBLIC — TRACK MY PRODUCT
 ========================= */
 
@@ -1521,106 +1463,6 @@ app.get("/api/track/:code", function (request, response) {
     }
 
     response.json({ product: publicProduct(product) });
-});
-
-/* =========================
-   PUBLIC — PRODUCT REVIEWS
-   Returns the approved reviews for one product, plus a rounded
-   average rating, so the product popup's Reviews tab can show real
-   customer feedback instead of a permanently-empty placeholder.
-========================= */
-
-app.get("/api/products/:id/reviews", function (request, response) {
-
-    const rows = db
-        .prepare(
-            "SELECT customer_name, rating, comment, created_at FROM reviews WHERE product_id = ? AND status = 'approved' ORDER BY created_at DESC"
-        )
-        .all(request.params.id);
-
-    const count = rows.length;
-    const average = count
-        ? Math.round((rows.reduce(function (sum, row) { return sum + Number(row.rating || 0); }, 0) / count) * 10) / 10
-        : 0;
-
-    response.json({
-        reviews: rows.map(function (row) {
-            return {
-                customerName: row.customer_name || "Anonymous",
-                rating: Number(row.rating || 0),
-                comment: row.comment || "",
-                createdAt: row.created_at
-            };
-        }),
-        averageRating: average,
-        count: count
-    });
-});
-
-/* =========================
-   CUSTOMER — SUBMIT A PRODUCT REVIEW
-   Only allowed if this customer has a PAID order that contains this
-   product ("verified purchase"). Goes in as 'pending' so it shows up
-   in the existing admin review-approval queue, same as before.
-========================= */
-
-app.post("/api/products/:id/reviews", requireCustomer, function (request, response) {
-
-    const productId = request.params.id;
-    const body = request.body || {};
-    const rating = Math.round(Number(body.rating));
-    const comment = String(body.comment || "").trim().slice(0, 1000);
-
-    if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
-        return response.status(400).json({ message: "Please choose a rating from 1 to 5 stars." });
-    }
-
-    const product = db.prepare("SELECT id, name FROM products WHERE id = ?").get(productId);
-
-    if (!product) {
-        return response.status(404).json({ message: "Product not found." });
-    }
-
-    // Verified-purchase check: this customer must have a paid order that
-    // included this exact product.
-    const purchase = db
-        .prepare(
-            `SELECT orders.id AS order_id FROM orders
-             JOIN order_items ON order_items.order_id = orders.id
-             WHERE orders.customer_id = ? AND order_items.product_id = ? AND orders.payment_status = 'paid'
-             ORDER BY orders.created_at DESC LIMIT 1`
-        )
-        .get(request.customer.id, productId);
-
-    if (!purchase) {
-        return response.status(403).json({ message: "You can review a product after you've bought and paid for it." });
-    }
-
-    const existing = db
-        .prepare("SELECT id FROM reviews WHERE customer_id = ? AND product_id = ?")
-        .get(request.customer.id, productId);
-
-    if (existing) {
-        return response.status(409).json({ message: "You've already reviewed this product." });
-    }
-
-    db.prepare(
-        `INSERT INTO reviews (product_id, product_name, customer_name, customer_id, order_id, rating, comment, status, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)`
-    ).run(
-        productId,
-        product.name,
-        request.customer.name || "Customer",
-        request.customer.id,
-        purchase.order_id,
-        rating,
-        comment,
-        Date.now()
-    );
-
-    logActivity("review_submitted", request.customer.name + " reviewed \"" + product.name + "\" (pending approval).");
-
-    response.json({ message: "Thanks! Your review has been submitted and will appear once approved." });
 });
 
 /* =========================
@@ -1774,7 +1616,7 @@ app.delete("/api/admin/products/:id", requireAdmin, function (request, response)
 
 // Admin creating a product directly (not via a seller submission).
 // Goes straight to "approved" since an admin is creating it themselves.
-app.post("/api/admin/products", requireAdmin, handleAdminUpload, async function (request, response) {
+app.post("/api/admin/products", requireAdmin, handleAdminUpload, function (request, response) {
 
     const body = request.body || {};
     const files = request.files || {};
@@ -1791,36 +1633,30 @@ app.post("/api/admin/products", requireAdmin, handleAdminUpload, async function 
     const mainImageFile = (files.image && files.image[0]) || null;
     const galleryFiles = files.gallery || [];
 
-    const filesToUpload = mainImageFile ? [mainImageFile].concat(galleryFiles) : galleryFiles;
+    const media = [];
 
-    let media;
-    try {
-        media = await storeMediaFiles(filesToUpload);
-    } catch (error) {
-        return response.status(502).json({ message: error.message || "Could not upload images." });
+    if (mainImageFile) {
+        media.push({ url: "/uploads/" + mainImageFile.filename, type: "image" });
     }
+
+    galleryFiles.forEach(function (file) {
+        media.push({
+            url: "/uploads/" + file.filename,
+            type: file.mimetype.indexOf("video/") === 0 ? "video" : "image"
+        });
+    });
 
     const mediaJson = JSON.stringify(media);
     const firstImage = (media[0] && media[0].url) || "";
     const trackingCode = generateTrackingCode();
-
-    const autoCategory = applyAutoCategory({
-        name: name,
-        description: String(body.description || "").trim(),
-        specifications: String(body.specifications || "").trim(),
-        brand: String(body.brand || "").trim(),
-        tags: String(body.tags || "").trim(),
-        category: body.category,
-        subcategory: body.subcategory
-    });
 
     const result = db
         .prepare(
             `INSERT INTO products
                 (seller_id, name, description, specifications, price, old_price, category, image, media,
                  status, sponsored, tracking_code, stock, low_stock_threshold, sku, brand, subcategory,
-                 condition_label, warranty, dispatch_location, return_policy, tags, featured, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                 condition_label, warranty, tags, featured, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
         .run(
             systemSeller.id,
@@ -1829,7 +1665,7 @@ app.post("/api/admin/products", requireAdmin, handleAdminUpload, async function 
             String(body.specifications || "").trim(),
             price,
             body.oldPrice ? Math.round(Number(body.oldPrice)) : null,
-            autoCategory.category,
+            String(body.category || "").trim(),
             firstImage,
             mediaJson,
             trackingCode,
@@ -1837,11 +1673,9 @@ app.post("/api/admin/products", requireAdmin, handleAdminUpload, async function 
             5,
             String(body.sku || "").trim(),
             String(body.brand || "").trim(),
-            autoCategory.subcategory,
+            String(body.subcategory || "").trim(),
             String(body.condition || "").trim(),
             String(body.warranty || "").trim(),
-            String(body.dispatchLocation || "").trim(),
-            String(body.returnPolicy || "").trim(),
             String(body.tags || "").trim(),
             body.featured === "true" ? 1 : 0,
             Date.now()
@@ -1854,7 +1688,7 @@ app.post("/api/admin/products", requireAdmin, handleAdminUpload, async function 
     response.json({ message: "Product created.", product: publicProduct(product) });
 });
 
-app.put("/api/admin/products/:id", requireAdmin, handleAdminUpload, async function (request, response) {
+app.put("/api/admin/products/:id", requireAdmin, handleAdminUpload, function (request, response) {
 
     const existing = db.prepare("SELECT * FROM products WHERE id = ?").get(request.params.id);
 
@@ -1878,64 +1712,47 @@ app.put("/api/admin/products/:id", requireAdmin, handleAdminUpload, async functi
     const mainImageFile = (files.image && files.image[0]) || null;
     const galleryFiles = files.gallery || [];
 
-    try {
-        if (mainImageFile) {
-            const uploadedMain = (await storeMediaFiles([mainImageFile]))[0];
-            const rest = media.filter(function (m, index) { return index !== 0; });
-            media = [uploadedMain].concat(rest);
-        }
+    if (mainImageFile) {
+        const rest = media.filter(function (m, index) { return index !== 0; });
+        media = [{ url: "/uploads/" + mainImageFile.filename, type: "image" }].concat(rest);
+    }
 
-        if (galleryFiles.length) {
-            const mainOnly = media.length ? [media[0]] : [];
-            const newGallery = await storeMediaFiles(galleryFiles);
-            media = mainOnly.concat(newGallery);
-        }
-    } catch (error) {
-        return response.status(502).json({ message: error.message || "Could not upload images." });
+    if (galleryFiles.length) {
+        const mainOnly = media.length ? [media[0]] : [];
+        const newGallery = galleryFiles.map(function (file) {
+            return {
+                url: "/uploads/" + file.filename,
+                type: file.mimetype.indexOf("video/") === 0 ? "video" : "image"
+            };
+        });
+        media = mainOnly.concat(newGallery);
     }
 
     const mediaJson = JSON.stringify(media);
     const firstImage = (media[0] && media[0].url) || existing.image || "";
 
-    const finalDescription = body.description != null ? String(body.description).trim() : existing.description;
-    const finalSpecifications = body.specifications != null ? String(body.specifications).trim() : existing.specifications;
-    const finalBrand = body.brand != null ? String(body.brand).trim() : existing.brand;
-    const finalTags = body.tags != null ? String(body.tags).trim() : existing.tags;
-
-    const autoCategory = applyAutoCategory({
-        name: name,
-        description: finalDescription,
-        specifications: finalSpecifications,
-        brand: finalBrand,
-        tags: finalTags,
-        category: body.category != null ? String(body.category).trim() : existing.category,
-        subcategory: body.subcategory != null ? String(body.subcategory).trim() : existing.subcategory
-    });
-
     db.prepare(
         `UPDATE products SET
             name = ?, description = ?, specifications = ?, price = ?, old_price = ?, category = ?,
             image = ?, media = ?, stock = ?, sku = ?, brand = ?, subcategory = ?, condition_label = ?,
-            warranty = ?, dispatch_location = ?, return_policy = ?, tags = ?, featured = ?
+            warranty = ?, tags = ?, featured = ?
          WHERE id = ?`
     ).run(
         name,
-        finalDescription,
-        finalSpecifications,
+        body.description != null ? String(body.description).trim() : existing.description,
+        body.specifications != null ? String(body.specifications).trim() : existing.specifications,
         price,
         body.oldPrice ? Math.round(Number(body.oldPrice)) : existing.old_price,
-        autoCategory.category,
+        body.category != null ? String(body.category).trim() : existing.category,
         firstImage,
         mediaJson,
         body.stock != null && body.stock !== "" ? Math.max(0, Math.round(Number(body.stock))) : existing.stock,
         body.sku != null ? String(body.sku).trim() : existing.sku,
-        finalBrand,
-        autoCategory.subcategory,
+        body.brand != null ? String(body.brand).trim() : existing.brand,
+        body.subcategory != null ? String(body.subcategory).trim() : existing.subcategory,
         body.condition != null ? String(body.condition).trim() : existing.condition_label,
         body.warranty != null ? String(body.warranty).trim() : existing.warranty,
-        body.dispatchLocation != null ? String(body.dispatchLocation).trim() : existing.dispatch_location,
-        body.returnPolicy != null ? String(body.returnPolicy).trim() : existing.return_policy,
-        finalTags,
+        body.tags != null ? String(body.tags).trim() : existing.tags,
         body.featured != null ? (body.featured === "true" ? 1 : 0) : existing.featured,
         request.params.id
     );
@@ -2027,7 +1844,6 @@ app.post("/api/admin/orders/:id/status", requireAdmin, function (request, respon
 
     const order = db.prepare("SELECT * FROM orders WHERE id = ?").get(request.params.id);
     logActivity("order_status_updated", "Order " + order.order_number + " marked as " + status + ".");
-    sendOrderStatusEmail(order, status);
 
     response.json({ ok: true });
 });
@@ -2115,22 +1931,6 @@ app.get("/api/admin/customers", requireAdmin, function (request, response) {
 /* =========================
    ADMIN — CATEGORIES
 ========================= */
-
-app.get("/api/categories", function (request, response) {
-    const rows = db.prepare("SELECT id, name, slug, description FROM categories ORDER BY name ASC").all();
-    const countStmt = db.prepare("SELECT COUNT(*) AS c FROM products WHERE category = ? AND status = 'approved'");
-    response.json({
-        categories: rows.map(function (category) {
-            return {
-                id: category.id,
-                name: category.name,
-                slug: category.slug,
-                description: category.description || "",
-                productCount: countStmt.get(category.name).c
-            };
-        })
-    });
-});
 
 app.get("/api/admin/categories", requireAdmin, function (request, response) {
 
@@ -2362,7 +2162,7 @@ app.get("/api/admin/online-users", requireAdmin, function (request, response) {
    M-PESA CONFIGURATION
 ========================= */
 
-const DELIVERY_FEE = 0; // must match DELIVERY_FEE in script.js — customer is charged the exact item total, no flat add-on
+const DELIVERY_FEE = 300; // must match DELIVERY_FEE in script.js
 
 function mpesaConfigured() {
     return Boolean(
@@ -2429,140 +2229,50 @@ async function getAccessToken() {
    "order_items" row per cart line, then attempts payment.
 ========================= */
 
-function releaseExpiredReservations() {
-    const now = Date.now();
-    const expired = db.prepare(
-        "SELECT id FROM orders WHERE payment_status = 'pending' AND status = 'pending' AND reservation_expires IS NOT NULL AND reservation_expires < ?"
-    ).all(now);
-    if (!expired.length) return;
-
-    const release = db.prepare(
-        "UPDATE products SET reserved_stock = MAX(0, reserved_stock - ?) WHERE id = ?"
-    );
-    const items = db.prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?").all;
-    const tx = db.transaction(function () {
-        for (const order of expired) {
-            const rows = items(order.id);
-            for (const item of rows) {
-                if (item.product_id) release.run(item.quantity, item.product_id);
-            }
-            db.prepare("UPDATE orders SET payment_status = 'expired', status = 'cancelled', reservation_expires = NULL, updated_at = ? WHERE id = ?")
-                .run(now, order.id);
-        }
-    });
-    tx();
-}
-
 app.post("/api/mpesa/stkpush", async function (request, response) {
 
     if (!mpesaConfigured()) {
-        return response.status(503).json({ message: "M-PESA is not configured yet. Add your Daraja credentials to .env." });
+        return response.status(503).json({
+            message: "M-PESA is not configured yet. Add your Daraja credentials to .env."
+        });
     }
 
-    releaseExpiredReservations();
-
     const payload = request.body || {};
-    const customer = optionalCustomer(request);
-    const customerInfo = payload.customer || {};
-    const delivery = payload.delivery || {};
-    const requestedItems = Array.isArray(payload.items) ? payload.items : [];
 
-    if (!requestedItems.length) {
+    const phone = normalizePhone(payload.mpesaPhone);
+    const amount = Math.round(Number(payload.total));
+
+    const calculatedAmount = Array.isArray(payload.items)
+        ? payload.items.reduce(function (sum, item) {
+            return sum + Number(item.price) * Number(item.quantity);
+        }, 0)
+        : 0;
+
+    if (!phone) {
+        return response.status(400).json({ message: "Enter a valid Kenyan M-PESA number." });
+    }
+
+    if (!Number.isFinite(amount) || amount < 1) {
+        return response.status(400).json({ message: "The order total must be at least KSh 1." });
+    }
+
+    if (!Array.isArray(payload.items) || payload.items.length === 0) {
         return response.status(400).json({ message: "Your cart is empty." });
     }
 
-    const phone = normalizePhone(payload.mpesaPhone);
-    if (!phone) return response.status(400).json({ message: "Enter a valid Kenyan M-PESA number." });
-
-    const productIds = requestedItems.map(item => Number(item.id)).filter(Number.isInteger);
-    if (productIds.length !== requestedItems.length) {
-        return response.status(400).json({ message: "Your cart contains an invalid product." });
+    if (amount !== Math.round(calculatedAmount) + DELIVERY_FEE) {
+        return response.status(400).json({ message: "The order total could not be verified." });
     }
 
-    const placeholders = productIds.map(() => "?").join(",");
-    const rows = db.prepare(
-        `SELECT products.*, sellers.business_name, sellers.phone AS seller_phone, sellers.whatsapp AS seller_whatsapp
-         FROM products JOIN sellers ON sellers.id = products.seller_id
-         WHERE products.id IN (${placeholders}) AND products.status = 'approved'`
-    ).all(...productIds);
-
-    const byId = new Map(rows.map(row => [row.id, row]));
-    const authoritativeItems = [];
-    let subtotal = 0;
-
-    for (const item of requestedItems) {
-        const id = Number(item.id);
-        const product = byId.get(id);
-        const quantity = Math.max(1, Math.round(Number(item.quantity) || 1));
-
-        if (!product) {
-            return response.status(400).json({ message: "One of the products is no longer available." });
-        }
-
-        const available = Math.max(0, Number(product.stock || 0) - Number(product.reserved_stock || 0));
-        if (available < quantity) {
-            return response.status(409).json({ message: product.name + " has only " + available + " available." });
-        }
-
-        subtotal += Number(product.price) * quantity;
-        authoritativeItems.push({
-            product,
-            quantity
-        });
-    }
-
-    const total = Math.round(subtotal + DELIVERY_FEE);
-    const orderNumber = generateOrderNumber();
-    const reservationExpires = Date.now() + 30 * 60 * 1000;
-
-    let orderId;
+    const customer = optionalCustomer(request);
+    const customerInfo = payload.customer || {};
+    const delivery = payload.delivery || {};
 
     try {
-        const createOrder = db.transaction(function () {
-            const result = db.prepare(
-                `INSERT INTO orders
-                    (order_number, customer_id, customer_name, customer_email, customer_phone,
-                     county, location, address, instructions, subtotal, delivery_fee, total,
-                     payment_method, payment_status, status, reservation_expires, created_at, updated_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'mpesa', 'pending', 'pending', ?, ?, ?)`
-            ).run(
-                orderNumber,
-                customer ? customer.id : null,
-                String(customerInfo.name || (customer && customer.name) || "").trim(),
-                String(customerInfo.email || (customer && customer.email) || "").trim(),
-                String(customerInfo.phone || payload.mpesaPhone || "").trim(),
-                String(delivery.county || "").trim(),
-                String(delivery.location || "").trim(),
-                String(delivery.address || "").trim(),
-                String(delivery.instructions || "").trim(),
-                subtotal,
-                DELIVERY_FEE,
-                total,
-                reservationExpires,
-                Date.now(),
-                Date.now()
-            );
-
-            const id = result.lastInsertRowid;
-            const insertItem = db.prepare(
-                "INSERT INTO order_items (order_id, product_id, seller_id, name, image, price, quantity) VALUES (?, ?, ?, ?, ?, ?, ?)"
-            );
-            const reserve = db.prepare(
-                "UPDATE products SET reserved_stock = COALESCE(reserved_stock, 0) + ? WHERE id = ? AND (stock - COALESCE(reserved_stock, 0)) >= ?"
-            );
-
-            for (const item of authoritativeItems) {
-                const changed = reserve.run(item.quantity, item.product.id, item.quantity);
-                if (changed.changes !== 1) throw new Error("Stock changed while your order was being prepared. Please try again.");
-                insertItem.run(id, item.product.id, item.product.seller_id, item.product.name, item.product.image || "", item.product.price, item.quantity);
-            }
-            return id;
-        });
-
-        orderId = createOrder();
 
         const accessToken = await getAccessToken();
         const requestTimestamp = timestamp();
+
         const password = Buffer.from(
             process.env.MPESA_SHORTCODE + process.env.MPESA_PASSKEY + requestTimestamp
         ).toString("base64");
@@ -2577,7 +2287,7 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
                     Password: password,
                     Timestamp: requestTimestamp,
                     TransactionType: "CustomerPayBillOnline",
-                    Amount: total,
+                    Amount: amount,
                     PartyA: phone,
                     PartyB: process.env.MPESA_SHORTCODE,
                     PhoneNumber: phone,
@@ -2591,23 +2301,74 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
         const result = await darajaResponse.json();
 
         if (!darajaResponse.ok || !result.CheckoutRequestID) {
-            db.prepare("UPDATE orders SET payment_status = 'failed', status = 'cancelled', reservation_expires = NULL, updated_at = ? WHERE id = ?")
-                .run(Date.now(), orderId);
-            const items = db.prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?").all(orderId);
-            const release = db.prepare("UPDATE products SET reserved_stock = MAX(0, reserved_stock - ?) WHERE id = ?");
-            items.forEach(item => { if (item.product_id) release.run(item.quantity, item.product_id); });
-            return response.status(502).json({ message: result.errorMessage || result.ResponseDescription || "M-PESA rejected the STK Push request." });
+            return response.status(502).json({
+                message: result.errorMessage || result.ResponseDescription || "M-PESA rejected the STK Push request."
+            });
         }
 
-        db.prepare("UPDATE orders SET checkout_request_id = ?, updated_at = ? WHERE id = ?")
-            .run(result.CheckoutRequestID, Date.now(), orderId);
+        const orderNumber = generateOrderNumber();
+        const subtotal = Math.round(calculatedAmount);
+
+        const orderResult = db
+            .prepare(
+                `INSERT INTO orders
+                    (order_number, customer_id, customer_name, customer_email, customer_phone,
+                     county, location, address, instructions, subtotal, delivery_fee, total,
+                     payment_method, payment_status, status, checkout_request_id, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'mpesa', 'pending', 'pending', ?, ?)`
+            )
+            .run(
+                orderNumber,
+                customer ? customer.id : null,
+                String(customerInfo.name || (customer && customer.name) || "").trim(),
+                String(customerInfo.email || (customer && customer.email) || "").trim(),
+                String(customerInfo.phone || payload.mpesaPhone || "").trim(),
+                String(delivery.county || "").trim(),
+                String(delivery.location || "").trim(),
+                String(delivery.address || "").trim(),
+                String(delivery.instructions || "").trim(),
+                subtotal,
+                DELIVERY_FEE,
+                amount,
+                result.CheckoutRequestID,
+                Date.now()
+            );
+
+        const orderId = orderResult.lastInsertRowid;
+
+        const insertItem = db.prepare(
+            "INSERT INTO order_items (order_id, product_id, seller_id, name, image, price, quantity) VALUES (?, ?, ?, ?, ?, ?, ?)"
+        );
+
+        payload.items.forEach(function (item) {
+
+            const numericId = Number(item.id);
+            const productId = Number.isFinite(numericId) ? numericId : null;
+
+            let sellerId = null;
+
+            if (productId) {
+                const productRow = db.prepare("SELECT seller_id FROM products WHERE id = ?").get(productId);
+                if (productRow) sellerId = productRow.seller_id;
+            }
+
+            insertItem.run(
+                orderId,
+                productId,
+                sellerId,
+                String(item.name || "").trim(),
+                String(item.image || "").trim(),
+                Math.round(Number(item.price) || 0),
+                Math.max(1, Math.round(Number(item.quantity) || 1))
+            );
+        });
 
         payments.set(result.CheckoutRequestID, {
             status: "pending",
-            orderNumber,
-            orderId,
-            amount: total,
-            phone,
+            orderNumber: orderNumber,
+            orderId: orderId,
+            amount: amount,
+            phone: phone,
             createdAt: Date.now()
         });
 
@@ -2615,19 +2376,12 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
 
         return response.json({
             checkoutRequestId: result.CheckoutRequestID,
-            orderNumber,
+            orderNumber: orderNumber,
             customerMessage: result.CustomerMessage || "M-PESA payment request sent."
         });
 
     } catch (error) {
-        if (orderId) {
-            const items = db.prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?").all(orderId);
-            const release = db.prepare("UPDATE products SET reserved_stock = MAX(0, reserved_stock - ?) WHERE id = ?");
-            items.forEach(item => { if (item.product_id) release.run(item.quantity, item.product_id); });
-            db.prepare("UPDATE orders SET payment_status = 'failed', status = 'cancelled', reservation_expires = NULL, updated_at = ? WHERE id = ?")
-                .run(Date.now(), orderId);
-        }
-        return response.status(502).json({ message: error.message || "Unable to process your order." });
+        return response.status(502).json({ message: error.message || "Unable to reach M-PESA." });
     }
 });
 
@@ -2650,12 +2404,12 @@ function deductStockForOrder(orderId) {
     const items = db.prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?").all(orderId);
 
     const updateStock = db.prepare(
-        "UPDATE products SET stock = MAX(0, stock - ?), reserved_stock = MAX(0, COALESCE(reserved_stock, 0) - ?) WHERE id = ?"
+        "UPDATE products SET stock = MAX(0, stock - ?) WHERE id = ?"
     );
 
     items.forEach(function (item) {
         if (item.product_id) {
-            updateStock.run(item.quantity, item.quantity, item.product_id);
+            updateStock.run(item.quantity, item.product_id);
         }
     });
 
@@ -2668,15 +2422,10 @@ app.post("/api/mpesa/callback", function (request, response) {
 
     if (callback && callback.CheckoutRequestID) {
 
-        let payment = payments.get(callback.CheckoutRequestID);
-        if (!payment) {
-            const order = db.prepare("SELECT id, order_number AS orderNumber, total AS amount, customer_phone AS phone FROM orders WHERE checkout_request_id = ?").get(callback.CheckoutRequestID);
-            if (order) {
-                payment = Object.assign({}, order, { status: "pending", createdAt: Date.now() });
-            } else {
-                payment = { status: "pending", createdAt: Date.now() };
-            }
-        }
+        const payment = payments.get(callback.CheckoutRequestID) || {
+            status: "pending",
+            createdAt: Date.now()
+        };
 
         const paid = Number(callback.ResultCode) === 0;
 
@@ -2686,29 +2435,12 @@ app.post("/api/mpesa/callback", function (request, response) {
         payments.set(callback.CheckoutRequestID, payment);
 
         if (payment.orderId) {
-            const existingOrder = db.prepare("SELECT payment_status FROM orders WHERE id = ?").get(payment.orderId);
-            const alreadyPaid = existingOrder && existingOrder.payment_status === "paid";
-
             db.prepare(
-                "UPDATE orders SET payment_status = ?, status = ?, reservation_expires = NULL, updated_at = ? WHERE id = ?"
-            ).run(paid ? "paid" : "failed", paid ? "paid" : "cancelled", Date.now(), payment.orderId);
+                "UPDATE orders SET payment_status = ?, status = ? WHERE id = ?"
+            ).run(paid ? "paid" : "failed", paid ? "paid" : "cancelled", payment.orderId);
 
             if (paid) {
                 deductStockForOrder(payment.orderId);
-
-                // Guard against Safaricom retrying the callback and us
-                // emailing the customer twice for the same order.
-                if (!alreadyPaid) {
-                    const paidOrder = db.prepare("SELECT * FROM orders WHERE id = ?").get(payment.orderId);
-                    const paidItems = db.prepare("SELECT * FROM order_items WHERE order_id = ?").all(payment.orderId);
-                    sendOrderConfirmationEmail(paidOrder, paidItems);
-                }
-            } else {
-                const failedItems = db.prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?").all(payment.orderId);
-                const release = db.prepare("UPDATE products SET reserved_stock = MAX(0, COALESCE(reserved_stock, 0) - ?) WHERE id = ?");
-                failedItems.forEach(function (item) {
-                    if (item.product_id) release.run(item.quantity, item.product_id);
-                });
             }
 
             logActivity(
@@ -2734,68 +2466,6 @@ app.get("/api/mpesa/status/:checkoutRequestId", function (request, response) {
     }
 
     return response.json(payment);
-});
-
-/* =========================
-   NEWSLETTER SIGNUP
-========================= */
-
-const newsletterRateLimit = new Map();
-const NEWSLETTER_WINDOW_MS = 10 * 60 * 1000;
-const NEWSLETTER_MAX_PER_WINDOW = 5;
-
-function isNewsletterRateLimited(ip) {
-    const now = Date.now();
-    const entry = newsletterRateLimit.get(ip);
-
-    if (!entry || now - entry.windowStart > NEWSLETTER_WINDOW_MS) {
-        newsletterRateLimit.set(ip, { windowStart: now, count: 1 });
-        return false;
-    }
-
-    entry.count += 1;
-
-    return entry.count > NEWSLETTER_MAX_PER_WINDOW;
-}
-
-app.post("/api/newsletter", function (request, response) {
-
-    if (isNewsletterRateLimited(request.ip)) {
-        return response.status(429).json({ message: "Too many attempts. Please try again later." });
-    }
-
-    const body = request.body || {};
-    const email = String(body.email || "").trim().toLowerCase();
-
-    if (!email) {
-        return response.status(400).json({ message: "Please enter your email address." });
-    }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        return response.status(400).json({ message: "Enter a valid email address." });
-    }
-
-    if (email.length > 200) {
-        return response.status(400).json({ message: "Email is too long." });
-    }
-
-    try {
-
-        const existing = db.prepare("SELECT id FROM newsletter_subscribers WHERE email = ?").get(email);
-
-        if (existing) {
-            return response.json({ ok: true, message: "You're already subscribed. Thanks for sticking around!" });
-        }
-
-        db.prepare("INSERT INTO newsletter_subscribers (email, created_at) VALUES (?, ?)")
-            .run(email, Date.now());
-
-        return response.json({ ok: true, message: "You're subscribed! Watch your inbox for deals." });
-
-    } catch (error) {
-        console.error("Newsletter signup failed:", error.message);
-        return response.status(500).json({ message: "Could not subscribe right now. Please try again later." });
-    }
 });
 
 /* =========================
@@ -2909,31 +2579,6 @@ app.get("/api/config", function (_request, response) {
     response.json({
         googleClientId: googleConfigured() ? process.env.GOOGLE_CLIENT_ID : null
     });
-});
-
-/* =========================
-   404 + ERROR HANDLING
-   Everything below must stay JSON for /api/* routes so the
-   front-end's fetch(...).json() calls never receive an HTML
-   error page (the cause of "Unexpected token '<' ... is not
-   valid JSON" errors in the browser console).
-========================= */
-
-app.use("/api", function (request, response) {
-    response.status(404).json({ message: "This endpoint does not exist." });
-});
-
-// Final safety net: any error thrown or passed to next(error) by a route
-// above (including ones we didn't wrap in try/catch) is answered as JSON
-// instead of Express's default HTML error page.
-app.use(function (error, request, response, next) {
-    console.error("Unhandled server error:", error);
-
-    if (response.headersSent) {
-        return next(error);
-    }
-
-    response.status(500).json({ message: "Something went wrong on our end. Please try again." });
 });
 
 /* =========================

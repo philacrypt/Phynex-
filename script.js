@@ -10,7 +10,7 @@
 
     const CART_KEY = 'phynexCart';
     const CUSTOMER_TOKEN_KEY = 'phynexCustomerToken';
-    const DELIVERY_FEE = 0; // must match DELIVERY_FEE in server.js — customer is charged the exact item total, no flat add-on
+    const DELIVERY_FEE = 300; // must match DELIVERY_FEE in server.js
 
     /* =====================================================
        BASIC HELPERS
@@ -63,10 +63,15 @@
         card.dataset.sellerName = product.sellerName || '';
         card.dataset.sellerPhone = product.sellerPhone || '';
         card.dataset.sellerWhatsapp = product.sellerWhatsapp || '';
-        card.dataset.warranty = product.warranty || '';
-        card.dataset.dispatchLocation = product.dispatchLocation || '';
-        card.dataset.returnPolicy = product.returnPolicy || '';
-        card.dataset.category = (product.category || '') + ' ' + (product.subcategory || '');
+        // Store normalized slugs (e.g. "Phones & Tablets" -> "phones-tablets")
+        // so category-tile filtering works no matter how the category name
+        // is capitalized or punctuated. Space-separated so filterCategory()
+        // can still do a simple "does this list contain that slug" check.
+        card.dataset.category = [
+            slugify(product.category || ''),
+            slugify(product.subcategory || '')
+        ].filter(Boolean).join(' ');
+        card.dataset.categoryLabel = product.category || '';
 
         const priceHtml = money(product.price) +
             (product.oldPrice
@@ -83,136 +88,29 @@
             '</div>' +
             '<div class="product-info">' +
                 '<div class="product-name">' + escapeHtml(product.name) + '</div>' +
-                '<div class="rating">' + (product.sellerName ? 'Sell by ' + escapeHtml(product.sellerName) : '') + '</div>' +
+                '<div class="rating">' +
+                    (product.reviewCount
+                        ? '\u2605\u2605\u2605\u2605\u2605'.slice(0, Math.round(product.rating)) +
+                          ' (' + product.reviewCount + ')'
+                        : 'No reviews yet') +
+                '</div>' +
+                (product.sellerName
+                    ? '<div class="sold-by">Sold by ' + escapeHtml(product.sellerName) + '</div>'
+                    : '') +
                 '<div class="price">' + priceHtml + '</div>' +
                 '<div class="stock-status' + (inStock ? '' : ' sold-out') + '">' +
                     (inStock ? 'In stock' : 'Sold out') +
                 '</div>' +
                 '<div class="product-actions">' +
                     (inStock
-                        ? '<button type="button" class="cart-btn">Add to Cart</button>' +
-                          '<button type="button" class="buy-btn">Buy Now</button>'
-                        : '<button type="button" class="cart-btn" disabled>Sold out</button>')
+                        ? '<button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>' +
+                          '<button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>'
+                        : '<button class="cart-btn" disabled>Sold out</button>')
                 +
                 '</div>' +
             '</div>';
 
         return card;
-    }
-
-    /* =====================================================
-       CATEGORY TAP → OPEN CATEGORY PAGE (INSTANT, NO SCROLL)
-       Maps the short slugs used in the markup (data-category="computers")
-       to the real category names stored on products in the database
-       (e.g. "Computers & Laptops"), so tapping a category actually opens
-       a page showing that category's real, approved products - instead
-       of doing nothing, or smooth-scrolling down the homepage.
-       This one delegated listener covers:
-         - the top category bar (.nav-item)
-         - the "Shop by Category" tiles (.category)
-         - the homepage promo banner tiles (.showcase-tile)
-       so every place a category is tappable behaves the same way.
-       ===================================================== */
-
-    const CATEGORY_SLUG_TO_NAME = {
-        'phones': 'Phones & Tablets',
-        'computers': 'Computers & Laptops',
-        'electronics': 'Electronics',
-        'gaming': 'Gaming',
-        'accessories': 'Accessories',
-        'home-office': 'Home & Office',
-        'fashion': 'Clothing & Fashion',
-        'clothing': 'Clothing & Fashion'
-    };
-
-    function goToCategoryBySlug(slug) {
-
-        const normalized = String(slug || '').toLowerCase().trim();
-
-        // "All Categories" → browse every category.
-        if (normalized === 'all') {
-            window.location.href = 'categories.html';
-            return true;
-        }
-
-        const realName = CATEGORY_SLUG_TO_NAME[normalized];
-
-        if (realName) {
-            window.location.href =
-                'category.html?category=' + encodeURIComponent(realName);
-            return true;
-        }
-
-        return false;
-    }
-
-    document.addEventListener('click', function (event) {
-
-        const target = event.target.closest(
-            '.nav-item[data-category], .category[data-category], .showcase-tile[data-category]'
-        );
-
-        if (!target) return;
-
-        const slug = target.dataset.category;
-
-        // "Deals" isn't a real store category - it jumps to the Flash
-        // Deals section on the homepage. If we're already on the
-        // homepage, scroll straight there; otherwise navigate home
-        // first and land on the same section.
-        if (slug === 'deals') {
-            event.preventDefault();
-
-            const dealsSection = document.getElementById('productsSection');
-
-            if (dealsSection) {
-                dealsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            } else {
-                window.location.href = 'index.html#productsSection';
-            }
-
-            return;
-        }
-
-        if (goToCategoryBySlug(slug)) {
-            event.preventDefault();
-        }
-
-    });
-
-    async function loadStoreCategories() {
-        const container = document.querySelector('.categories');
-        if (!container) return;
-
-        try {
-            const response = await fetch('/api/categories', { cache: 'no-store' });
-            if (!response.ok) throw new Error('Could not load categories');
-            const data = await response.json();
-            const categories = Array.isArray(data.categories) ? data.categories : [];
-
-            container.innerHTML = categories.map(function (category) {
-                return '<div class="category" data-category="' + escapeHtml(category.name) + '" role="button" tabindex="0">' +
-                    '<span class="cat-badge"><i class="fa-solid fa-layer-group"></i></span>' +
-                    '<span>' + escapeHtml(category.name) + '</span>' +
-                    '<small>' + Number(category.productCount || 0) + ' products</small>' +
-                '</div>';
-            }).join('');
-
-            container.querySelectorAll('.category').forEach(function (card) {
-                function openCategory() {
-                    window.location.href = 'category.html?category=' + encodeURIComponent(card.dataset.category);
-                }
-                card.addEventListener('click', openCategory);
-                card.addEventListener('keydown', function (event) {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        openCategory();
-                    }
-                });
-            });
-        } catch (error) {
-            console.error('PHYNEX: Could not load categories.', error);
-        }
     }
 
     async function loadMarketplaceProducts() {
@@ -232,14 +130,10 @@
             const products = Array.isArray(data.products) ? data.products : [];
 
             if (newGrid) {
-                if (products.length) {
-                    newGrid.innerHTML = '';
-                    products.forEach(function (product) {
-                        newGrid.appendChild(buildProductCard(product));
-                    });
-                } else {
-                    newGrid.innerHTML = '<p class="products-empty-note">No new arrivals yet — check back soon.</p>';
-                }
+                newGrid.innerHTML = '';
+                products.slice(0, 8).forEach(function (product) {
+                    newGrid.appendChild(buildProductCard(product));
+                });
             }
 
             const sponsored = products.filter(function (product) { return product.sponsored; });
@@ -253,20 +147,45 @@
                 if (sponsoredSection) sponsoredSection.style.display = '';
             }
 
-            // If there are no live, approved products yet, leave the
-            // existing homepage content in the Flash Deals grid alone
-            // instead of clearing it to blank — an empty-looking
-            // storefront is worse than a placeholder while the store
-            // is still getting its first listings approved.
-            if (flashGrid && products.length) {
-                flashGrid.innerHTML = '';
+            if (flashGrid) {
                 products.forEach(function (product) {
                     flashGrid.appendChild(buildProductCard(product));
                 });
             }
 
+            applyUrlProductAndCategoryParams();
+
         } catch (error) {
             console.error('PHYNEX: Could not load live marketplace products.', error);
+        }
+    }
+
+    /* =====================================================
+       DEEP LINKS FROM OTHER PAGES (category.html, categories.html)
+       Supports index.html?category=<slug> to auto-filter to a
+       category, and index.html?product=<id> to open a specific
+       product's details popup, once real listings have loaded.
+       ===================================================== */
+
+    function applyUrlProductAndCategoryParams() {
+
+        const params = new URLSearchParams(location.search);
+        const categoryParam = params.get('category');
+        const productParam = params.get('product');
+
+        if (categoryParam) {
+            filterCategory(categoryParam);
+        }
+
+        if (productParam) {
+
+            const card = document.querySelector(
+                '.product[data-product-id="' + CSS.escape(productParam) + '"]'
+            );
+
+            if (card) {
+                openProductPopup(getProductFromCard(card));
+            }
         }
     }
 
@@ -276,23 +195,7 @@
                 localStorage.getItem(CART_KEY)
             );
 
-            if (!Array.isArray(cart)) return [];
-
-            // Sample/demo cards don't have a real numeric database ID,
-            // so if one was ever added to the cart before purchasing was
-            // disabled on them, it would sit there permanently blocking
-            // checkout with "Your cart contains an invalid product."
-            // Quietly drop anything without a real ID so an old, already
-            // affected cart self-heals instead of staying stuck.
-            const cleaned = cart.filter(function (item) {
-                return item && Number.isInteger(Number(item.id)) && item.id !== '';
-            });
-
-            if (cleaned.length !== cart.length) {
-                localStorage.setItem(CART_KEY, JSON.stringify(cleaned));
-            }
-
-            return cleaned;
+            return Array.isArray(cart) ? cart : [];
         } catch (error) {
             return [];
         }
@@ -638,16 +541,7 @@
                 card.dataset.sellerPhone || '',
 
             sellerWhatsapp:
-                card.dataset.sellerWhatsapp || '',
-
-            warranty:
-                card.dataset.warranty || '',
-
-            dispatchLocation:
-                card.dataset.dispatchLocation || '',
-
-            returnPolicy:
-                card.dataset.returnPolicy || ''
+                card.dataset.sellerWhatsapp || ''
         };
     }
 
@@ -762,36 +656,6 @@
     };
 
     /* =====================================================
-       CARD BUTTONS — EVENT DELEGATION
-       We deliberately do NOT rely on inline onclick="" attributes
-       for Add to Cart / Buy Now. Inline handlers can silently stop
-       working in some browsers/extensions and are easy to break by
-       accident when a card is re-rendered or re-templated. A single
-       delegated listener on document keeps working for:
-         - the 5 static cards in index.html
-         - every card the "New Arrivals" script clones
-         - every card buildProductCard() injects from the live
-           marketplace API (seller-added products)
-       without depending on any specific onclick markup existing.
-       ===================================================== */
-
-    document.addEventListener('click', function (event) {
-
-        const cartButton = event.target.closest('.cart-btn');
-
-        if (cartButton && !cartButton.disabled) {
-            window.addToCart(cartButton);
-            return;
-        }
-
-        const buyButton = event.target.closest('.buy-btn');
-
-        if (buyButton && !buyButton.disabled) {
-            window.buyNowFromCard(buyButton);
-        }
-    });
-
-    /* =====================================================
        CARD — BUY NOW
        ===================================================== */
 
@@ -822,6 +686,137 @@
     };
 
     /* =====================================================
+       PRODUCT POPUP — REAL RATINGS & REVIEWS
+       Replaces the old hardcoded "★★★★★ (24)" text. Reviews come
+       from real, admin-approved customer feedback, and only a
+       customer who actually paid for the product can submit one.
+       ===================================================== */
+
+    function starString(rating) {
+        const rounded = Math.max(0, Math.min(5, Math.round(Number(rating) || 0)));
+        return '★'.repeat(rounded) + '☆'.repeat(5 - rounded);
+    }
+
+    async function loadProductReviews(productId) {
+
+        const summaryBox = document.getElementById('ppReviewSummary');
+        const listBox = document.getElementById('ppReviewList');
+        const formWrap = document.getElementById('ppReviewFormWrap');
+
+        if (!summaryBox || !listBox || !formWrap) return;
+
+        summaryBox.innerHTML = '';
+        listBox.innerHTML = '';
+        formWrap.innerHTML = '';
+
+        const numericId = Number(productId);
+
+        if (!Number.isFinite(numericId)) {
+            listBox.innerHTML = '<p class="pp-reviews-empty">Reviews aren\u2019t available for this item.</p>';
+            return;
+        }
+
+        try {
+
+            const response = await fetch('/api/products/' + numericId + '/reviews');
+            const data = await response.json();
+
+            if (data.reviewCount) {
+                summaryBox.innerHTML =
+                    '<span class="pp-review-stars">' + starString(data.rating) + '</span>' +
+                    '<span>' + data.rating + ' out of 5 &middot; ' + data.reviewCount +
+                    ' review' + (data.reviewCount === 1 ? '' : 's') + '</span>';
+            }
+
+            if (Array.isArray(data.reviews) && data.reviews.length) {
+                listBox.innerHTML = data.reviews.map(function (review) {
+                    return '<div class="pp-review-item">' +
+                        '<div class="pp-review-item-head">' +
+                            '<span>' + escapeHtml(review.customerName || 'Customer') + '</span>' +
+                            '<span class="pp-review-stars">' + starString(review.rating) + '</span>' +
+                        '</div>' +
+                        (review.comment ? '<p>' + escapeHtml(review.comment) + '</p>' : '') +
+                    '</div>';
+                }).join('');
+            } else {
+                listBox.innerHTML = '<p class="pp-reviews-empty">No reviews yet for this product. Be the first to leave one after your order.</p>';
+            }
+
+        } catch (error) {
+            listBox.innerHTML = '<p class="pp-reviews-empty">Could not load reviews right now.</p>';
+        }
+
+        renderReviewForm(numericId, formWrap);
+    }
+
+    function renderReviewForm(productId, formWrap) {
+
+        const token = localStorage.getItem(CUSTOMER_TOKEN_KEY);
+
+        if (!token) {
+            formWrap.innerHTML =
+                '<p class="pp-review-note">' +
+                '<a href="customer-login.html">Log in</a> and buy this product to leave a review.' +
+                '</p>';
+            return;
+        }
+
+        formWrap.innerHTML =
+            '<p class="pp-review-note">Bought this? Rate and review it below — only verified buyers can submit.</p>' +
+            '<form class="pp-review-form" id="ppReviewForm">' +
+                '<label for="ppReviewRating">Your rating</label>' +
+                '<select id="ppReviewRating">' +
+                    '<option value="5">\u2605\u2605\u2605\u2605\u2605 — Excellent</option>' +
+                    '<option value="4">\u2605\u2605\u2605\u2605\u2606 — Good</option>' +
+                    '<option value="3">\u2605\u2605\u2605\u2606\u2606 — Okay</option>' +
+                    '<option value="2">\u2605\u2605\u2606\u2606\u2606 — Poor</option>' +
+                    '<option value="1">\u2605\u2606\u2606\u2606\u2606 — Bad</option>' +
+                '</select>' +
+                '<label for="ppReviewComment">Your review (optional)</label>' +
+                '<textarea id="ppReviewComment" rows="3" placeholder="What did you think of this product?"></textarea>' +
+                '<button type="submit">Submit Review</button>' +
+                '<p class="pp-review-note" id="ppReviewFeedback"></p>' +
+            '</form>';
+
+        const form = document.getElementById('ppReviewForm');
+
+        form.addEventListener('submit', async function (event) {
+
+            event.preventDefault();
+
+            const feedback = document.getElementById('ppReviewFeedback');
+            const rating = Number(document.getElementById('ppReviewRating').value);
+            const comment = document.getElementById('ppReviewComment').value.trim();
+
+            feedback.textContent = 'Submitting...';
+
+            try {
+
+                const response = await fetch('/api/products/' + productId + '/reviews', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ rating: rating, comment: comment })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    feedback.textContent = data.message || 'Could not submit your review.';
+                    return;
+                }
+
+                feedback.textContent = data.message || 'Thanks for your review!';
+
+            } catch (error) {
+                feedback.textContent = 'Network error — please try again.';
+            }
+        });
+    }
+
+    /* =====================================================
        PRODUCT POPUP
        ===================================================== */
 
@@ -831,22 +826,7 @@
 
         currentProduct = product;
 
-        // Sample/demo cards (the homepage placeholders shown when the
-        // store has no real listings yet) don't have a real numeric
-        // product ID from the database, so they can never actually be
-        // checked out - trying to buy one is exactly what was causing
-        // "Your cart contains an invalid product." Disable purchasing
-        // for those here instead of letting the request reach the server.
-        const isRealProduct = Number.isInteger(Number(product && product.id)) && product.id !== '';
-
-        const modalAddToCart = document.getElementById('modalAddToCart');
-        const modalBuyNow = document.getElementById('modalBuyNow');
-
-        [modalAddToCart, modalBuyNow].forEach(function (button) {
-            if (!button) return;
-            button.disabled = !isRealProduct;
-            button.title = isRealProduct ? '' : 'This is a sample listing and is not available for purchase.';
-        });
+        loadProductReviews(product.id);
 
         const image =
             document.getElementById(
@@ -924,7 +904,8 @@
         }
 
         if (rating) {
-            rating.textContent = '';
+            rating.textContent =
+                product.rating || '';
         }
 
         if (description) {
@@ -942,68 +923,6 @@
         if (quantity) {
             quantity.textContent = '1';
         }
-
-        /* ---------------------------------------------
-           LOCAL DISPATCH
-           Shows where THIS product actually ships from,
-           set by the seller, instead of a fixed location
-           shown for every listing regardless of seller.
-           --------------------------------------------- */
-
-        const dispatchNote =
-            document.getElementById('modalDispatchNote');
-
-        if (dispatchNote) {
-            dispatchNote.innerHTML = product.dispatchLocation
-                ? 'Ships from <strong>' + escapeHtml(product.dispatchLocation) + '</strong>. Select a delivery address at checkout to see delivery times for your area.'
-                : 'Ships from <strong>' + escapeHtml(product.sellerName || 'the seller') + '</strong>. Select a delivery address at checkout to see delivery times for your area.';
-        }
-
-        /* ---------------------------------------------
-           WARRANTY / RETURN OPTIONS
-           Built from what this seller actually set for this
-           product (return_policy tags + warranty length),
-           instead of showing the same fixed guarantees on
-           every listing regardless of what the seller offers.
-           The whole section is hidden if the seller set neither.
-           --------------------------------------------- */
-
-        const warrantySection =
-            document.getElementById('modalWarrantySection');
-
-        const warrantyTags =
-            document.getElementById('modalWarrantyTags');
-
-        if (warrantySection && warrantyTags) {
-
-            const tags = String(product.returnPolicy || '')
-                .split(',')
-                .map(function (tag) { return tag.trim(); })
-                .filter(Boolean);
-
-            if (product.warranty) {
-                tags.push(product.warranty + ' Warranty');
-            }
-
-            if (tags.length) {
-                warrantyTags.innerHTML = tags
-                    .map(function (tag) { return '<span>' + escapeHtml(tag) + '</span>'; })
-                    .join('');
-                warrantySection.style.display = '';
-            } else {
-                warrantyTags.innerHTML = '';
-                warrantySection.style.display = 'none';
-            }
-        }
-
-        /* ---------------------------------------------
-           REVIEWS
-           Loads this product's real, approved reviews
-           instead of always showing a static placeholder.
-           --------------------------------------------- */
-
-        loadProductReviews(product.id);
-        renderReviewForm(product.id);
 
         /* ---------------------------------------------
            TRACKING CODE
@@ -1124,174 +1043,6 @@
         currentProduct = null;
     }
 
-    async function loadProductReviews(productId) {
-
-        const summary = document.getElementById('modalReviewsSummary');
-        const list = document.getElementById('modalReviewsList');
-        const empty = document.getElementById('modalReviewsEmpty');
-        const topRating = document.getElementById('modalProductRating');
-
-        if (!summary || !list || !empty) return;
-
-        summary.innerHTML = '';
-        list.innerHTML = '';
-        empty.style.display = 'none';
-
-        if (!productId) {
-            empty.style.display = '';
-            return;
-        }
-
-        try {
-
-            const response = await fetch('/api/products/' + encodeURIComponent(productId) + '/reviews', { cache: 'no-store' });
-            if (!response.ok) throw new Error('Could not load reviews');
-            const data = await response.json();
-            const reviews = Array.isArray(data.reviews) ? data.reviews : [];
-
-            if (!reviews.length) {
-                empty.style.display = '';
-                if (topRating) topRating.textContent = 'No reviews yet';
-                return;
-            }
-
-            if (topRating) {
-                topRating.textContent =
-                    '★'.repeat(Math.round(data.averageRating)) +
-                    '☆'.repeat(5 - Math.round(data.averageRating)) +
-                    ' ' + data.averageRating + ' (' + data.count + (data.count === 1 ? ' review)' : ' reviews)');
-            }
-
-            summary.innerHTML =
-                '<strong>' + data.averageRating + ' / 5</strong> from ' +
-                data.count + (data.count === 1 ? ' review' : ' reviews');
-
-            list.innerHTML = reviews.map(function (review) {
-                return '<div class="pp-review">' +
-                    '<div class="pp-review-head">' +
-                        '<strong>' + escapeHtml(review.customerName) + '</strong>' +
-                        '<span>' + '★'.repeat(Math.round(review.rating)) + '</span>' +
-                    '</div>' +
-                    (review.comment ? '<p>' + escapeHtml(review.comment) + '</p>' : '') +
-                '</div>';
-            }).join('');
-
-        } catch (error) {
-            console.error('PHYNEX: Could not load reviews.', error);
-            empty.style.display = '';
-        }
-    }
-
-    /* ---------------------------------------------
-       LEAVE A REVIEW
-       Renders a rating + comment form inside the Reviews tab.
-       The backend only accepts the submission if this customer
-       has a paid order containing this product, so the form is
-       shown to everyone but the result message reflects whatever
-       the server actually decided.
-       --------------------------------------------- */
-
-    let selectedReviewRating = 0;
-
-    function renderReviewForm(productId) {
-
-        const container = document.getElementById('modalReviewFormWrap');
-        if (!container) return;
-
-        selectedReviewRating = 0;
-
-        const loggedIn = !!localStorage.getItem(CUSTOMER_TOKEN_KEY);
-
-        if (!loggedIn) {
-            container.innerHTML =
-                '<p class="pp-review-login-note">' +
-                '<a href="customer-login.html">Log in</a> to leave a rating and review after your order.' +
-                '</p>';
-            return;
-        }
-
-        container.innerHTML =
-            '<div class="pp-review-form">' +
-                '<span class="pp-review-form-label">Leave a review</span>' +
-                '<div class="pp-star-picker" id="ppStarPicker">' +
-                    [1, 2, 3, 4, 5].map(function (n) {
-                        return '<button type="button" class="pp-star-btn" data-star="' + n + '" aria-label="' + n + ' star">☆</button>';
-                    }).join('') +
-                '</div>' +
-                '<textarea id="ppReviewComment" placeholder="Optional: say what you liked or didn\'t (optional)" maxlength="1000"></textarea>' +
-                '<button type="button" class="pp-review-submit" id="ppReviewSubmit">Submit review</button>' +
-                '<p class="pp-review-message" id="ppReviewMessage"></p>' +
-            '</div>';
-
-        const starButtons = container.querySelectorAll('.pp-star-btn');
-
-        function paintStars(upTo) {
-            starButtons.forEach(function (button) {
-                const value = Number(button.dataset.star);
-                button.textContent = value <= upTo ? '★' : '☆';
-                button.classList.toggle('selected', value <= upTo);
-            });
-        }
-
-        starButtons.forEach(function (button) {
-            button.addEventListener('click', function () {
-                selectedReviewRating = Number(button.dataset.star);
-                paintStars(selectedReviewRating);
-            });
-        });
-
-        const submitButton = document.getElementById('ppReviewSubmit');
-        const messageEl = document.getElementById('ppReviewMessage');
-
-        if (submitButton) {
-            submitButton.addEventListener('click', async function () {
-
-                if (!selectedReviewRating) {
-                    messageEl.textContent = 'Please pick a star rating first.';
-                    return;
-                }
-
-                submitButton.disabled = true;
-                submitButton.textContent = 'Submitting...';
-                messageEl.textContent = '';
-
-                const comment = document.getElementById('ppReviewComment').value.trim();
-                const token = localStorage.getItem(CUSTOMER_TOKEN_KEY);
-
-                try {
-
-                    const response = await fetch('/api/products/' + encodeURIComponent(productId) + '/reviews', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Bearer ' + token
-                        },
-                        body: JSON.stringify({ rating: selectedReviewRating, comment: comment })
-                    });
-
-                    const data = await response.json().catch(function () { return {}; });
-
-                    if (!response.ok) {
-                        messageEl.textContent = data.message || 'Could not submit your review.';
-                        submitButton.disabled = false;
-                        submitButton.textContent = 'Submit review';
-                        return;
-                    }
-
-                    messageEl.textContent = data.message || 'Thanks! Your review has been submitted.';
-                    submitButton.remove();
-                    document.getElementById('ppReviewComment').setAttribute('disabled', 'disabled');
-                    starButtons.forEach(function (button) { button.disabled = true; });
-
-                } catch (error) {
-                    messageEl.textContent = 'Network error — please try again.';
-                    submitButton.disabled = false;
-                    submitButton.textContent = 'Submit review';
-                }
-            });
-        }
-    }
-
     /* =====================================================
        PRODUCT FILTERING
        ===================================================== */
@@ -1340,6 +1091,8 @@
 
         let found = 0;
 
+        const target = slugify(category);
+
         getProducts().forEach(
             function (card) {
 
@@ -1347,12 +1100,17 @@
                     (
                         card.dataset.category ||
                         ''
-                    ).split(' ');
+                    ).split(' ').filter(Boolean);
 
+                // Exact slug match, or either slug containing the other,
+                // so a broad tile key like "phones" still matches a fuller
+                // category slug like "phones-tablets", and vice versa.
                 const match =
-                    categories.includes(
-                        category
-                    );
+                    categories.some(function (slug) {
+                        return slug === target ||
+                            slug.indexOf(target) !== -1 ||
+                            target.indexOf(slug) !== -1;
+                    });
 
                 card.style.display =
                     match ? '' : 'none';
@@ -2054,14 +1812,32 @@
             }
 
             /* ---------------------------------------------
-               CATEGORY TAPS now navigate straight to the real
-               category page (see the delegated click listener
-               near the top of this file, next to
-               goToCategoryBySlug). Tapping a category used to
-               just filter the 5 demo cards on this page and
-               smooth-scroll down to them - it now opens
-               category.html with that category's real, approved
-               products from every seller instead.
+               HERO CATEGORY LINKS
+               --------------------------------------------- */
+
+            document
+                .querySelectorAll(
+                    '.hero-links a[data-category]'
+                )
+                .forEach(
+                    function (link) {
+
+                        link.addEventListener(
+                            'click',
+                            function () {
+
+                                filterCategory(
+                                    link.dataset.category
+                                );
+
+                            }
+                        );
+
+                    }
+                );
+
+            /* ---------------------------------------------
+               CATEGORY TILES
                --------------------------------------------- */
 
             document
@@ -2070,7 +1846,21 @@
                 )
                 .forEach(
                     function (tile) {
-                        tile.style.cursor = 'pointer';
+
+                        tile.style.cursor =
+                            'pointer';
+
+                        tile.addEventListener(
+                            'click',
+                            function () {
+
+                                filterCategory(
+                                    tile.dataset.category
+                                );
+
+                            }
+                        );
+
                     }
                 );
 
@@ -2161,6 +1951,29 @@
                     closeProductPopup
                 );
             }
+
+            /* ---------------------------------------------
+               POPUP TABS (Description / Specifications / Reviews)
+               --------------------------------------------- */
+
+            document.querySelectorAll('.pp-tab').forEach(function (tabButton) {
+
+                tabButton.addEventListener('click', function () {
+
+                    document.querySelectorAll('.pp-tab').forEach(function (btn) {
+                        btn.classList.remove('active');
+                    });
+
+                    document.querySelectorAll('.pp-tab-panel').forEach(function (panel) {
+                        panel.classList.remove('active');
+                    });
+
+                    tabButton.classList.add('active');
+
+                    const target = document.getElementById(tabButton.dataset.tab);
+                    if (target) target.classList.add('active');
+                });
+            });
 
             document.addEventListener(
                 'keydown',
@@ -2261,8 +2074,7 @@
                     function () {
 
                         if (
-                            !currentProduct ||
-                            modalAdd.disabled
+                            !currentProduct
                         ) return;
 
                         const qty =
@@ -2297,8 +2109,7 @@
                     function () {
 
                         if (
-                            !currentProduct ||
-                            modalBuy.disabled
+                            !currentProduct
                         ) return;
 
                         const qty =

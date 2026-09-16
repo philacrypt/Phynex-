@@ -1365,127 +1365,6 @@
             line-height: 1.6;
         }
 
-        .products-empty-note {
-            grid-column: 1 / -1;
-            color: #687083;
-            font-size: 14px;
-            padding: 20px 0;
-            text-align: center;
-        }
-
-        #modalReviewsSummary {
-            font-size: 14px;
-            color: #172033;
-            margin-bottom: 12px;
-        }
-
-        .pp-review {
-            padding: 10px 0;
-            border-top: 1px solid #eef0f4;
-            font-size: 13px;
-            color: #687083;
-        }
-
-        .pp-review:first-child {
-            border-top: none;
-        }
-
-        .pp-review-head {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 4px;
-            color: #172033;
-        }
-
-        .pp-review-head span {
-            color: #ffa41c;
-            font-size: 12px;
-            letter-spacing: 1px;
-        }
-
-        .pp-review p {
-            margin: 0;
-            line-height: 1.5;
-        }
-
-        #modalReviewFormWrap {
-            margin-top: 16px;
-            padding-top: 16px;
-            border-top: 1px solid #eef0f4;
-        }
-
-        .pp-review-login-note {
-            font-size: 13px;
-            color: #687083;
-            margin: 0;
-        }
-
-        .pp-review-login-note a {
-            color: #0b3fae;
-            font-weight: 700;
-        }
-
-        .pp-review-form {
-            display: grid;
-            gap: 10px;
-        }
-
-        .pp-review-form-label {
-            font-size: 13px;
-            font-weight: 700;
-            color: #172033;
-        }
-
-        .pp-star-picker {
-            display: flex;
-            gap: 4px;
-        }
-
-        .pp-star-btn {
-            border: 0;
-            background: transparent;
-            font-size: 24px;
-            line-height: 1;
-            color: #ffa41c;
-            cursor: pointer;
-            padding: 2px;
-        }
-
-        .pp-review-form textarea {
-            width: 100%;
-            min-height: 70px;
-            border: 1.5px solid #e1e4e8;
-            border-radius: 7px;
-            padding: 10px;
-            font: inherit;
-            resize: vertical;
-        }
-
-        .pp-review-submit {
-            justify-self: start;
-            border: 0;
-            border-radius: 7px;
-            padding: 10px 16px;
-            background: #0b3fae;
-            color: #fff;
-            font-weight: 700;
-            cursor: pointer;
-            font: inherit;
-        }
-
-        .pp-review-submit:disabled {
-            opacity: .65;
-            cursor: wait;
-        }
-
-        .pp-review-message {
-            margin: 0;
-            font-size: 13px;
-            color: #157a45;
-            min-height: 16px;
-        }
-
         .pp-section {
             padding: 16px 18px;
             border-top: 8px solid #f7f8fa;
@@ -1795,19 +1674,6 @@
             color: #a9bce0;
         }
 
-        #newsletterMessage.error {
-            color: #ff9b9b;
-        }
-
-        #newsletterMessage.success {
-            color: #8be29b;
-        }
-
-        .newsletter-form button:disabled {
-            opacity: .6;
-            cursor: not-allowed;
-        }
-
         .footer-bottom {
             border-top: 1px solid rgba(255,255,255,.12);
             padding: 18px 5%;
@@ -2009,14 +1875,7 @@
 
     <div class="header-actions">
 
-        <a class="action" href="account.html">
-            <span class="action-icon"><i class="fa-solid fa-user"></i></span>
-            <div class="action-text">
-                Account
-                <small>Login</small>
-            </div>
-        </a>
-
+       
         <a class="action" href="delivery.html#tracking">
             <span class="action-icon"><i class="fa-solid fa-box"></i></span>
             <div class="action-text">
@@ -2267,188 +2126,15 @@
 </div>
 
 
-<div class="products" id="flashDealsGrid">
-
-    <!-- PRODUCT 1 -->
-
-    <div class="product" data-category="computers laptops home-office deals new" data-description="A dependable Dell laptop for work, study and everyday productivity." data-specifications="Intel Core i7 11th Gen | 8GB RAM | 400GB SSD">
-
-        <div class="product-image">
-            <img src="images/13.jpeg" alt="Laptop" loading="lazy">
-        </div>
-
-        <div class="product-info">
-
-            <div class="product-name">
-                Dell Vostro 15 3500 i7 11th Gen 8GB 400GB SSD
-            </div>
-
-            <div class="rating"></div>
-
-            <div class="price">
-                KSh 35,000
-                <span class="old-price">KSh 40,000</span>
-            </div>
-
-            <div class="express">
-                PHYNEX EXPRESS
-            </div>
-
-            <div class="stock-status">Sample listing</div>
-            <div class="product-actions">
-                <button type="button" class="cart-btn" disabled>Not for sale — sample</button>
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- PRODUCT 2 -->
-
-    <div class="product" data-category="computers desktops home-office deals new" data-description="A professionally refurbished HP desktop with responsive performance for office and home use." data-specifications="Intel Core i5 8th Gen | 8GB RAM | 256GB SSD">
-
-        <div class="product-image">
-            <img src="images/18.jpeg" alt="Laptop" loading="lazy">
-        </div>
-
-        <div class="product-info">
-
-            <div class="product-name">
-                HP EliteDesk 830 G5 i5 8th Gen 8GB 256GB SSD
-            </div>
-
-            <div class="rating"></div>
-
-            <div class="price">
-                KSh 32,500
-                <span class="old-price">KSh 36,000</span>
-            </div>
-
-            <div class="express">
-                PHYNEX EXPRESS
-            </div>
-
-            <div class="stock-status">Sample listing</div>
-            <div class="product-actions">
-                <button type="button" class="cart-btn" disabled>Not for sale — sample</button>
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- PRODUCT 3 -->
-
-    <div class="product" data-category="electronics audio accessories deals new" data-description="A portable Bluetooth speaker with clear sound for music, calls and everyday entertainment." data-specifications="Bluetooth wireless audio | Portable design | Rechargeable battery">
-
-        <div class="product-image">
-            <img src="images/19.jpeg" alt="BT speaker" loading="lazy">
-        </div>
-
-        <div class="product-info">
-
-            <div class="product-name">
-                BT Speaker HF226
-            </div>
-
-            <div class="rating"></div>
-
-            <div class="price">
-                KSh 2,000
-                <span class="old-price">KSh 2,500</span>
-            </div>
-
-            <div class="express">
-                PHYNEX EXPRESS
-            </div>
-
-            <div class="stock-status">Sample listing</div>
-            <div class="product-actions">
-                <button type="button" class="cart-btn" disabled>Not for sale — sample</button>
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- PRODUCT 4 -->
-
-    <div class="product" data-category="computers laptops deals new" data-description="A compact MacBook with a sharp display and reliable performance for everyday computing." data-specifications="Intel Core i5 | 8GB RAM | 256GB SSD">
-
-        <div class="product-image">
-            <img src="images/17.jpeg" alt="MacBook" loading="lazy">
-        </div>
-
-        <div class="product-info">
-
-            <div class="product-name">
-                MacBook Air i5 2017 256GB SSD 8GB RAM
-            </div>
-
-            <div class="rating"></div>
-
-            <div class="price">
-                KSh 20,500
-                <span class="old-price">KSh 35,000</span>
-            </div>
-
-            <div class="express">
-                PHYNEX EXPRESS
-            </div>
-
-            <div class="stock-status">Sample listing</div>
-            <div class="product-actions">
-                <button type="button" class="cart-btn" disabled>Not for sale — sample</button>
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- PRODUCT 5 -->
-
-    <div class="product" data-category="computers laptops deals new" data-description="A durable Lenovo ThinkPad with a comfortable keyboard and fast SSD storage for work on the go." data-specifications="Intel Core i5 | 8GB RAM | 256GB SSD">
-
-        <div class="product-image">
-            <img src="images/20.jpeg" alt="Laptop" loading="lazy">
-        </div>
-
-        <div class="product-info">
-
-            <div class="product-name">
-             Lenovo Thinkpad T460 256GB SSD 8GB RAM   
-            </div>
-
-            <div class="rating"></div>
-
-            <div class="price">
-                KSh 23,000
-                <span class="old-price">KSh 25,000</span>
-            </div>
-
-            <div class="express">
-                PHYNEX EXPRESS
-            </div>
-
-            <div class="stock-status">Sample listing</div>
-            <div class="product-actions">
-                <button type="button" class="cart-btn" disabled>Not for sale — sample</button>
-            </div>
-
-        </div>
-
-    </div>
-
-
-  
-
-    
-
-</div>
+<!--
+    These 5 products used to be hardcoded, non-purchasable sample
+    markup here. They are now real, approved products in the
+    database (see seedFlashDealProducts() in server.js), so
+    loadMarketplaceProducts() in script.js fills this grid in
+    live from /api/products — real id, real stock, real checkout,
+    real reviews. Nothing to hardcode here anymore.
+-->
+<div class="products" id="flashDealsGrid"></div>
 <p id="searchMessage" hidden style="padding:24px;text-align:center;color:#687083;background:white;border:1px solid #e1e4e8;">No products found.</p>
 
 
@@ -2589,20 +2275,24 @@
         </div>
 
         <div class="pp-tab-panel" id="ppReviews">
-            <div id="modalReviewsSummary"></div>
-            <div id="modalReviewsList"></div>
-            <p class="pp-reviews-empty" id="modalReviewsEmpty">No reviews yet for this product. Be the first to leave one after your order.</p>
-            <div id="modalReviewFormWrap"></div>
+            <div id="ppReviewSummary" class="pp-review-summary"></div>
+            <div id="ppReviewList" class="pp-review-list"></div>
+            <div id="ppReviewFormWrap" class="pp-review-form-wrap"></div>
         </div>
 
-        <div class="pp-section" id="modalDispatchSection">
+        <div class="pp-section">
             <div class="pp-dispatch"><i class="fa-solid fa-location-dot"></i> Local Dispatch</div>
-            <p class="pp-shipping-note" id="modalDispatchNote">Ships from the seller. Select a delivery address at checkout to see delivery times for your area.</p>
+            <p class="pp-shipping-note">Ships from <strong>PHYNEX Nairobi</strong>. Select a delivery address at checkout to see delivery times for your area.</p>
         </div>
 
-        <div class="pp-section" id="modalWarrantySection" style="display:none;">
+        <div class="pp-section">
             <div class="pp-section-title"><i class="fa-solid fa-shield-halved"></i> Warranty Options</div>
-            <div class="pp-tags" id="modalWarrantyTags"></div>
+            <div class="pp-tags">
+                <span>7-Day No-Reason Return</span>
+                <span>7-Day Return</span>
+                <span>7-Day Exchange</span>
+                <span>120-Day Support</span>
+            </div>
             <p class="pp-shipping-note">All details at <a href="waranty.html" style="color:#0875e1;font-weight:bold;">Warranty Policy</a></p>
         </div>
 
@@ -2697,7 +2387,8 @@
             <div class="social-links">
                 <a href="https://www.facebook.com/" target="_blank" rel="noopener">Facebook</a>
                 <a href="https://www.instagram.com/" target="_blank" rel="noopener">Instagram</a>
-                <a href="https://wa.me/254793977389" target="_blank" rel="noopener">WhatsApp</a>
+                <a href="https://wa.me/254793977389
+        " target="_blank" rel="noopener">WhatsApp</a>
             </div>
         </div>
 
@@ -2869,15 +2560,25 @@
 </script>
 
 <script>
-    // "Explore Gaming" opens the real Gaming category page directly,
-    // the same way tapping the Gaming tile/nav-item does - no more
-    // scrolling down the homepage instead of actually navigating.
+    // Promo buttons use the store's real category/filter controls.
+    // Clicking Explore Gaming selects Gaming in the existing product store
+    // and brings the matching products into view instead of doing nothing.
     document.addEventListener('DOMContentLoaded', function () {
         var gamingButton = document.getElementById('gamingButton');
+        var gamingNav = document.querySelector('.nav-item[data-category="gaming"]');
 
         if (gamingButton) {
             gamingButton.addEventListener('click', function () {
-                window.location.href = 'category.html?category=' + encodeURIComponent('Gaming');
+                if (gamingNav) {
+                    gamingNav.click();
+                }
+
+                var productsSection = document.getElementById('productsSection');
+                if (productsSection) {
+                    setTimeout(function () {
+                        productsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 80);
+                }
             });
         }
 
@@ -2890,63 +2591,10 @@
                 }
             });
         }
-
-        var newsletterForm = document.getElementById('newsletterForm');
-        if (newsletterForm) {
-            newsletterForm.addEventListener('submit', function (event) {
-                event.preventDefault();
-
-                var emailInput = document.getElementById('newsletterEmail');
-                var messageEl = document.getElementById('newsletterMessage');
-                var submitButton = newsletterForm.querySelector('button[type="submit"]');
-                var email = emailInput ? emailInput.value.trim() : '';
-
-                if (!messageEl) return;
-
-                messageEl.classList.remove('error', 'success');
-
-                if (!email) {
-                    messageEl.textContent = 'Please enter your email address.';
-                    messageEl.classList.add('error');
-                    return;
-                }
-
-                if (submitButton) submitButton.disabled = true;
-                messageEl.textContent = 'Subscribing...';
-
-                fetch('/api/newsletter', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: email })
-                })
-                    .then(function (response) {
-                        return response.json().then(function (data) {
-                            return { ok: response.ok, data: data };
-                        });
-                    })
-                    .then(function (result) {
-                        if (result.ok && result.data && result.data.ok) {
-                            messageEl.textContent = result.data.message || "You're subscribed!";
-                            messageEl.classList.add('success');
-                            newsletterForm.reset();
-                        } else {
-                            messageEl.textContent = (result.data && result.data.message) || 'Could not subscribe right now.';
-                            messageEl.classList.add('error');
-                        }
-                    })
-                    .catch(function () {
-                        messageEl.textContent = 'Could not subscribe right now. Please try again later.';
-                        messageEl.classList.add('error');
-                    })
-                    .finally(function () {
-                        if (submitButton) submitButton.disabled = false;
-                    });
-            });
-        }
     });
 </script>
 
-<script src="script.js?v=20260912"></script>
+<script src="script.js"></script>
 
 </body>
 </html>
