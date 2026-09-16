@@ -1900,12 +1900,9 @@
 <nav class="nav" id="categoryNav">
 
     <div class="nav-item" data-category="all"><i class="fa-solid fa-bars"></i> All Categories</div>
-    <div class="nav-item" data-category="phones">Phones & Tablets</div>
-    <div class="nav-item" data-category="computers">Computers</div>
-    <div class="nav-item" data-category="electronics">Electronics</div>
-    <div class="nav-item" data-category="gaming">Gaming</div>
-    <div class="nav-item" data-category="accessories">Accessories</div>
-    <div class="nav-item" data-category="home-office">Home & Office</div>
+    <!-- The real categories (every one the business actually has) are
+         fetched from /api/categories and inserted here at load time,
+         instead of a hardcoded, easily-outdated shortlist. -->
     <div class="nav-item deals" data-category="deals">Deals</div>
 
 </nav>
@@ -1974,19 +1971,19 @@
 <section class="showcase">
     <div class="showcase-grid">
 
-        <a class="showcase-tile" href="javascript:void(0)" data-category="phones">
+        <a class="showcase-tile" href="category.html?category=phones" data-category="phones">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
             </div>
-            <img src="images/00.png" alt="Fashion&Clothing" loading="lazy" onerror="this.classList.add('broken')">
+            <img src="images/12.jpeg" alt="Phones&Tablets" loading="lazy" onerror="this.classList.add('broken')">
             <div class="showcase-tile-overlay">
-                <strong>Fashion&Clothing</strong>
+                <strong>Phones & Tablets</strong>
                 <span>Shop now</span>
             </div>
         </a>
 
-        <a class="showcase-tile" href="javascript:void(0)" data-category="computers">
+        <a class="showcase-tile" href="category.html?category=computers" data-category="computers">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
@@ -1998,7 +1995,7 @@
             </div>
         </a>
 
-        <a class="showcase-tile" href="javascript:void(0)" data-category="gaming">
+        <a class="showcase-tile" href="category.html?category=gaming" data-category="gaming">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
@@ -2010,7 +2007,7 @@
             </div>
         </a>
 
-        <a class="showcase-tile" href="javascript:void(0)" data-category="accessories">
+        <a class="showcase-tile" href="category.html?category=accessories" data-category="accessories">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
@@ -2038,7 +2035,7 @@
 
     <h2><span class="heading-icon"><i class="fa-solid fa-star"></i></span>New Arrivals</h2>
 
-    <a href="#newArrivalsSection" class="view-all">
+    <a href="category.html?category=all" class="view-all">
         View All New Arrivals
     </a>
 
@@ -2107,6 +2104,22 @@
 </div>
 
 
+<!--
+    PRODUCT IMAGE REGISTRY
+    ----------------------
+    For the built-in PHYNEX products, the image in this HTML registry is
+    the source of truth. Change ONLY the src below when a developer wants
+    to replace a product image. The live product cards, product popup and
+    cart will automatically use the new image.
+-->
+<div id="productImageRegistry" hidden aria-hidden="true">
+    <img data-product-name="Dell Vostro 15 3500 i7 11th Gen 8GB 400GB SSD" src="images/13.jpeg" alt="">
+    <img data-product-name="HP EliteDesk 830 G5 i5 8th Gen 8GB 256GB SSD" src="images/18.jpeg" alt="">
+    <img data-product-name="BT Speaker HF226" src="images/19.jpeg" alt="">
+    <img data-product-name="MacBook Air i5 2017 256GB SSD 8GB RAM" src="images/17.jpeg" alt="">
+    <img data-product-name="Lenovo Thinkpad T460 256GB SSD 8GB RAM" src="images/20.jpeg" alt="">
+</div>
+
 <div class="section-heading" id="productsSection">
 
     <div class="flash-title">
@@ -2119,210 +2132,22 @@
 
     </div>
 
-    <a href="#productsSection" class="view-all">
+    <a href="category.html?category=all" class="view-all">
         View All Deals
     </a>
 
 </div>
 
 
-<div class="products" id="flashDealsGrid">
-
-    <!-- PRODUCT 1 -->
-
-    <div class="product" data-category="computers laptops home-office deals new" data-description="A dependable Dell laptop for work, study and everyday productivity." data-specifications="Intel Core i7 11th Gen | 8GB RAM | 400GB SSD">
-
-        <div class="product-image">
-            <img src="images/13.jpeg" alt="Laptop" loading="lazy">
-        </div>
-
-        <div class="product-info">
-
-            <div class="product-name">
-                Dell Vostro 15 3500 i7 11th Gen 8GB 400GB SSD
-            </div>
-
-            <div class="rating">
-                ★★★★★ (24)
-            </div>
-
-            <div class="price">
-                KSh 35,000
-                <span class="old-price">KSh 40,000</span>
-            </div>
-
-            <div class="express">
-                PHYNEX EXPRESS
-            </div>
-
-            <div class="stock-status">In stock</div>
-            <div class="product-actions">
-                <button type="button" class="cart-btn">Add to Cart</button>
-                <button type="button" class="buy-btn">Buy Now</button>
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- PRODUCT 2 -->
-
-    <div class="product" data-category="computers desktops home-office deals new" data-description="A professionally refurbished HP desktop with responsive performance for office and home use." data-specifications="Intel Core i5 8th Gen | 8GB RAM | 256GB SSD">
-
-        <div class="product-image">
-            <img src="images/18.jpeg" alt="Laptop" loading="lazy">
-        </div>
-
-        <div class="product-info">
-
-            <div class="product-name">
-                HP EliteDesk 830 G5 i5 8th Gen 8GB 256GB SSD
-            </div>
-
-            <div class="rating">
-                ★★★★★ (18)
-            </div>
-
-            <div class="price">
-                KSh 32,500
-                <span class="old-price">KSh 36,000</span>
-            </div>
-
-            <div class="express">
-                PHYNEX EXPRESS
-            </div>
-
-            <div class="stock-status">In stock</div>
-            <div class="product-actions">
-                <button type="button" class="cart-btn">Add to Cart</button>
-                <button type="button" class="buy-btn">Buy Now</button>
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- PRODUCT 3 -->
-
-    <div class="product" data-category="electronics audio accessories deals new" data-description="A portable Bluetooth speaker with clear sound for music, calls and everyday entertainment." data-specifications="Bluetooth wireless audio | Portable design | Rechargeable battery">
-
-        <div class="product-image">
-            <img src="images/19.jpeg" alt="BT speaker" loading="lazy">
-        </div>
-
-        <div class="product-info">
-
-            <div class="product-name">
-                BT Speaker HF226
-            </div>
-
-            <div class="rating">
-                ★★★★★ (31)
-            </div>
-
-            <div class="price">
-                KSh 2,000
-                <span class="old-price">KSh 2,500</span>
-            </div>
-
-            <div class="express">
-                PHYNEX EXPRESS
-            </div>
-
-            <div class="stock-status">In stock</div>
-            <div class="product-actions">
-                <button type="button" class="cart-btn">Add to Cart</button>
-                <button type="button" class="buy-btn">Buy Now</button>
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- PRODUCT 4 -->
-
-    <div class="product" data-category="computers laptops deals new" data-description="A compact MacBook with a sharp display and reliable performance for everyday computing." data-specifications="Intel Core i5 | 8GB RAM | 256GB SSD">
-
-        <div class="product-image">
-            <img src="images/17.jpeg" alt="MacBook" loading="lazy">
-        </div>
-
-        <div class="product-info">
-
-            <div class="product-name">
-                MacBook Air i5 2017 256GB SSD 8GB RAM
-            </div>
-
-            <div class="rating">
-                ★★★★★ (15)
-            </div>
-
-            <div class="price">
-                KSh 20,500
-                <span class="old-price">KSh 35,000</span>
-            </div>
-
-            <div class="express">
-                PHYNEX EXPRESS
-            </div>
-
-            <div class="stock-status">In stock</div>
-            <div class="product-actions">
-                <button type="button" class="cart-btn">Add to Cart</button>
-                <button type="button" class="buy-btn">Buy Now</button>
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- PRODUCT 5 -->
-
-    <div class="product" data-category="computers laptops deals new" data-description="A durable Lenovo ThinkPad with a comfortable keyboard and fast SSD storage for work on the go." data-specifications="Intel Core i5 | 8GB RAM | 256GB SSD">
-
-        <div class="product-image">
-            <img src="images/20.jpeg" alt="Laptop" loading="lazy">
-        </div>
-
-        <div class="product-info">
-
-            <div class="product-name">
-             Lenovo Thinkpad T460 256GB SSD 8GB RAM   
-            </div>
-
-            <div class="rating">
-                ★★★★★ (41)
-            </div>
-
-            <div class="price">
-                KSh 23,000
-                <span class="old-price">KSh 25,000</span>
-            </div>
-
-            <div class="express">
-                PHYNEX EXPRESS
-            </div>
-
-            <div class="stock-status">In stock</div>
-            <div class="product-actions">
-                <button type="button" class="cart-btn">Add to Cart</button>
-                <button type="button" class="buy-btn">Buy Now</button>
-            </div>
-
-        </div>
-
-    </div>
-
-
-  
-
-    
-
-</div>
+<!--
+    These 5 products used to be hardcoded, non-purchasable sample
+    markup here. They are now real, approved products in the
+    database (see seedFlashDealProducts() in server.js), so
+    loadMarketplaceProducts() in script.js fills this grid in
+    live from /api/products — real id, real stock, real checkout,
+    real reviews. Nothing to hardcode here anymore.
+-->
+<div class="products" id="flashDealsGrid"></div>
 <p id="searchMessage" hidden style="padding:24px;text-align:center;color:#687083;background:white;border:1px solid #e1e4e8;">No products found.</p>
 
 
@@ -2463,7 +2288,9 @@
         </div>
 
         <div class="pp-tab-panel" id="ppReviews">
-            <p class="pp-reviews-empty">No reviews yet for this product. Be the first to leave one after your order.</p>
+            <div id="ppReviewSummary" class="pp-review-summary"></div>
+            <div id="ppReviewList" class="pp-review-list"></div>
+            <div id="ppReviewFormWrap" class="pp-review-form-wrap"></div>
         </div>
 
         <div class="pp-section">
@@ -2542,7 +2369,7 @@
         Home
     </a>
 
-    <a class="mbn-item" href="#categoryNav">
+    <a class="mbn-item" href="categories.html">
         <i class="fa-solid fa-list"></i>
         Category
     </a>
@@ -2746,41 +2573,80 @@
 </script>
 
 <script>
-    // Promo buttons use the store's real category/filter controls.
-    // Clicking Explore Gaming selects Gaming in the existing product store
-    // and brings the matching products into view instead of doing nothing.
+    // Anything styled to look clickable (category bar, category cards,
+    // promo buttons) should actually open a page, not just scroll or
+    // do nothing. Everything below navigates to category.html with the
+    // matching category, the same page the showcase tiles already use.
     document.addEventListener('DOMContentLoaded', function () {
-        var gamingButton = document.getElementById('gamingButton');
-        var gamingNav = document.querySelector('.nav-item[data-category="gaming"]');
 
+        function goToCategory(cat) {
+            // "deals" has no real product category behind it — the Flash
+            // Deals section shows every product, so send it to "all" too.
+            var target = (!cat || cat === 'deals') ? 'all' : cat;
+            window.location.href = 'category.html?category=' + encodeURIComponent(target);
+        }
+
+        // Top category bar (All Categories, Deals, and every real category)
+        document.querySelectorAll('.nav-item[data-category]').forEach(function (item) {
+            item.addEventListener('click', function () {
+                goToCategory(item.getAttribute('data-category'));
+            });
+        });
+
+        // Fill in the rest of the bar with every category the store
+        // actually has, so it's never out of sync with what's for sale.
+        var categoryNav = document.getElementById('categoryNav');
+        var dealsTab = document.querySelector('.nav-item.deals');
+
+        if (categoryNav) {
+            fetch('/api/categories')
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
+                    var categories = Array.isArray(data.categories) ? data.categories : [];
+
+                    categories.forEach(function (category) {
+                        var item = document.createElement('div');
+                        item.className = 'nav-item';
+                        item.setAttribute('data-category', category.slug || category.name);
+                        item.textContent = category.name;
+
+                        item.addEventListener('click', function () {
+                            goToCategory(category.slug || category.name);
+                        });
+
+                        categoryNav.insertBefore(item, dealsTab || null);
+                    });
+                })
+                .catch(function (error) {
+                    console.error('PHYNEX: Could not load categories for the nav bar.', error);
+                });
+        }
+
+        // Homepage category cards (Phones & Tablets, Laptops, Gaming...)
+        document.querySelectorAll('.category[data-category]').forEach(function (item) {
+            item.addEventListener('click', function () {
+                goToCategory(item.getAttribute('data-category'));
+            });
+        });
+
+        // Promo buttons
+        var gamingButton = document.getElementById('gamingButton');
         if (gamingButton) {
             gamingButton.addEventListener('click', function () {
-                if (gamingNav) {
-                    gamingNav.click();
-                }
-
-                var productsSection = document.getElementById('productsSection');
-                if (productsSection) {
-                    setTimeout(function () {
-                        productsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }, 80);
-                }
+                goToCategory('gaming');
             });
         }
 
         var newArrivalsButton = document.getElementById('newArrivalsButton');
         if (newArrivalsButton) {
             newArrivalsButton.addEventListener('click', function () {
-                var newArrivals = document.getElementById('newArrivalsSection');
-                if (newArrivals) {
-                    newArrivals.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
+                goToCategory('all');
             });
         }
     });
 </script>
 
-<script src="script.js?v=20260912"></script>
+<script src="script.js"></script>
 
 </body>
 </html>
