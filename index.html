@@ -2118,7 +2118,7 @@
         <div class="product-image"><img src="images/13.jpeg" alt="Dell Vostro 15 3500 i7 11th Gen 8GB 400GB SSD" loading="lazy"></div>
         <div class="product-info">
             <div class="product-name">Dell Vostro 15 3500 i7 11th Gen 8GB 400GB SSD</div>
-            <div class="rating">★★★★★ (24)</div>
+            
             <div class="price">KSh 35,000 <span class="old-price">KSh 40,000</span></div>
             <div class="express">PHYNEX EXPRESS</div>
             <div class="stock-status">In stock</div>
@@ -2131,7 +2131,7 @@
         <div class="product-image"><img src="images/18.jpeg" alt="HP EliteDesk 830 G5 i5 8th Gen 8GB 256GB SSD" loading="lazy"></div>
         <div class="product-info">
             <div class="product-name">HP EliteDesk 830 G5 i5 8th Gen 8GB 256GB SSD</div>
-            <div class="rating">★★★★★ (18)</div>
+            
             <div class="price">KSh 32,500 <span class="old-price">KSh 36,000</span></div>
             <div class="express">PHYNEX EXPRESS</div>
             <div class="stock-status">In stock</div>
@@ -2144,7 +2144,7 @@
         <div class="product-image"><img src="images/19.jpeg" alt="BT Speaker HF226" loading="lazy"></div>
         <div class="product-info">
             <div class="product-name">BT Speaker HF226</div>
-            <div class="rating">★★★★★ (12)</div>
+            
             <div class="price">KSh 2,000 <span class="old-price">KSh 2,500</span></div>
             <div class="express">PHYNEX EXPRESS</div>
             <div class="stock-status">In stock</div>
@@ -2157,7 +2157,7 @@
         <div class="product-image"><img src="images/17.jpeg" alt="MacBook Air i5 2017 256GB SSD 8GB RAM" loading="lazy"></div>
         <div class="product-info">
             <div class="product-name">MacBook Air i5 2017 256GB SSD 8GB RAM</div>
-            <div class="rating">★★★★★ (16)</div>
+            
             <div class="price">KSh 20,500 <span class="old-price">KSh 35,000</span></div>
             <div class="express">PHYNEX EXPRESS</div>
             <div class="stock-status">In stock</div>
@@ -2170,7 +2170,7 @@
         <div class="product-image"><img src="images/20.jpeg" alt="Lenovo Thinkpad T460 256GB SSD 8GB RAM" loading="lazy"></div>
         <div class="product-info">
             <div class="product-name">Lenovo Thinkpad T460 256GB SSD 8GB RAM</div>
-            <div class="rating">★★★★★ (14)</div>
+            
             <div class="price">KSh 23,000 <span class="old-price">KSh 25,000</span></div>
             <div class="express">PHYNEX EXPRESS</div>
             <div class="stock-status">In stock</div>
@@ -2183,7 +2183,7 @@
         <div class="product-image"><img src="images/product-6.jpg" alt="Product 6" loading="lazy"></div>
         <div class="product-info">
             <div class="product-name">Product 6 Name</div>
-            <div class="rating">No reviews yet</div>
+            
             <div class="price">KSh 0 <span class="old-price">KSh 0</span></div>
             <div class="express">PHYNEX EXPRESS</div>
             <div class="stock-status">In stock</div>
@@ -2304,7 +2304,7 @@
             </div>
 
             <h2 class="product-popup-title" id="modalProductName"></h2>
-            <div class="product-popup-rating" id="modalProductRating"></div>
+            
 
             <span class="pp-express-badge" id="modalProductExpress">PHYNEX EXPRESS</span>
         </div>
@@ -2333,9 +2333,9 @@
         </div>
 
         <div class="pp-tab-panel" id="ppReviews">
-            <div id="ppReviewSummary" class="pp-review-summary"></div>
-            <div id="ppReviewList" class="pp-review-list"></div>
-            <div id="ppReviewFormWrap" class="pp-review-form-wrap"></div>
+            
+            
+            
         </div>
 
         <div class="pp-section">
@@ -2692,6 +2692,71 @@
 </script>
 
 <script src="script.js"></script>
+
+
+<!-- CUSTOMER REVIEWS -->
+<section id="customerReviews" class="customer-reviews" style="max-width:1100px;margin:40px auto;padding:24px;">
+  <h2>Customer Reviews</h2>
+  <p>Only customers who have completed a purchase can submit a review.</p>
+  <div id="reviewsList"></div>
+  <form id="reviewForm" style="display:none;margin-top:20px;">
+    <input id="reviewProductId" type="hidden">
+    <label>Rating
+      <select id="reviewRating" required>
+        <option value="">Choose rating</option>
+        <option value="1">1 star</option>
+        <option value="2">2 stars</option>
+        <option value="3">3 stars</option>
+        <option value="4">4 stars</option>
+        <option value="5">5 stars</option>
+      </select>
+    </label>
+    <textarea id="reviewText" placeholder="Write your review..." required></textarea>
+    <button type="submit">Submit review</button>
+  </form>
+</section>
+<script>
+(function () {
+  const STORAGE_KEY = 'phynex_customer_reviews_v1';
+  function loadReviews() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+    catch (e) { return []; }
+  }
+  function saveReviews(items) { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); }
+  function renderReviews(productId) {
+    const list = document.getElementById('reviewsList');
+    if (!list) return;
+    const reviews = loadReviews().filter(r => r.productId === String(productId));
+    list.innerHTML = reviews.length ? reviews.map(r =>
+      '<article style="padding:12px 0;border-bottom:1px solid #ddd">' +
+      '<strong>' + '★'.repeat(Number(r.rating)) + '</strong> ' +
+      '<span>' + (r.text || '').replace(/[&<>"]/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]}) + '</span>' +
+      '<small style="display:block;opacity:.7">' + new Date(r.date).toLocaleDateString() + '</small>' +
+      '</article>'
+    ).join('') : '<p>No reviews yet.</p>';
+  }
+  window.PHYNEX_SHOW_REVIEWS = function(productId, canReview) {
+    document.getElementById('reviewProductId').value = productId;
+    document.getElementById('reviewForm').style.display = canReview ? '' : 'none';
+    renderReviews(productId);
+    document.getElementById('customerReviews').scrollIntoView({behavior:'smooth'});
+  };
+  const form = document.getElementById('reviewForm');
+  if (form) form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const rating = Number(document.getElementById('reviewRating').value);
+    const text = document.getElementById('reviewText').value.trim();
+    const productId = document.getElementById('reviewProductId').value;
+    if (!productId || !rating || !text) return;
+    const reviews = loadReviews();
+    reviews.push({ productId, rating, text, date: new Date().toISOString() });
+    saveReviews(reviews);
+    form.reset();
+    document.getElementById('reviewProductId').value = productId;
+    renderReviews(productId);
+  });
+})();
+</script>
 
 </body>
 </html>

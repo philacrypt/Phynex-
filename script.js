@@ -51,6 +51,7 @@
        ===================================================== */
 
     function buildProductCard(product) {
+    product = uniqueProductImages(product);
 
         const card = document.createElement('div');
 
@@ -88,12 +89,7 @@
             '</div>' +
             '<div class="product-info">' +
                 '<div class="product-name">' + escapeHtml(product.name) + '</div>' +
-                '<div class="rating">' +
-                    (product.reviewCount
-                        ? '\u2605\u2605\u2605\u2605\u2605'.slice(0, Math.round(product.rating)) +
-                          ' (' + product.reviewCount + ')'
-                        : 'No reviews yet') +
-                '</div>' +
+                '' +
                 '<div class="sold-by">Sold by PHYNEX</div>' +
                 '<div class="price">' + priceHtml + '</div>' +
                 '<div class="stock-status' + (inStock ? '' : ' sold-out') + '">' +
@@ -111,6 +107,29 @@
         return card;
     }
 
+    // Products written directly in index.html are the storefront source of truth.
+    // Seller/API products are added after the HTML products instead of replacing them.
+    function getExistingProductNames(grid) {
+        const names = new Set();
+        if (!grid) return names;
+        grid.querySelectorAll('.product .product-name').forEach(function (el) {
+            const name = String(el.textContent || '').trim().toLowerCase();
+            if (name) names.add(name);
+        });
+        return names;
+    }
+
+    function appendUniqueApiProducts(grid, products) {
+        if (!grid) return;
+        const existingNames = getExistingProductNames(grid);
+        products.forEach(function (product) {
+            const key = String(product.name || '').trim().toLowerCase();
+            if (!key || existingNames.has(key)) return;
+            grid.appendChild(buildProductCard(product));
+            existingNames.add(key);
+        });
+    }
+
     async function loadMarketplaceProducts() {
 
         const flashGrid = document.getElementById('flashDealsGrid');
@@ -118,43 +137,40 @@
         const sponsoredGrid = document.getElementById('sponsoredGrid');
         const sponsoredSection = document.getElementById('sponsoredSection');
 
-        // Only run this on pages that actually have the marketplace grids.
         if (!flashGrid && !newGrid && !sponsoredGrid) return;
 
         try {
-
-            const response = await fetch('/api/products');
+            const response = await fetch('/api/products', { cache: 'no-store' });
+            if (!response.ok) throw new Error('Products request failed: ' + response.status);
             const data = await response.json();
             const products = Array.isArray(data.products) ? data.products : [];
 
+            // Keep every product manually added to index.html.
+            // API products are appended only when they are not already present.
+            if (flashGrid) {
+                appendUniqueApiProducts(flashGrid, products);
+            }
+
             if (newGrid) {
-                newGrid.innerHTML = '';
-                products.slice(0, 8).forEach(function (product) {
-                    newGrid.appendChild(buildProductCard(product));
+                // Do not clear the HTML New Arrivals cards. Add API products after them.
+                const newProducts = products.filter(function (product) {
+                    return String(product.category || '').toLowerCase().includes('new') || product.newArrival;
                 });
+                appendUniqueApiProducts(newGrid, newProducts.slice(0, 8));
             }
 
             const sponsored = products.filter(function (product) { return product.sponsored; });
-
             if (sponsoredGrid && sponsored.length) {
-                sponsoredGrid.innerHTML = '';
-                sponsored.forEach(function (product) {
-                    sponsoredGrid.appendChild(buildProductCard(product));
-                });
+                appendUniqueApiProducts(sponsoredGrid, sponsored);
                 sponsoredGrid.style.display = '';
                 if (sponsoredSection) sponsoredSection.style.display = '';
-            }
-
-            if (flashGrid) {
-                products.forEach(function (product) {
-                    flashGrid.appendChild(buildProductCard(product));
-                });
             }
 
             applyUrlProductAndCategoryParams();
 
         } catch (error) {
             console.error('PHYNEX: Could not load live marketplace products.', error);
+            // HTML products remain visible even when the API is unavailable.
         }
     }
 
@@ -737,18 +753,14 @@
 
             if (data.reviewCount) {
                 summaryBox.innerHTML =
-                    '<span class="pp-review-stars">' + starString(data.rating) + '</span>' +
+                    '' +
                     '<span>' + data.rating + ' out of 5 &middot; ' + data.reviewCount +
                     ' review' + (data.reviewCount === 1 ? '' : 's') + '</span>';
             }
 
             if (Array.isArray(data.reviews) && data.reviews.length) {
                 listBox.innerHTML = data.reviews.map(function (review) {
-                    return '<div class="pp-review-item">' +
-                        '<div class="pp-review-item-head">' +
-                            '<span>' + escapeHtml(review.customerName || 'Customer') + '</span>' +
-                            '<span class="pp-review-stars">' + starString(review.rating) + '</span>' +
-                        '</div>' +
+                    return '' +
                         (review.comment ? '<p>' + escapeHtml(review.comment) + '</p>' : '') +
                     '</div>';
                 }).join('');
@@ -2124,3 +2136,20 @@
     );
 
 })();
+
+
+/* PHYNEX: prevent duplicate product images in cards/gallery data. */
+function uniqueProductImages(product) {
+    if (!product || !Array.isArray(product.images)) return product;
+    const seen = new Set();
+    product.images = product.images.filter(function (url) {
+        const key = String(url || '').trim().toLowerCase();
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+    if (product.image && !seen.has(String(product.image).trim().toLowerCase())) {
+        product.images.unshift(product.image);
+    }
+    return product;
+}
