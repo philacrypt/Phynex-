@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Email — PHYNEX</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f5f6f8;
+            color: #172033;
+        }
+
+        .top {
+            background: #071a49;
+            color: white;
+            padding: 16px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .top a {
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .wrap {
+            width: 90%;
+            max-width: 420px;
+            margin: 60px auto;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #e1e4e8;
+            border-radius: 12px;
+            padding: 32px 30px;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .sub {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+
+        .email-display {
+            background: #eef4ff;
+            color: #0875e1;
+            padding: 11px;
+            border-radius: 7px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            word-break: break-word;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 7px;
+        }
+
+        input {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #d9dde5;
+            border-radius: 6px;
+            font-size: 20px;
+            text-align: center;
+            letter-spacing: 6px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #0875e1;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 20px;
+            padding: 13px;
+            background: #0875e1;
+            color: white;
+            border: none;
+            border-radius: 7px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #075fc0;
+        }
+
+        button:disabled {
+            opacity: .6;
+            cursor: default;
+        }
+
+        .msg {
+            margin-top: 16px;
+            padding: 10px 12px;
+            border-radius: 5px;
+            font-size: 13px;
+            display: none;
+        }
+
+        .msg.error {
+            display: block;
+            background: #fdeaea;
+            color: #b42318;
+        }
+
+        .msg.success {
+            display: block;
+            background: #e8f6ec;
+            color: #0f7a3d;
+        }
+
+        .back {
+            margin-top: 18px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .back a {
+            color: #0875e1;
+            font-weight: 700;
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="top">
+    <strong>PHYNEX</strong>
+    <a href="index.html">← Continue Shopping</a>
+</header>
+
+<main class="wrap">
+
+    <div class="card">
+
+        <h1>Verify Your Email</h1>
+
+        <p class="sub">
+            We sent a 6-digit verification code to your email address.
+            Enter it below to activate your PHYNEX account.
+        </p>
+
+        <div class="email-display" id="emailDisplay"></div>
+
+        <form id="verifyForm">
+
+            <label for="code">Verification code</label>
+
+            <input
+                type="text"
+                id="code"
+                maxlength="6"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                placeholder="000000"
+                required
+            >
+
+            <div id="formMsg" class="msg"></div>
+
+            <button type="submit" id="verifyBtn">
+                Verify Email
+            </button>
+
+        </form>
+
+        <div class="back">
+            <a href="customer-register.html">← Back to registration</a>
+        </div>
+
+    </div>
+
+</main>
+
+<script>
+
+    const params = new URLSearchParams(window.location.search);
+    const email = (params.get("email") || "").trim().toLowerCase();
+    const redirect = params.get("redirect") || "";
+
+    const emailDisplay = document.getElementById("emailDisplay");
+    const form = document.getElementById("verifyForm");
+    const codeInput = document.getElementById("code");
+    const button = document.getElementById("verifyBtn");
+    const msg = document.getElementById("formMsg");
+
+    if (!email) {
+
+        emailDisplay.textContent = "No email address was provided.";
+
+        button.disabled = true;
+
+    } else {
+
+        emailDisplay.textContent = email;
+
+    }
+
+    form.addEventListener("submit", async function (event) {
+
+        event.preventDefault();
+
+        const code = codeInput.value.trim();
+
+        msg.className = "msg";
+        msg.textContent = "";
+
+        if (!/^\d{6}$/.test(code)) {
+
+            msg.className = "msg error";
+            msg.textContent = "Enter the 6-digit verification code.";
+
+            return;
+        }
+
+        button.disabled = true;
+        button.textContent = "Verifying...";
+
+        try {
+
+            const response = await fetch("/api/customers/verify-email", {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    email: email,
+                    code: code
+                })
+
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+
+                msg.className = "msg error";
+                msg.textContent =
+                    data.message || "Verification failed.";
+
+                button.disabled = false;
+                button.textContent = "Verify Email";
+
+                return;
+            }
+
+            localStorage.setItem(
+                "phynexCustomerToken",
+                data.token
+            );
+
+            localStorage.setItem(
+                "phynexCustomerName",
+                data.customer.name
+            );
+
+            msg.className = "msg success";
+            msg.textContent =
+                "Email verified successfully!";
+
+            setTimeout(function () {
+
+                window.location.href =
+                    redirect || "account.html";
+
+            }, 700);
+
+        } catch (error) {
+
+            msg.className = "msg error";
+            msg.textContent =
+                "Network error. Please try again.";
+
+            button.disabled = false;
+            button.textContent = "Verify Email";
+
+        }
+
+    });
+
+</script>
+
+</body>
+</html>
