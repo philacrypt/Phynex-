@@ -291,12 +291,12 @@
 
         if (!itemsBox) return; // not on checkout.html
 
+        // Guest checkout is allowed — if a session cookie happens to be
+        // present, prefill the known fields; otherwise the customer just
+        // fills the form in themselves. No login/account required to buy.
         fetch('/api/customers/me', { credentials: 'include' })
             .then(function (response) {
-                if (response.status === 401 || response.status === 403) {
-                    window.location.href = 'customer-login.html?redirect=' + encodeURIComponent('checkout.html');
-                    return null;
-                }
+                if (!response.ok) return null;
                 return response.json();
             })
             .then(function (data) {
@@ -306,15 +306,12 @@
                 const emailField = document.getElementById('customerEmail');
                 const phoneField = document.getElementById('customerPhone');
                 if (nameField && !nameField.value) nameField.value = c.name || '';
-                if (emailField) {
-                    emailField.value = c.email || '';
-                    emailField.readOnly = true;
-                }
+                if (emailField && !emailField.value) emailField.value = c.email || '';
                 if (phoneField && !phoneField.value) phoneField.value = c.phone || '';
                 localStorage.setItem(CUSTOMER_NAME_KEY, c.name || '');
             })
             .catch(function () {
-                window.location.href = 'customer-login.html?redirect=' + encodeURIComponent('checkout.html');
+                // Not logged in / request failed — that's fine, guest checkout continues.
             });
 
         const emptyMsg =

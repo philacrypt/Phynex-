@@ -10,21 +10,6 @@ require("dotenv").config();
 const app = express();
 const port = Number(process.env.PORT) || 3000;
 
-// Express 4 does NOT forward a rejected promise from an async route
-// handler to error-handling middleware automatically — an exception
-// thrown inside an `async function (request, response) { ... }` route
-// just becomes an unhandled rejection and the request hangs with no
-// response ever sent. From the browser that looks exactly like a
-// connection failure ("Network error"), even though the server is fine
-// and the real problem is a bug in that one route. Wrapping every async
-// route in this makes sure such errors reach the JSON error handler
-// below instead of hanging the request.
-function asyncHandler(fn) {
-    return function (request, response, next) {
-        Promise.resolve(fn(request, response, next)).catch(next);
-    };
-}
-
 const payments = new Map();
 
 app.disable("x-powered-by");
@@ -1128,7 +1113,7 @@ function genericPasswordResetResponse() {
     };
 }
 
-app.post("/api/customers/register", asyncHandler(async function (request, response) {
+app.post("/api/customers/register", async function (request, response) {
     const body = request.body || {};
     const name = String(body.name || "").trim();
     const email = String(body.email || "").trim().toLowerCase();
@@ -1222,7 +1207,7 @@ app.post("/api/customers/register", asyncHandler(async function (request, respon
         emailVerificationRequired: true,
         phoneVerificationRequired: phoneVerificationRequired
     });
-}));
+});
 
 app.get("/api/customers/verify-email", function (request, response) {
     const token = String(request.query.token || "").trim();
@@ -1250,7 +1235,7 @@ app.get("/api/customers/verify-email", function (request, response) {
     response.redirect("/customer-login.html?verified=1");
 });
 
-app.post("/api/customers/resend-verification", asyncHandler(async function (request, response) {
+app.post("/api/customers/resend-verification", async function (request, response) {
     if (sensitiveActionRateLimited(request, "email-verification")) {
         return response.json({ ok: true, message: "If that account needs verification, a new verification email has been sent." });
     }
@@ -1275,7 +1260,7 @@ app.post("/api/customers/resend-verification", asyncHandler(async function (requ
     }
 
     return response.json({ ok: true, message: "If that account needs verification, a new verification email has been sent." });
-}));
+});
 
 app.post("/api/customers/verify-phone", function (request, response) {
     if (!smsVerificationConfigured()) {
@@ -1322,7 +1307,7 @@ app.post("/api/customers/verify-phone", function (request, response) {
     response.json({ ok: true, message: "Your phone number has been verified." });
 });
 
-app.post("/api/customers/resend-phone-code", asyncHandler(async function (request, response) {
+app.post("/api/customers/resend-phone-code", async function (request, response) {
     if (sensitiveActionRateLimited(request, "phone-otp")) {
         return response.status(429).json({ message: "Too many OTP requests. Please try again later." });
     }
@@ -1343,9 +1328,9 @@ app.post("/api/customers/resend-phone-code", asyncHandler(async function (reques
     }
 
     response.json({ ok: true, message: "A new phone verification code has been sent." });
-}));
+});
 
-app.post("/api/customers/login", asyncHandler(async function (request, response) {
+app.post("/api/customers/login", async function (request, response) {
     const body = request.body || {};
     const identifier = String(body.identifier || body.email || body.phone || "").trim();
     const password = String(body.password || "");
@@ -1392,9 +1377,9 @@ app.post("/api/customers/login", asyncHandler(async function (request, response)
     logLogin("customer", customer, "login");
 
     response.json({ ok: true, customer: publicCustomer(customer) });
-}));
+});
 
-app.post("/api/customers/google", asyncHandler(async function (request, response) {
+app.post("/api/customers/google", async function (request, response) {
     if (!googleConfigured() || !googleClient) {
         return response.status(503).json({ message: "Google sign-in is not configured yet." });
     }
@@ -1448,9 +1433,9 @@ app.post("/api/customers/google", asyncHandler(async function (request, response
     logLogin("customer", customer, "google");
 
     response.json({ ok: true, customer: publicCustomer(customer) });
-}));
+});
 
-app.post("/api/customers/forgot-password", asyncHandler(async function (request, response) {
+app.post("/api/customers/forgot-password", async function (request, response) {
     if (sensitiveActionRateLimited(request, "password-reset")) {
         return response.json(genericPasswordResetResponse());
     }
@@ -1491,9 +1476,9 @@ app.post("/api/customers/forgot-password", asyncHandler(async function (request,
     }
 
     response.json(genericPasswordResetResponse());
-}));
+});
 
-app.post("/api/customers/reset-password", asyncHandler(async function (request, response) {
+app.post("/api/customers/reset-password", async function (request, response) {
     const body = request.body || {};
     const token = String(body.token || "").trim();
     const password = String(body.password || "");
@@ -1525,7 +1510,7 @@ app.post("/api/customers/reset-password", asyncHandler(async function (request, 
     logLogin("customer", customer, "password_reset");
 
     response.json({ ok: true, message: "Password updated successfully. Please log in again." });
-}));
+});
 
 app.get("/api/customers/me", requireCustomer, function (request, response) {
     response.json({ customer: publicCustomer(request.customer) });
@@ -1542,7 +1527,7 @@ app.post("/api/customers/logout", function (request, response) {
    SELLER REGISTER / LOGIN
 ========================= */
 
-app.post("/api/sellers/register", asyncHandler(async function (request, response) {
+app.post("/api/sellers/register", async function (request, response) {
 
     const body = request.body || {};
 
@@ -1594,9 +1579,9 @@ app.post("/api/sellers/register", asyncHandler(async function (request, response
     logLogin("seller", seller, "register");
 
     response.json({ token: token, seller: publicSeller(seller) });
-}));
+});
 
-app.post("/api/sellers/login", asyncHandler(async function (request, response) {
+app.post("/api/sellers/login", async function (request, response) {
 
     const body = request.body || {};
 
@@ -1635,7 +1620,7 @@ app.post("/api/sellers/login", asyncHandler(async function (request, response) {
     logLogin("seller", seller, "login");
 
     response.json({ token: token, seller: publicSeller(seller) });
-}));
+});
 
 app.get("/api/sellers/me", requireSeller, function (request, response) {
     response.json({ seller: publicSeller(request.seller) });
@@ -1728,6 +1713,85 @@ function handleAdminUpload(request, response, next) {
 }
 
 /* =========================
+   AUTOMATIC PRODUCT CATEGORIZATION
+   Guesses the right category from the product's name/description/brand/
+   tags so sellers and admin don't have to hand-pick one every time. A
+   manually chosen category (if the form sends one) always wins — this
+   only fills the gap when the category field is left blank.
+========================= */
+
+const CATEGORY_KEYWORDS = {
+    "Phones & Tablets": ["phone", "smartphone", "iphone", "samsung galaxy", "tablet", "ipad", "android phone"],
+    "Laptops & Computers": ["laptop", "notebook", "macbook", "desktop computer", "chromebook", "workstation", "ultrabook"],
+    "Computer Accessories": ["keyboard", "mouse", "laptop bag", "laptop stand", "docking station", "webcam", "usb hub"],
+    "Gaming Consoles": ["playstation", "ps5", "ps4", "xbox", "nintendo switch", "console"],
+    "Gaming Accessories": ["game controller", "gamepad", "gaming headset", "racing wheel", "vr headset"],
+    "Gaming Chairs": ["gaming chair", "racing chair", "ergonomic chair"],
+    "PC Gaming": ["graphics card", "gpu", "gaming pc", "motherboard", "cpu cooler", "rgb fan", "gaming rig"],
+    "Monitors": ["monitor", "display screen", "curved screen", "ultrawide"],
+    "TVs & Home Theater": ["television", " tv ", "smart tv", "home theater", "projector", "soundbar"],
+    "Audio & Headphones": ["headphone", "earphone", "earbud", "speaker", "bluetooth speaker", "microphone", "airpods"],
+    "Cameras & Photography": ["camera", "dslr", "mirrorless", "lens", "tripod", "gopro", "camcorder"],
+    "Smartwatches & Wearables": ["smartwatch", "fitness band", "smart band", "wearable", "apple watch"],
+    "Printers & Scanners": ["printer", "scanner", "ink cartridge", "toner"],
+    "Networking & Wi-Fi": ["router", "wifi", "wi-fi", "modem", "network switch", "access point", "ethernet"],
+    "Storage & Memory": ["hard drive", "ssd", "flash drive", "memory card", "external drive", "ram", "usb stick"],
+    "Power & Charging": ["charger", "power bank", "battery", "adapter", "inverter", "solar panel", "ups"],
+    "Office Equipment": ["office chair", "office desk", "shredder", "projector screen", "whiteboard"],
+    "Home Appliances": ["fridge", "refrigerator", "microwave", "washing machine", "blender", "cooker", "kettle", "vacuum"],
+    "Smart Home": ["smart bulb", "smart plug", "smart lock", "alexa", "google home", "smart home"],
+    "Drones & RC": ["drone", "quadcopter", "remote control car", "rc helicopter"],
+    "Car Electronics": ["car stereo", "dash cam", "car charger", "car speaker", "gps navigator"],
+    "Security & CCTV": ["cctv", "security camera", "alarm system", "doorbell camera", "surveillance"],
+    "Cables & Adapters": ["cable", "hdmi", "usb-c", "lightning cable", "converter", "adapter cable"],
+    "Software & Digital": ["software", "license key", "antivirus", "windows key", "digital download"]
+};
+
+const DEFAULT_CATEGORY = "Other Electronics";
+
+function guessCategory(fields) {
+    const text = [fields.name, fields.description, fields.brand, fields.tags, fields.subcategory]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+    if (!text.trim()) return DEFAULT_CATEGORY;
+
+    let bestCategory = DEFAULT_CATEGORY;
+    let bestScore = 0;
+
+    for (const categoryName in CATEGORY_KEYWORDS) {
+        const keywords = CATEGORY_KEYWORDS[categoryName];
+        let score = 0;
+        keywords.forEach(function (keyword) {
+            if (text.indexOf(keyword) !== -1) score += 1;
+        });
+        if (score > bestScore) {
+            bestScore = score;
+            bestCategory = categoryName;
+        }
+    }
+
+    return bestCategory;
+}
+
+// Makes sure the guessed/chosen category actually exists as a row in the
+// categories table (creates it if this is a brand-new category name), so
+// it immediately shows up in category browsing/filtering — not just on
+// the product itself.
+function ensureCategoryExists(categoryName) {
+    const name = String(categoryName || "").trim();
+    if (!name) return;
+
+    const existing = db.prepare("SELECT id FROM categories WHERE name = ?").get(name);
+    if (existing) return;
+
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    db.prepare("INSERT INTO categories (name, slug, description, created_at) VALUES (?, ?, ?, ?)")
+        .run(name, slug, "", Date.now());
+}
+
+/* =========================
    SELLER — SUBMIT / VIEW OWN PRODUCTS
 ========================= */
 
@@ -1754,7 +1818,14 @@ app.post("/api/products", requireSeller, function (request, response, next) {
     const specifications = String(body.specifications || "").trim();
     const price = Math.round(Number(body.price));
     const oldPrice = body.oldPrice ? Math.round(Number(body.oldPrice)) : null;
-    const category = String(body.category || "").trim();
+    const category = String(body.category || "").trim() || guessCategory({
+        name: name,
+        description: description,
+        brand: body.brand,
+        tags: body.tags,
+        subcategory: body.subcategory
+    });
+    ensureCategoryExists(category);
     const stock = body.stock != null && body.stock !== "" ? Math.max(0, Math.round(Number(body.stock))) : 0;
 
     if (!name || !Number.isFinite(price) || price < 1) {
@@ -2259,6 +2330,14 @@ app.post("/api/admin/products", requireAdmin, handleAdminUpload, function (reque
     }
 
     const systemSeller = ensureSystemSeller();
+    const category = String(body.category || "").trim() || guessCategory({
+        name: name,
+        description: body.description,
+        brand: body.brand,
+        tags: body.tags,
+        subcategory: body.subcategory
+    });
+    ensureCategoryExists(category);
 
     const mainImageFile = (files.image && files.image[0]) || null;
     const galleryFiles = files.gallery || [];
@@ -2295,7 +2374,7 @@ app.post("/api/admin/products", requireAdmin, handleAdminUpload, function (reque
             String(body.specifications || "").trim(),
             price,
             body.oldPrice ? Math.round(Number(body.oldPrice)) : null,
-            String(body.category || "").trim(),
+            category,
             firstImage,
             mediaJson,
             trackingCode,
@@ -2361,6 +2440,17 @@ app.put("/api/admin/products/:id", requireAdmin, handleAdminUpload, function (re
     const mediaJson = JSON.stringify(media);
     const firstImage = (media[0] && media[0].url) || existing.image || "";
 
+    const category = (body.category != null && String(body.category).trim())
+        ? String(body.category).trim()
+        : (existing.category || guessCategory({
+            name: name,
+            description: body.description != null ? body.description : existing.description,
+            brand: body.brand != null ? body.brand : existing.brand,
+            tags: body.tags != null ? body.tags : existing.tags,
+            subcategory: body.subcategory != null ? body.subcategory : existing.subcategory
+        }));
+    ensureCategoryExists(category);
+
     db.prepare(
         `UPDATE products SET
             name = ?, description = ?, specifications = ?, price = ?, old_price = ?, category = ?,
@@ -2373,7 +2463,7 @@ app.put("/api/admin/products/:id", requireAdmin, handleAdminUpload, function (re
         body.specifications != null ? String(body.specifications).trim() : existing.specifications,
         price,
         body.oldPrice ? Math.round(Number(body.oldPrice)) : existing.old_price,
-        body.category != null ? String(body.category).trim() : existing.category,
+        category,
         firstImage,
         mediaJson,
         body.stock != null && body.stock !== "" ? Math.max(0, Math.round(Number(body.stock))) : existing.stock,
@@ -2853,7 +2943,7 @@ async function getAccessToken() {
    "order_items" row per cart line, then attempts payment.
 ========================= */
 
-app.post("/api/mpesa/stkpush", requireCustomer, asyncHandler(async function (request, response) {
+app.post("/api/mpesa/stkpush", async function (request, response) {
 
     if (!mpesaConfigured()) {
         return response.status(503).json({
@@ -2930,12 +3020,23 @@ app.post("/api/mpesa/stkpush", requireCustomer, asyncHandler(async function (req
         });
     }
 
-    const customer = request.customer;
+    const customer = getAuthenticatedCustomer(request); // optional — guest checkout is allowed
+    const guestInfo = payload.customer || {};
     const customerInfo = {
-        name: customer.name,
-        email: customer.email,
-        phone: customer.phone
+        name: String((customer && customer.name) || guestInfo.name || "").trim(),
+        email: String((customer && customer.email) || guestInfo.email || "").trim(),
+        phone: String((customer && customer.phone) || guestInfo.phone || "").trim()
     };
+
+    if (!customerInfo.name) {
+        return response.status(400).json({ message: "Enter your full name." });
+    }
+    if (!customerInfo.phone) {
+        return response.status(400).json({ message: "Enter your phone number." });
+    }
+    // Email is optional for guest checkout — only used for an order
+    // confirmation email if it's supplied.
+
     const delivery = payload.delivery || {};
 
     try {
@@ -3043,7 +3144,7 @@ app.post("/api/mpesa/stkpush", requireCustomer, asyncHandler(async function (req
         releaseStock(resolvedItems);
         return response.status(502).json({ message: error.message || "Unable to reach M-PESA." });
     }
-}));
+});
 
 /* =========================
    M-PESA CALLBACK
@@ -3167,16 +3268,14 @@ app.post("/api/mpesa/callback", function (request, response) {
    CHECK PAYMENT STATUS
 ========================= */
 
-app.get("/api/mpesa/status/:checkoutRequestId", requireCustomer, function (request, response) {
+app.get("/api/mpesa/status/:checkoutRequestId", function (request, response) {
 
+    // No login required (guest checkout): the CheckoutRequestID itself is
+    // an unguessable value only known to the browser that started this
+    // specific payment, so it already acts as the access token here.
     const payment = payments.get(request.params.checkoutRequestId);
 
     if (!payment) {
-        return response.status(404).json({ status: "unknown", message: "Payment request not found." });
-    }
-
-    const order = db.prepare("SELECT customer_id FROM orders WHERE id = ?").get(payment.orderId);
-    if (!order || order.customer_id !== request.customer.id) {
         return response.status(404).json({ status: "unknown", message: "Payment request not found." });
     }
 
@@ -3218,7 +3317,7 @@ function isRateLimited(ip) {
     return entry.count > CONTACT_MAX_PER_WINDOW;
 }
 
-app.post("/api/contact", asyncHandler(async function (request, response) {
+app.post("/api/contact", async function (request, response) {
 
     if (!contactMailConfigured()) {
         return response.status(503).json({
@@ -3268,7 +3367,7 @@ app.post("/api/contact", asyncHandler(async function (request, response) {
         console.error("Contact form email failed:", error.message);
         return response.status(502).json({ message: "Could not send message. Please try again later." });
     }
-}));
+});
 
 /* =========================
    SERVER HEALTH
@@ -3327,25 +3426,6 @@ function releaseStaleReservations() {
 }
 
 setInterval(releaseStaleReservations, 5 * 60 * 1000);
-
-/* =========================
-   JSON 404 + ERROR HANDLERS
-   Must be registered after every route above. Without these, an unknown
-   path or an uncaught exception falls through to Express's default HTML
-   error page — which breaks every frontend `await response.json()` call
-   and shows a misleading "Network error" even though the request did
-   reach the server.
-========================= */
-
-app.use(function (request, response) {
-    response.status(404).json({ message: "Not found." });
-});
-
-app.use(function (error, request, response, next) {
-    console.error("Unhandled request error:", error);
-    if (response.headersSent) return next(error);
-    response.status(500).json({ message: "Something went wrong on our end. Please try again." });
-});
 
 /* =========================
    START SERVER
