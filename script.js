@@ -1638,9 +1638,9 @@
 
             setMessage('Sending the M-PESA payment request...');
 
+            let response;
             try {
-
-                const response =
+                response =
                     await fetch('/api/mpesa/stkpush', {
 
                         method: 'POST',
@@ -1695,41 +1695,52 @@
                                 })
                         })
                     });
+            } catch (error) {
+                // fetch() itself only throws for a genuine connectivity
+                // problem — offline, DNS failure, server unreachable.
+                setMessage('Could not reach the PHYNEX server. Check your internet connection and try again.');
+                payButton.disabled = false;
+                payButton.textContent = 'Pay with M-PESA';
+                return;
+            }
 
-                const data = await response.json();
+            let data;
+            try {
+                data = await response.json();
+            } catch (error) {
+                // Reached the server and got a response, but it wasn't
+                // valid JSON — a host/proxy error page, not a network
+                // problem on your end.
+                setMessage('The server sent back an unexpected response (status ' + response.status + '). Please wait a moment and try again.');
+                payButton.disabled = false;
+                payButton.textContent = 'Pay with M-PESA';
+                return;
+            }
 
-                if (!response.ok) {
-
-                    setMessage(
-                        data.message ||
-                        'Could not send the M-PESA request.'
-                    );
-
-                    payButton.disabled = false;
-                    payButton.textContent = 'Pay with M-PESA';
-
-                    return;
-                }
+            if (!response.ok) {
 
                 setMessage(
-                    data.customerMessage ||
-                    'Check your phone and enter your M-PESA PIN.'
+                    data.message ||
+                    'Could not send the M-PESA request.'
                 );
-
-                payButton.textContent = 'Waiting for payment...';
-
-                pollPaymentStatus(
-                    data.checkoutRequestId,
-                    data.orderNumber
-                );
-
-            } catch (error) {
-
-                setMessage('Network error. Please try again.');
 
                 payButton.disabled = false;
                 payButton.textContent = 'Pay with M-PESA';
+
+                return;
             }
+
+            setMessage(
+                data.customerMessage ||
+                'Check your phone and enter your M-PESA PIN.'
+            );
+
+            payButton.textContent = 'Waiting for payment...';
+
+            pollPaymentStatus(
+                data.checkoutRequestId,
+                data.orderNumber
+            );
         });
 
         form.addEventListener('submit', function (event) {

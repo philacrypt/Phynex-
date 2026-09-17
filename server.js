@@ -2894,6 +2894,19 @@ function mpesaConfigured() {
     );
 }
 
+// Tells you exactly which Daraja credential(s) are missing, instead of a
+// single generic "not configured" message — this is the #1 reason "Pay
+// with M-PESA" does nothing: one env var typo'd or never set on the host.
+function mpesaMissingVars() {
+    return [
+        ["MPESA_CONSUMER_KEY", process.env.MPESA_CONSUMER_KEY],
+        ["MPESA_CONSUMER_SECRET", process.env.MPESA_CONSUMER_SECRET],
+        ["MPESA_PASSKEY", process.env.MPESA_PASSKEY],
+        ["MPESA_SHORTCODE", process.env.MPESA_SHORTCODE],
+        ["MPESA_CALLBACK_URL", process.env.MPESA_CALLBACK_URL]
+    ].filter(function (pair) { return !pair[1]; }).map(function (pair) { return pair[0]; });
+}
+
 function normalizePhone(value) {
     const normalized = normalizeKenyanPhone(value);
     return normalized ? normalized.slice(1) : null;
@@ -2946,9 +2959,28 @@ async function getAccessToken() {
 app.post("/api/mpesa/stkpush", async function (request, response) {
 
     if (!mpesaConfigured()) {
+        const missing = mpesaMissingVars();
         return response.status(503).json({
-            message: "M-PESA is not configured yet. Add your Daraja credentials to .env."
+            message: "M-PESA is not fully configured yet. Missing from .env: " + missing.join(", ") + "."
         });
+    }
+
+    // Two very common misconfigurations that Daraja will otherwise reject
+    // with a cryptic error, or that silently send requests to the wrong
+    // environment. Catch them here with a message that says exactly what
+    // to fix.
+    const callbackUrl = process.env.MPESA_CALLBACK_URL || "";
+    if (!/^https:\/\//i.test(callbackUrl) || /localhost|127\.0\.0\.1/i.test(callbackUrl)) {
+        return response.status(503).json({
+            message: "MPESA_CALLBACK_URL must be a public https:// URL that Safaricom can reach (not localhost) — e.g. https://your-deployed-domain.com/api/mpesa/callback."
+        });
+    }
+    if (!process.env.MPESA_ENV || process.env.MPESA_ENV.toLowerCase() === "sandbox") {
+        // Not an error — sandbox is valid for testing — but sandbox only
+        // sends a real phone prompt to Safaricom's test MSISDN
+        // (254708374149), never to a real customer's phone. If you're
+        // expecting a real prompt on a real number, set MPESA_ENV=production
+        // in .env with your live Daraja/paybill credentials.
     }
 
     const payload = request.body || {};
