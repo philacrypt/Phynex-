@@ -115,7 +115,7 @@
                     <div class="field-grid">
                         <div class="field"><label for="customerName">Full name</label><input id="customerName" name="name" type="text" autocomplete="name" required></div>
                         <div class="field"><label for="customerPhone">Phone number</label><input id="customerPhone" name="phone" type="tel" autocomplete="tel" required></div>
-                        <div class="field full"><label for="customerEmail">Email address (optional)</label><input id="customerEmail" name="email" type="email" autocomplete="email"></div>
+                        <div class="field full"><label for="customerEmail">Email address</label><input id="customerEmail" name="email" type="email" autocomplete="email" required></div>
                         <div class="field"><label for="deliveryCounty">County</label><input id="deliveryCounty" name="county" type="text" required></div>
                         <div class="field"><label for="deliveryLocation">Town or city</label><input id="deliveryLocation" name="location" type="text" required></div>
                         <div class="field full"><label for="deliveryAddress">Delivery address</label><input id="deliveryAddress" name="address" type="text" autocomplete="street-address" required></div>
@@ -130,12 +130,12 @@
                         </label>
                         <div class="mpesa-fields"><label for="mpesaPhone">M-PESA phone number</label><input id="mpesaPhone" name="mpesaPhone" type="tel" placeholder="07XXXXXXXX" required></div>
                         <button class="mpesa-button" id="payWithMpesa" type="button">Pay with M-PESA</button>
-                        <p class="payment-note">Your payment request is sent only through the protected PHYNEX backend. If Daraja credentials are missing, the page will tell you that M-PESA is not configured yet.</p>
+                        <p class="payment-note">Clicking pay sends a real STK Push request to the number above through the PHYNEX backend. You'll get a prompt on your phone to enter your M-PESA PIN.</p>
                     </div>
 
                     <button class="place-order" type="submit">Place Order</button>
                     <p id="checkoutMessage" class="order-message" role="status"></p>
-                    <p class="checkout-notice">Order submission is currently a local demo. Payment processing, order confirmation, and delivery updates require a connected PHYNEX backend.</p>
+                    <p class="checkout-notice">Your order is created and reserved as soon as you submit. Stock is only deducted, and the order marked paid, once M-PESA confirms your payment.</p>
                 </form>
                 <section id="orderConfirmation" hidden aria-live="polite">
                     <h2>Order Confirmed</h2>
@@ -157,7 +157,7 @@
   "use strict";
 
   const CART_KEYS = ["phynexCart", "cart", "cartItems"];
-  const DELIVERY_FEE = 0; // Change this to a fixed fee if your store charges one.
+  const DELIVERY_FEE = 300; // Must match DELIVERY_FEE in server.js and script.js.
 
   function readCart() {
     for (const key of CART_KEYS) {
@@ -338,80 +338,213 @@
     renderCart();
   });
 
-  const form = document.getElementById("checkoutForm");
-  if (form) {
-    form.addEventListener("submit", function (event) {
-      event.preventDefault();
-
-      if (!cart.length) {
-        const msg = document.getElementById("checkoutMessage");
-        if (msg) msg.textContent = "Your cart is empty. Add a product before placing the order.";
-        return;
-      }
-
-      const data = new FormData(form);
-      const customer = data.get("name") || "";
-      const total = cartSubtotal() + (cartSubtotal() > 0 ? DELIVERY_FEE : 0);
-
-      const orderNumber = "PHX-" + Date.now().toString().slice(-8);
-      const confirmation = document.getElementById("orderConfirmation");
-      const formMessage = document.getElementById("checkoutMessage");
-
-      const orderNumberEl = document.getElementById("confirmationOrderNumber");
-      const customerEl = document.getElementById("confirmationCustomer");
-      const deliveryEl = document.getElementById("confirmationDelivery");
-      const totalEl = document.getElementById("confirmationTotal");
-      const itemsEl = document.getElementById("confirmationItems");
-
-      if (orderNumberEl) orderNumberEl.textContent = orderNumber;
-      if (customerEl) customerEl.textContent = customer;
-      if (deliveryEl) {
-        deliveryEl.textContent =
-          (data.get("county") || "") + ", " +
-          (data.get("location") || "") + ", " +
-          (data.get("address") || "");
-      }
-      if (totalEl) totalEl.textContent = money(total);
-
-      if (itemsEl) {
-        itemsEl.innerHTML = cart.map(item =>
-          "<p><strong>" + escapeHtml(itemName(item)) + "</strong> × " +
-          itemQty(item) + " — " + money(itemPrice(item) * itemQty(item)) + "</p>"
-        ).join("");
-      }
-
-      if (confirmation) confirmation.hidden = false;
-      if (formMessage) formMessage.textContent = "Order created successfully.";
-
-      // Clear cart only after the order has been accepted by this local checkout flow.
-      cart = [];
-      saveCart(cart);
-      renderCart();
-      form.hidden = true;
-    });
-  }
-
   function escapeHtml(value) {
     return String(value).replace(/[&<>"']/g, ch => ({
       "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
     }[ch]));
   }
 
+  /* =====================================================
+     REAL M-PESA CHECKOUT — talks to the PHYNEX backend
+     ===================================================== */
+
+  const form = document.getElementById("checkoutForm");
   const mpesaButton = document.getElementById("payWithMpesa");
-  if (mpesaButton) {
-    mpesaButton.addEventListener("click", function () {
-      const msg = document.getElementById("checkoutMessage");
-      if (!cart.length) {
-        if (msg) msg.textContent = "Your cart is empty.";
-        return;
-      }
-      if (msg) {
-        msg.textContent = "M-PESA payment request is ready for " + money(
-          cartSubtotal() + (cartSubtotal() > 0 ? DELIVERY_FEE : 0)
-        ) + ".";
-      }
-    });
+  const placeOrderButton = form ? form.querySelector(".place-order") : null;
+  const formMessage = document.getElementById("checkoutMessage");
+
+  const POLL_INTERVAL_MS = 3000;
+  const MAX_POLL_ATTEMPTS = 40; // ~2 minutes of polling
+
+  let submitting = false;
+  let pollTimer = null;
+
+  function setMessage(text, isError) {
+    if (!formMessage) return;
+    formMessage.textContent = text || "";
+    formMessage.style.color = isError ? "#d9363e" : "";
   }
+
+  function setBusy(busy, label) {
+    submitting = busy;
+    [mpesaButton, placeOrderButton].forEach(function (btn) {
+      if (!btn) return;
+      btn.disabled = busy;
+    });
+    if (label && mpesaButton) mpesaButton.textContent = label;
+  }
+
+  function stopPolling() {
+    if (pollTimer) {
+      clearTimeout(pollTimer);
+      pollTimer = null;
+    }
+  }
+
+  function showConfirmation(orderNumber, snapshot) {
+    const confirmation = document.getElementById("orderConfirmation");
+    const orderNumberEl = document.getElementById("confirmationOrderNumber");
+    const customerEl = document.getElementById("confirmationCustomer");
+    const deliveryEl = document.getElementById("confirmationDelivery");
+    const totalEl = document.getElementById("confirmationTotal");
+    const itemsEl = document.getElementById("confirmationItems");
+
+    if (orderNumberEl) orderNumberEl.textContent = orderNumber;
+    if (customerEl) customerEl.textContent = snapshot.name;
+    if (deliveryEl) {
+      deliveryEl.textContent = [snapshot.county, snapshot.location, snapshot.address]
+        .filter(Boolean).join(", ");
+    }
+    if (totalEl) totalEl.textContent = money(snapshot.total);
+    if (itemsEl) {
+      itemsEl.innerHTML = snapshot.items.map(item =>
+        "<p><strong>" + escapeHtml(itemName(item)) + "</strong> × " +
+        itemQty(item) + " — " + money(itemPrice(item) * itemQty(item)) + "</p>"
+      ).join("");
+    }
+
+    if (confirmation) confirmation.hidden = false;
+    if (form) form.hidden = true;
+
+    cart = [];
+    saveCart(cart);
+    renderCart();
+  }
+
+  function pollPayment(checkoutRequestId, orderNumber, snapshot, attempt) {
+    attempt = attempt || 0;
+
+    fetch("/api/mpesa/status/" + encodeURIComponent(checkoutRequestId))
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (data.status === "paid") {
+          stopPolling();
+          setMessage("Payment received. Your order is confirmed.", false);
+          setBusy(false, "Pay with M-PESA");
+          showConfirmation(orderNumber, snapshot);
+          return;
+        }
+
+        if (data.status === "failed") {
+          stopPolling();
+          setBusy(false, "Pay with M-PESA");
+          setMessage(data.message || "The M-PESA payment failed or was cancelled. Please try again.", true);
+          return;
+        }
+
+        // still pending
+        if (attempt + 1 >= MAX_POLL_ATTEMPTS) {
+          stopPolling();
+          setBusy(false, "Check payment status");
+          setMessage(
+            "Still waiting for M-PESA to confirm this payment. If you entered your PIN, this can take a little longer — click \u201cCheck payment status\u201d to check again, or refresh in a minute.",
+            false
+          );
+          if (mpesaButton) {
+            mpesaButton.onclick = function () {
+              setBusy(true, "Checking...");
+              pollPayment(checkoutRequestId, orderNumber, snapshot, 0);
+            };
+          }
+          return;
+        }
+
+        pollTimer = setTimeout(function () {
+          pollPayment(checkoutRequestId, orderNumber, snapshot, attempt + 1);
+        }, POLL_INTERVAL_MS);
+      })
+      .catch(function () {
+        pollTimer = setTimeout(function () {
+          pollPayment(checkoutRequestId, orderNumber, snapshot, attempt + 1);
+        }, POLL_INTERVAL_MS);
+      });
+  }
+
+  function submitOrder(event) {
+    if (event) event.preventDefault();
+    if (submitting) return;
+
+    if (!cart.length) {
+      setMessage("Your cart is empty. Add a product before placing the order.", true);
+      return;
+    }
+
+    if (!form.reportValidity()) return;
+
+    const data = new FormData(form);
+    const mpesaPhoneInput = document.getElementById("mpesaPhone");
+    const mpesaPhone = mpesaPhoneInput ? mpesaPhoneInput.value.trim() : "";
+
+    if (!mpesaPhone) {
+      if (mpesaPhoneInput) mpesaPhoneInput.focus();
+      setMessage("Enter the M-PESA phone number to pay with.", true);
+      return;
+    }
+
+    const total = cartSubtotal() + (cartSubtotal() > 0 ? DELIVERY_FEE : 0);
+
+    const snapshot = {
+      name: data.get("name") || "",
+      county: data.get("county") || "",
+      location: data.get("location") || "",
+      address: data.get("address") || "",
+      items: cart.map(function (item) { return Object.assign({}, item); }),
+      total: total
+    };
+
+    const payload = {
+      items: cart.map(function (item) {
+        return { id: item.id, quantity: itemQty(item) };
+      }),
+      customer: {
+        name: data.get("name") || "",
+        email: data.get("email") || "",
+        phone: data.get("phone") || ""
+      },
+      delivery: {
+        county: data.get("county") || "",
+        location: data.get("location") || "",
+        address: data.get("address") || "",
+        instructions: data.get("instructions") || ""
+      },
+      mpesaPhone: mpesaPhone
+    };
+
+    setBusy(true, "Sending prompt...");
+    setMessage("Sending your M-PESA payment request...", false);
+
+    fetch("/api/mpesa/stkpush", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+      .then(function (res) {
+        return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+      })
+      .then(function (result) {
+        if (!result.ok) {
+          setBusy(false, "Pay with M-PESA");
+          setMessage(result.data.message || "Unable to send the M-PESA request. Please try again.", true);
+          return;
+        }
+
+        setBusy(true, "Waiting for you to pay...");
+        setMessage(
+          (result.data.customerMessage || "A payment prompt was sent to your phone.") +
+          " Enter your M-PESA PIN on " + mpesaPhone + " to pay " + money(total) + ". Don't close this page.",
+          false
+        );
+
+        pollPayment(result.data.checkoutRequestId, result.data.orderNumber, snapshot, 0);
+      })
+      .catch(function () {
+        setBusy(false, "Pay with M-PESA");
+        setMessage("Could not reach the PHYNEX server. Check your connection and try again.", true);
+      });
+  }
+
+  if (form) form.addEventListener("submit", submitOrder);
+  if (mpesaButton) mpesaButton.addEventListener("click", submitOrder);
 
   renderCart();
 })();
