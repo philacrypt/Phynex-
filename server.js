@@ -1,5 +1,6 @@
 const express = require("express");
 const path = require("path");
+const fs = require("fs");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
@@ -12,59 +13,16 @@ const port = Number(process.env.PORT) || 3000;
 
 const payments = new Map();
 
-app.disable("x-powered-by");
-
-app.use(function (request, response, next) {
-    response.setHeader("X-Content-Type-Options", "nosniff");
-    response.setHeader("X-Frame-Options", "SAMEORIGIN");
-    response.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-    response.setHeader("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
-    next();
-});
-
-// PHYNEX is normally same-origin. If an API consumer is hosted on a
-// separate origin, list only those trusted origins in ALLOWED_ORIGINS.
-app.use(function (request, response, next) {
-    const origin = request.headers.origin;
-    const allowed = String(process.env.ALLOWED_ORIGINS || "")
-        .split(",").map(function (item) { return item.trim(); }).filter(Boolean);
-
-    if (!origin || allowed.length === 0) return next();
-    if (!allowed.includes(origin)) {
-        return response.status(403).json({ message: "Origin is not allowed." });
-    }
-
-    response.setHeader("Access-Control-Allow-Origin", origin);
-    response.setHeader("Vary", "Origin");
-    response.setHeader("Access-Control-Allow-Credentials", "true");
-    response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    response.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
-
-    if (request.method === "OPTIONS") return response.sendStatus(204);
-    next();
-});
-
 app.use(express.json({ limit: "100kb" }));
 app.use(express.static(__dirname));
-
-// Explicit fallback routes for the category pages. express.static above
-// should already serve these, but some hosts/build steps can be picky
-// about which top-level files get deployed, so this guarantees the
-// pages that "Shop now" / category taps link to always resolve instead
-// of returning "Cannot GET".
-app.get("/category.html", function (request, response) {
-    response.sendFile(path.join(__dirname, "category.html"));
-});
-
-app.get("/categories.html", function (request, response) {
-    response.sendFile(path.join(__dirname, "categories.html"));
-});
 
 /* =========================
    DATABASE
 ========================= */
 
-const db = new Database(path.join(__dirname, "phynex.db"));
+const DATA_DIR = process.env.PHYNEX_DATA_DIR || __dirname;
+fs.mkdirSync(DATA_DIR, { recursive: true });
+const db = new Database(path.join(DATA_DIR, "phynex.db"));
 db.pragma("journal_mode = WAL");
 
 db.exec(`
@@ -187,18 +145,6 @@ db.exec(`
         action TEXT NOT NULL,
         created_at INTEGER NOT NULL
     );
-
-    CREATE TABLE IF NOT EXISTS blog_posts (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        tag TEXT,
-        title TEXT NOT NULL,
-        body TEXT NOT NULL,
-        image_url TEXT,
-        video_url TEXT,
-        customer_id INTEGER,
-        author_name TEXT,
-        created_at INTEGER NOT NULL
-    );
 `);
 
 /* =========================
@@ -211,9 +157,7 @@ function ensureColumn(table, column, definition) {
 
     if (!hasColumn) {
         db.exec("ALTER TABLE " + table + " ADD COLUMN " + column + " " + definition);
-        return true; // column was just added by this run
     }
-    return false;
 }
 
 ensureColumn("products", "media", "TEXT");
@@ -236,393 +180,114 @@ ensureColumn("orders", "stock_deducted", "INTEGER DEFAULT 0");
 ensureColumn("customers", "google_id", "TEXT");
 ensureColumn("customers", "reset_token", "TEXT");
 ensureColumn("customers", "reset_token_expires", "INTEGER");
+ensureColumn("customers", "token_expires", "INTEGER");
+ensureColumn("sellers", "token_expires", "INTEGER");
+ensureColumn("products", "deleted_at", "INTEGER");
+ensureColumn("orders", "updated_at", "INTEGER");
+ensureColumn("orders", "reservation_expires", "INTEGER");
+ensureColumn("products", "reserved_stock", "INTEGER DEFAULT 0");
 
-// Customer authentication additions: email verification, phone OTP
-// verification and HttpOnly session cookies. Safe to re-run on every
-// startup; ensureColumn() is a no-op once a column already exists.
-const emailVerifiedColumnIsNew = ensureColumn("customers", "email_verified_at", "INTEGER");
-ensureColumn("customers", "email_verification_token_hash", "TEXT");
-ensureColumn("customers", "email_verification_expires", "INTEGER");
-ensureColumn("customers", "phone_verified_at", "INTEGER");
-ensureColumn("customers", "phone_verification_code_hash", "TEXT");
-ensureColumn("customers", "phone_verification_expires", "INTEGER");
-ensureColumn("customers", "phone_verification_attempts", "INTEGER DEFAULT 0");
-ensureColumn("customers", "session_token_hash", "TEXT");
-ensureColumn("customers", "session_expires", "INTEGER");
+const DEFAULT_CATEGORIES = [
+    ["Phones & Tablets","phones-tablets","Mobile phones, tablets and accessories"],
+    ["Computers & Laptops","computers-laptops","Laptops, desktops, monitors and computer accessories"],
+    ["Electronics","electronics","TVs, audio, smart devices and electronics"],
+    ["Gaming","gaming","Consoles, games, controllers and gaming accessories"],
+    ["Fashion","fashion","Clothing, fashion and accessories"],
+    ["Shoes & Bags","shoes-bags","Shoes, handbags, backpacks and travel bags"],
+    ["Beauty & Personal Care","beauty-personal-care","Beauty, cosmetics and personal-care products"],
+    ["Home & Garden","home-garden","Home improvement, decor, garden and outdoor home items"],
+    ["Furniture","furniture","Beds, sofas, tables, chairs and storage"],
+    ["Appliances","appliances","Kitchen, laundry, cooling and household appliances"],
+    ["Grocery","grocery","Food, beverages and everyday household consumables"],
+    ["Health & Wellness","health-wellness","Wellness and non-prescription health products"],
+    ["Baby & Kids","baby-kids","Baby products, toys, kids clothing and essentials"],
+    ["Sports & Outdoors","sports-outdoors","Sports equipment, fitness and outdoor gear"],
+    ["Automotive","automotive","Car, motorcycle and vehicle parts and accessories"],
+    ["Books & Stationery","books-stationery","Books, school, office and stationery supplies"],
+    ["Jewelry & Watches","jewelry-watches","Jewelry, watches and accessories"],
+    ["Cameras & Photography","cameras-photography","Cameras, lenses and photography equipment"],
+    ["Pet Supplies","pet-supplies","Pet food, accessories and supplies"],
+    ["Industrial & Tools","industrial-tools","Tools, hardware, machinery and business equipment"],
+    ["Services","services","Local and professional services"],
+    ["Other","other","Other products that do not fit another category"]
+];
 
-// One-time backfill: this is the first startup after email verification was
-// added, so accounts that already existed (and could already log in under
-// the old system) are grandfathered in as email-verified. Without this,
-// every pre-existing customer would be locked out on the next deploy.
-if (emailVerifiedColumnIsNew) {
-    db.prepare(
-        "UPDATE customers SET email_verified_at = created_at WHERE email_verified_at IS NULL"
-    ).run();
+const seedCategory = db.prepare(
+    "INSERT OR IGNORE INTO categories (name, slug, description, created_at) VALUES (?, ?, ?, ?)"
+);
+for (const category of DEFAULT_CATEGORIES) {
+    seedCategory.run(category[0], category[1], category[2], Date.now());
 }
-
-ensureColumn("reviews", "customer_id", "INTEGER");
-
-// SPEED: the schema had no indexes at all, so every filtered lookup below
-// was a full table scan. These back the exact WHERE/JOIN/ORDER BY columns
-// used throughout the routes above and below. Safe to re-run on startup.
-db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_products_status_created ON products(status, created_at);
-    CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
-    CREATE INDEX IF NOT EXISTS idx_products_seller ON products(seller_id);
-    CREATE INDEX IF NOT EXISTS idx_products_sponsored ON products(sponsored);
-    CREATE INDEX IF NOT EXISTS idx_products_tracking_code ON products(tracking_code);
-    CREATE INDEX IF NOT EXISTS idx_reviews_product_status ON reviews(product_id, status);
-    CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
-    CREATE INDEX IF NOT EXISTS idx_orders_checkout_request ON orders(checkout_request_id);
-    CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
-    CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
-`);
-
-// Seed a broad, ready-to-use set of categories the first time the store
-// runs (covers more than just tech so the marketplace isn't tech-only).
-// This only runs once — if the admin has already added/removed categories,
-// we leave their list alone.
-(function seedDefaultCategories() {
-    const count = db.prepare("SELECT COUNT(*) AS c FROM categories").get().c;
-    if (count > 0) return;
-
-    const defaults = [
-        ["Phones & Tablets", "Mobile phones, tablets and accessories."],
-        ["Computers & Laptops", "Desktops, laptops, monitors and computer parts."],
-        ["Electronics", "TVs, audio, cameras and general electronics."],
-        ["Gaming", "Consoles, games and gaming accessories."],
-        ["Fashion & Clothing", "Men's, women's and kids' clothing."],
-        ["Shoes & Footwear", "Sneakers, official shoes, sandals and boots."],
-        ["Beauty & Personal Care", "Skincare, makeup, haircare and grooming."],
-        ["Health & Wellness", "Supplements, fitness and wellness products."],
-        ["Home & Living", "Furniture, decor, bedding and storage."],
-        ["Kitchen & Appliances", "Cookware, small appliances and kitchen tools."],
-        ["Groceries & Food", "Packaged foods, snacks and household groceries."],
-        ["Baby & Kids", "Baby gear, toys and kids' essentials."],
-        ["Toys & Games", "Toys, board games and hobby items."],
-        ["Sports & Outdoors", "Fitness gear, camping and outdoor equipment."],
-        ["Automotive", "Car accessories, parts and tools."],
-        ["Books & Stationery", "Books, office and school supplies."],
-        ["Jewelry & Watches", "Jewelry, watches and fashion accessories."],
-        ["Pet Supplies", "Food, toys and accessories for pets."],
-        ["Garden & Outdoor Living", "Garden tools, plants and outdoor furniture."],
-        ["Other", "Anything that doesn't fit another category."]
-    ];
-
-    const insert = db.prepare(
-        "INSERT INTO categories (name, slug, description, created_at) VALUES (?, ?, ?, ?)"
-    );
-
-    const now = Date.now();
-
-    defaults.forEach(function (entry) {
-        const name = entry[0];
-        const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-        try {
-            insert.run(name, slug, entry[1], now);
-        } catch (error) {
-            // Ignore duplicates — safe to re-run.
-        }
-    });
-})();
-
-// Turn the old static "Flash Deals" showcase cards (which used to be
-// hardcoded, non-purchasable HTML) into real, approved products owned
-// by an official PHYNEX store account. This makes them behave exactly
-// like any seller's product: real id, real stock, real checkout/order
-// records, and eligible for real customer reviews. Runs once — if this
-// store account already exists we leave everything alone.
-(function seedFlashDealProducts() {
-
-    const STORE_EMAIL = "store@phynextech.co.ke";
-
-    let store = db.prepare("SELECT * FROM sellers WHERE email = ?").get(STORE_EMAIL);
-
-    if (!store) {
-        const passwordHash = bcrypt.hashSync(crypto.randomBytes(24).toString("hex"), 10);
-        const result = db
-            .prepare(
-                `INSERT INTO sellers (business_name, email, phone, password_hash, status, created_at)
-                 VALUES (?, ?, ?, ?, 'approved', ?)`
-            )
-            .run("PHYNEX Official Store", STORE_EMAIL, "", passwordHash, Date.now());
-        store = db.prepare("SELECT * FROM sellers WHERE id = ?").get(result.lastInsertRowid);
-    }
-
-    const existingCount = db
-        .prepare("SELECT COUNT(*) AS c FROM products WHERE seller_id = ?")
-        .get(store.id).c;
-
-    if (existingCount > 0) return;
-
-    const items = [
-        {
-            name: "Dell Vostro 15 3500 i7 11th Gen 8GB 400GB SSD",
-            description: "A dependable Dell laptop for work, study and everyday productivity.",
-            specifications: "Intel Core i7 11th Gen | 8GB RAM | 400GB SSD",
-            price: 35000,
-            oldPrice: 40000,
-            category: "Computers & Laptops",
-            image: "images/13.jpeg",
-            stock: 6
-        },
-        {
-            name: "HP EliteDesk 830 G5 i5 8th Gen 8GB 256GB SSD",
-            description: "A professionally refurbished HP desktop with responsive performance for office and home use.",
-            specifications: "Intel Core i5 8th Gen | 8GB RAM | 256GB SSD",
-            price: 32500,
-            oldPrice: 36000,
-            category: "Computers & Laptops",
-            image: "images/18.jpeg",
-            stock: 5
-        },
-        {
-            name: "BT Speaker HF226",
-            description: "A portable Bluetooth speaker with clear sound for music, calls and everyday entertainment.",
-            specifications: "Bluetooth wireless audio | Portable design | Rechargeable battery",
-            price: 2000,
-            oldPrice: 2500,
-            category: "Electronics",
-            image: "images/19.jpeg",
-            stock: 20
-        },
-        {
-            name: "MacBook Air i5 2017 256GB SSD 8GB RAM",
-            description: "A compact MacBook with a sharp display and reliable performance for everyday computing.",
-            specifications: "Intel Core i5 | 8GB RAM | 256GB SSD",
-            price: 20500,
-            oldPrice: 35000,
-            category: "Computers & Laptops",
-            image: "images/17.jpeg",
-            stock: 4
-        },
-        {
-            name: "Lenovo Thinkpad T460 256GB SSD 8GB RAM",
-            description: "A durable Lenovo ThinkPad with a comfortable keyboard and fast SSD storage for work on the go.",
-            specifications: "Intel Core i5 | 8GB RAM | 256GB SSD",
-            price: 23000,
-            oldPrice: 25000,
-            category: "Computers & Laptops",
-            image: "images/20.jpeg",
-            stock: 7
-        }
-    ];
-
-    const insertProduct = db.prepare(
-        `INSERT INTO products
-            (seller_id, name, description, specifications, price, old_price, category, image, media, status, sponsored, tracking_code, stock, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', 0, ?, ?, ?)`
-    );
-
-    const now = Date.now();
-
-    items.forEach(function (item, index) {
-        const media = JSON.stringify([{ url: item.image, type: "image" }]);
-        const trackingCode = generateTrackingCode();
-        insertProduct.run(
-            store.id, item.name, item.description, item.specifications,
-            item.price, item.oldPrice, item.category, item.image, media,
-            trackingCode, item.stock, now - (items.length - index)
-        );
-    });
-})();
 
 /* =========================
-   LOGIN RATE LIMITING (brute-force protection)
-   Tracks failed sign-in attempts per IP + account identifier. After too
-   many failures in a short window, further attempts are blocked for a
-   cooldown period. Successful logins reset the counter.
+   AUTO-CATEGORISATION
+   Keyword map used to place a product in the right category
+   whenever a seller/admin leaves the category field blank, so
+   no product is ever saved with an empty category.
 ========================= */
 
-const LOGIN_MAX_ATTEMPTS = 6;
-const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-const loginAttempts = new Map(); // key -> { count, firstAttempt, lockedUntil }
+const CATEGORY_KEYWORDS = [
+    ["Phones & Tablets", ["phone", "smartphone", "iphone", "samsung galaxy", "tecno", "infinix", "itel", "tablet", "ipad", "sim card", "phone case", "screen protector"]],
+    ["Computers & Laptops", ["laptop", "notebook", "macbook", "dell", "hp laptop", "lenovo", "desktop", "pc", "monitor", "keyboard", "mouse", "printer", "computer", "ram", "ssd", "hard drive", "motherboard", "graphics card"]],
+    ["Electronics", ["tv", "television", "speaker", "headphone", "earphone", "earbud", "bluetooth", "radio", "smartwatch", "power bank", "charger", "cable", "drone", "projector", "router", "modem"]],
+    ["Gaming", ["playstation", "xbox", "nintendo", "gaming console", "game controller", "video game", "ps4", "ps5", "gamepad"]],
+    ["Fashion", ["shirt", "dress", "trouser", "jeans", "jacket", "suit", "skirt", "blouse", "t-shirt", "hoodie", "clothing", "kitenge", "ankara"]],
+    ["Shoes & Bags", ["shoe", "sneaker", "sandal", "heel", "boot", "handbag", "backpack", "purse", "wallet", "suitcase", "luggage"]],
+    ["Beauty & Personal Care", ["makeup", "lipstick", "perfume", "cosmetic", "skincare", "lotion", "shampoo", "hair", "wig", "nail", "cream", "soap"]],
+    ["Home & Garden", ["decor", "curtain", "rug", "carpet", "garden", "plant pot", "lamp", "lighting", "bedding", "duvet", "pillow"]],
+    ["Furniture", ["sofa", "bed", "mattress", "chair", "table", "wardrobe", "cabinet", "shelf", "desk", "furniture"]],
+    ["Appliances", ["fridge", "refrigerator", "microwave", "blender", "cooker", "oven", "washing machine", "iron box", "kettle", "fan", "air conditioner", "heater", "appliance"]],
+    ["Grocery", ["rice", "flour", "sugar", "cooking oil", "beverage", "snack", "grocery", "food", "drink", "juice", "tea", "coffee"]],
+    ["Health & Wellness", ["vitamin", "supplement", "first aid", "thermometer", "wellness", "fitness tracker", "mask", "sanitizer"]],
+    ["Baby & Kids", ["baby", "diaper", "toy", "stroller", "kids", "infant", "toddler"]],
+    ["Sports & Outdoors", ["bicycle", "bike", "gym", "dumbbell", "treadmill", "football", "basketball", "tent", "camping", "sports", "yoga mat"]],
+    ["Automotive", ["car", "vehicle", "tyre", "tire", "engine oil", "motorcycle", "spare part", "car battery", "helmet", "automotive"]],
+    ["Books & Stationery", ["book", "novel", "textbook", "pen", "notebook paper", "stationery", "office supplies"]],
+    ["Jewelry & Watches", ["watch", "necklace", "bracelet", "ring", "earring", "jewelry", "jewellery"]],
+    ["Cameras & Photography", ["camera", "lens", "tripod", "dslr", "gopro", "photography"]],
+    ["Pet Supplies", ["dog food", "cat food", "pet", "leash", "aquarium", "pet supplies"]],
+    ["Industrial & Tools", ["drill", "hammer", "wrench", "toolbox", "generator", "welding", "industrial", "machine", "tools"]],
+    ["Services", ["service", "repair service", "installation", "consultation", "cleaning service"]]
+];
 
-const SENSITIVE_ACTION_WINDOW_MS = 15 * 60 * 1000;
-const sensitiveActionAttempts = new Map();
-
-function sensitiveActionRateLimited(request, action) {
-    const key = action + ":" + request.ip;
-    const now = Date.now();
-    const entry = sensitiveActionAttempts.get(key);
-
-    if (!entry || now - entry.windowStart > SENSITIVE_ACTION_WINDOW_MS) {
-        sensitiveActionAttempts.set(key, { windowStart: now, count: 1 });
-        return false;
+function inferCategory(name, description, tags) {
+    const text = [name, description, tags].filter(Boolean).join(" ").toLowerCase();
+    for (const [category, keywords] of CATEGORY_KEYWORDS) {
+        if (keywords.some(function (keyword) { return text.indexOf(keyword) !== -1; })) {
+            return category;
+        }
     }
-
-    entry.count += 1;
-    return entry.count > 10;
+    return "Other";
 }
 
-function loginRateLimitKey(request, identifier) {
-    return request.ip + ":" + String(identifier || "").toLowerCase();
+function resolveCategory(rawCategory, name, description, tags) {
+    const trimmed = String(rawCategory || "").trim();
+    if (trimmed) return trimmed;
+    return inferCategory(name, description, tags);
 }
 
-function checkLoginRateLimit(request, identifier) {
-    const key = loginRateLimitKey(request, identifier);
-    const entry = loginAttempts.get(key);
-
-    if (!entry) return null;
-
-    if (entry.lockedUntil && entry.lockedUntil > Date.now()) {
-        const minutesLeft = Math.ceil((entry.lockedUntil - Date.now()) / 60000);
-        return "Too many failed sign-in attempts. Please try again in " + minutesLeft + " minute" + (minutesLeft === 1 ? "" : "s") + ".";
-    }
-
-    if (entry.lockedUntil && entry.lockedUntil <= Date.now()) {
-        loginAttempts.delete(key);
-    }
-
-    return null;
-}
-
-function recordLoginFailure(request, identifier) {
-    const key = loginRateLimitKey(request, identifier);
-    const now = Date.now();
-    const entry = loginAttempts.get(key) || { count: 0, firstAttempt: now };
-
-    if (now - entry.firstAttempt > LOGIN_WINDOW_MS) {
-        entry.count = 0;
-        entry.firstAttempt = now;
-    }
-
-    entry.count += 1;
-
-    if (entry.count >= LOGIN_MAX_ATTEMPTS) {
-        entry.lockedUntil = now + LOGIN_WINDOW_MS;
-    }
-
-    loginAttempts.set(key, entry);
-}
-
-function clearLoginFailures(request, identifier) {
-    loginAttempts.delete(loginRateLimitKey(request, identifier));
-}
+// One-time startup backfill: give every already-saved product with a
+// blank category a real one, so nothing already in the database is
+// left uncategorised either.
+(function backfillEmptyCategories() {
+    const blank = db.prepare("SELECT id, name, description, tags FROM products WHERE category IS NULL OR TRIM(category) = ''").all();
+    if (!blank.length) return;
+    const update = db.prepare("UPDATE products SET category = ? WHERE id = ?");
+    const applyBackfill = db.transaction(function () {
+        for (const product of blank) {
+            update.run(inferCategory(product.name, product.description, product.tags), product.id);
+        }
+    });
+    applyBackfill();
+    console.log("Backfilled category for " + blank.length + " product(s) that had none.");
+})();
 
 /* =========================
    SMALL HELPERS
 ========================= */
 
-function newToken(bytes = 32) {
-    return crypto.randomBytes(bytes).toString("hex");
-}
-
-function hashToken(token) {
-    return crypto.createHash("sha256").update(String(token)).digest("hex");
-}
-
-function parseCookies(request) {
-    const header = request.headers.cookie || "";
-    const cookies = {};
-    header.split(";").forEach(function (part) {
-        const index = part.indexOf("=");
-        if (index === -1) return;
-        const key = part.slice(0, index).trim();
-        const value = part.slice(index + 1).trim();
-        if (key) cookies[key] = decodeURIComponent(value);
-    });
-    return cookies;
-}
-
-function setCustomerSession(response, customerId) {
-    const rawToken = newToken(32);
-    const maxAge = 7 * 24 * 60 * 60 * 1000;
-    db.prepare("UPDATE customers SET session_token_hash = ?, session_expires = ?, token = NULL WHERE id = ?")
-        .run(hashToken(rawToken), Date.now() + maxAge, customerId);
-
-    const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
-    response.setHeader(
-        "Set-Cookie",
-        "phynex_session=" + encodeURIComponent(rawToken) +
-        "; Max-Age=" + Math.floor(maxAge / 1000) +
-        "; Path=/; HttpOnly; SameSite=Lax" + secure
-    );
-    return rawToken;
-}
-
-function clearCustomerSession(response, customerId) {
-    if (customerId) {
-        db.prepare("UPDATE customers SET session_token_hash = NULL, session_expires = NULL, token = NULL WHERE id = ?")
-            .run(customerId);
-    }
-    response.setHeader(
-        "Set-Cookie",
-        "phynex_session=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax"
-    );
-}
-
-function normalizeKenyanPhone(value) {
-    const digits = String(value || "").replace(/\D/g, "");
-
-    // Kenyan 10-digit mobile/service ranges currently supported by PHYNEX.
-    // 07x covers the common mobile operator ranges; 010/011 cover the
-    // common 01x mobile ranges requested by the store.
-    if (/^0[7][0-9]\d{7}$/.test(digits)) return "+254" + digits.slice(1);
-    if (/^01[01]\d{7}$/.test(digits)) return "+254" + digits.slice(1);
-    if (/^2547[0-9]\d{8}$/.test(digits)) return "+" + digits;
-    if (/^25401[01]\d{7}$/.test(digits)) return "+" + digits;
-    return null;
-}
-
-function isPlausibleEmail(email) {
-    if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,63}$/.test(email)) return false;
-    const lower = email.toLowerCase();
-    const blocked = new Set([
-        "test@test.com", "fake@email.com", "abc@abc.com",
-        "test@example.com", "user@example.com", "name@example.com",
-        "example@example.com", "test@example.org", "test@example.net"
-    ]);
-    if (blocked.has(lower)) return false;
-    const [local, domain] = lower.split("@");
-    if (!local || !domain || local.length > 64) return false;
-    if (/^(test|fake|dummy|random|asdf|abc)([0-9._-]*)$/.test(local)) return false;
-    if (/^(example|invalid|localhost|test)$/i.test(domain.split(".")[0])) return false;
-    return true;
-}
-
-function passwordIsStrong(password) {
-    return typeof password === "string" &&
-        password.length >= 8 &&
-        password.length <= 128 &&
-        /[A-Za-z]/.test(password) &&
-        /\d/.test(password);
-}
-
-function emailVerificationConfigured() {
-    return Boolean(mailTransporter && process.env.APP_URL);
-}
-
-function smsVerificationConfigured() {
-    return Boolean(process.env.AT_USERNAME && process.env.AT_API_KEY && process.env.AT_SENDER_ID);
-}
-
-async function sendSms(phone, message) {
-    const body = new URLSearchParams({
-        username: process.env.AT_USERNAME,
-        to: phone,
-        message: message,
-        from: process.env.AT_SENDER_ID
-    });
-
-    const response = await fetch(
-        process.env.AT_SMS_URL || "https://api.africastalking.com/version1/messaging",
-        {
-            method: "POST",
-            headers: {
-                "apiKey": process.env.AT_API_KEY,
-                "Content-Type": "application/x-www-form-urlencoded",
-                "Accept": "application/json"
-            },
-            body: body.toString()
-        }
-    );
-
-    if (!response.ok) {
-        throw new Error("SMS provider returned HTTP " + response.status);
-    }
-
-    return response.json();
+function newToken() {
+    return crypto.randomBytes(24).toString("hex");
 }
 
 function generateTrackingCode() {
@@ -754,8 +419,6 @@ function publicCustomer(customer) {
         name: customer.name,
         email: customer.email,
         phone: customer.phone,
-        emailVerified: Boolean(customer.email_verified_at),
-        phoneVerified: Boolean(customer.phone_verified_at),
         hasGoogle: Boolean(customer.google_id)
     };
 }
@@ -766,66 +429,7 @@ function googleConfigured() {
 
 const googleClient = googleConfigured() ? new OAuth2Client(process.env.GOOGLE_CLIENT_ID) : null;
 
-// Real rating/review count for a product, computed from actual
-// customer-submitted, admin-approved reviews. No made-up numbers.
-//
-// SPEED: when listing many products, pass a pre-batched ratingsMap (see
-// getRatingSummariesMap/publicProductList below) instead of letting this
-// run one extra query per product — that turns an N-product listing from
-// 1 + N queries into just 2.
-function getRatingSummary(productId, ratingsMap) {
-    if (ratingsMap) {
-        return ratingsMap.get(productId) || { average: null, count: 0 };
-    }
-
-    const row = db
-        .prepare(
-            "SELECT COUNT(*) AS count, AVG(rating) AS average FROM reviews WHERE product_id = ? AND status = 'approved'"
-        )
-        .get(productId);
-
-    return {
-        average: row.count > 0 ? Math.round(row.average * 10) / 10 : null,
-        count: row.count || 0
-    };
-}
-
-// One query for every product in a list, instead of one query per product.
-function getRatingSummariesMap(productIds) {
-    const map = new Map();
-    const uniqueIds = Array.from(new Set(productIds.filter(function (id) { return id != null; })));
-    if (uniqueIds.length === 0) return map;
-
-    const placeholders = uniqueIds.map(function () { return "?"; }).join(",");
-    const rows = db
-        .prepare(
-            `SELECT product_id, COUNT(*) AS count, AVG(rating) AS average
-             FROM reviews
-             WHERE status = 'approved' AND product_id IN (${placeholders})
-             GROUP BY product_id`
-        )
-        .all(...uniqueIds);
-
-    rows.forEach(function (row) {
-        map.set(row.product_id, {
-            average: row.count > 0 ? Math.round(row.average * 10) / 10 : null,
-            count: row.count || 0
-        });
-    });
-
-    return map;
-}
-
-// Use this instead of `.map(publicProduct)` for any list of products.
-function publicProductList(rows, extra) {
-    const ratingsMap = getRatingSummariesMap(rows.map(function (row) { return row.id; }));
-    return rows.map(function (row) {
-        const mapped = publicProduct(row, ratingsMap);
-        return extra ? extra(mapped, row) : mapped;
-    });
-}
-
-function publicProduct(product, ratingsMap) {
+function publicProduct(product) {
 
     var media = [];
 
@@ -843,12 +447,8 @@ function publicProduct(product, ratingsMap) {
         media = [{ url: product.image, type: "image" }];
     }
 
-    const ratingSummary = getRatingSummary(product.id, ratingsMap);
-
     return {
         id: product.id,
-        rating: ratingSummary.average,
-        reviewCount: ratingSummary.count,
         sellerId: product.seller_id,
         sellerName: product.business_name || undefined,
         sellerPhone: product.seller_phone || undefined,
@@ -866,7 +466,7 @@ function publicProduct(product, ratingsMap) {
         tags: product.tags || "",
         featured: Boolean(product.featured),
         sku: product.sku || "",
-        stock: product.stock != null ? product.stock : 0,
+        stock: product.stock != null ? Math.max(0, Number(product.stock) - Number(product.reserved_stock || 0)) : 0,
         lowStockThreshold: product.low_stock_threshold != null ? product.low_stock_threshold : 5,
         image: (media[0] && media[0].url) || product.image || "",
         images: media.filter(function (m) { return m.type === "image"; }).map(function (m) { return m.url; }),
@@ -915,8 +515,8 @@ function requireSeller(request, response, next) {
     }
 
     const seller = db
-        .prepare("SELECT * FROM sellers WHERE token = ?")
-        .get(token);
+        .prepare("SELECT * FROM sellers WHERE token = ? AND (token_expires IS NULL OR token_expires > ?)")
+        .get(token, Date.now());
 
     if (!seller) {
         return response.status(401).json({ message: "Your session has expired. Please log in again." });
@@ -961,9 +561,28 @@ function requireAdmin(request, response, next) {
     next();
 }
 
+const authAttempts = new Map();
+const AUTH_WINDOW_MS = 15 * 60 * 1000;
+const AUTH_MAX_ATTEMPTS = 8;
+function authRateLimited(request, identity) {
+    const key = String(request.ip || "unknown") + ":" + String(identity || "").toLowerCase();
+    const now = Date.now();
+    const row = authAttempts.get(key);
+    if (!row || now - row.startedAt > AUTH_WINDOW_MS) {
+        authAttempts.set(key, { startedAt: now, count: 1 });
+        return false;
+    }
+    row.count += 1;
+    return row.count > AUTH_MAX_ATTEMPTS;
+}
+
 app.post("/api/admin/login", function (request, response) {
 
     const password = String((request.body || {}).password || "");
+
+    if (authRateLimited(request, "admin")) {
+        return response.status(429).json({ message: "Too many login attempts. Please try again in 15 minutes." });
+    }
 
     if (!process.env.ADMIN_PASSWORD) {
         return response.status(503).json({
@@ -971,24 +590,9 @@ app.post("/api/admin/login", function (request, response) {
         });
     }
 
-    const lockMessage = checkLoginRateLimit(request, "admin");
-    if (lockMessage) {
-        return response.status(429).json({ message: lockMessage });
-    }
-
-    const expected = Buffer.from(process.env.ADMIN_PASSWORD);
-    const supplied = Buffer.from(password);
-
-    const valid =
-        expected.length === supplied.length &&
-        crypto.timingSafeEqual(expected, supplied);
-
-    if (!valid) {
-        recordLoginFailure(request, "admin");
+    if (password !== process.env.ADMIN_PASSWORD) {
         return response.status(401).json({ message: "Incorrect admin password." });
     }
-
-    clearLoginFailures(request, "admin");
 
     const token = newToken();
     adminTokens.add(token);
@@ -997,397 +601,124 @@ app.post("/api/admin/login", function (request, response) {
 });
 
 /* =========================
-   CUSTOMER AUTHENTICATION
-   Email verification + optional real SMS OTP + HttpOnly session cookie.
+   CUSTOMER AUTH MIDDLEWARE
 ========================= */
 
-function getAuthenticatedCustomer(request) {
-    const cookies = parseCookies(request);
-    const session = cookies.phynex_session;
-
-    if (session) {
-        const customer = db.prepare(
-            "SELECT * FROM customers WHERE session_token_hash = ? AND session_expires > ?"
-        ).get(hashToken(session), Date.now());
-
-        if (customer) return customer;
-    }
-
-    // Backward-compatible only: accept an old Bearer token during migration.
-    // New sessions are never returned to the browser as bearer tokens.
-    const header = request.headers.authorization || "";
-    if (header.startsWith("Bearer ")) {
-        const token = header.slice(7);
-        return db.prepare("SELECT * FROM customers WHERE token = ?").get(token) || null;
-    }
-
-    return null;
-}
-
 function requireCustomer(request, response, next) {
-    const customer = getAuthenticatedCustomer(request);
 
-    if (!customer) {
+    const header = request.headers.authorization || "";
+    const token = header.startsWith("Bearer ") ? header.slice(7) : "";
+
+    if (!token) {
         return response.status(401).json({ message: "Please log in to continue." });
     }
 
-    if (!customer.email_verified_at) {
-        return response.status(403).json({ message: "Please verify your email before continuing." });
-    }
+    const customer = db
+        .prepare("SELECT * FROM customers WHERE token = ? AND (token_expires IS NULL OR token_expires > ?)")
+        .get(token, Date.now());
 
-    if (smsVerificationConfigured() && !customer.phone_verified_at) {
-        return response.status(403).json({ message: "Please verify your phone number before continuing." });
+    if (!customer) {
+        return response.status(401).json({ message: "Your session has expired. Please log in again." });
     }
 
     request.customer = customer;
     next();
 }
 
-function optionalCustomer(request) {
-    const customer = getAuthenticatedCustomer(request);
-    if (!customer || !customer.email_verified_at) return null;
-    if (smsVerificationConfigured() && !customer.phone_verified_at) return null;
-    return customer;
-}
-
-function customerLoginAllowed(customer) {
-    return Boolean(
-        customer &&
-        customer.email_verified_at &&
-        (!smsVerificationConfigured() || customer.phone_verified_at)
-    );
-}
-
-async function sendVerificationEmail(customer, rawToken) {
-    if (!mailTransporter) {
-        throw new Error("Email delivery is not configured.");
-    }
-
-    const baseUrl = (process.env.APP_URL || "").replace(/\/$/, "");
-    const verifyUrl = baseUrl + "/api/customers/verify-email?token=" + encodeURIComponent(rawToken);
-
-    await mailTransporter.sendMail({
-        from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-        to: customer.email,
-        subject: "Verify your PHYNEX email address",
-        text:
-            "Hi " + customer.name + ",\n\n" +
-            "Please verify your PHYNEX email address by opening this link:\n" +
-            verifyUrl + "\n\n" +
-            "This link expires in 24 hours. If you did not create this account, ignore this message.\n\n" +
-            "The PHYNEX Team",
-        html:
-            "<p>Hi " + escapeHtmlServer(customer.name) + ",</p>" +
-            "<p>Please verify your PHYNEX email address:</p>" +
-            "<p><a href=\"" + verifyUrl + "\">Verify my email address</a></p>" +
-            "<p>This link expires in 24 hours. If you did not create this account, you can ignore this message.</p>"
-    });
-}
-
-function escapeHtmlServer(value) {
-    return String(value || "").replace(/[&<>"']/g, function (char) {
-        return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char];
-    });
-}
-
-function createEmailVerification(customerId) {
-    const rawToken = newToken(32);
-    db.prepare(
-        "UPDATE customers SET email_verification_token_hash = ?, email_verification_expires = ? WHERE id = ?"
-    ).run(hashToken(rawToken), Date.now() + 24 * 60 * 60 * 1000, customerId);
-    return rawToken;
-}
-
-function createPhoneOtp(customerId) {
-    const code = String(crypto.randomInt(100000, 1000000));
-    db.prepare(
-        "UPDATE customers SET phone_verification_code_hash = ?, phone_verification_expires = ?, phone_verification_attempts = 0 WHERE id = ?"
-    ).run(hashToken(code), Date.now() + 10 * 60 * 1000, customerId);
-    return code;
-}
-
-function genericPasswordResetResponse() {
-    return {
-        ok: true,
-        message: "If that email has an account, a reset link has been sent."
-    };
-}
+/* =========================
+   CUSTOMER REGISTER / LOGIN
+========================= */
 
 app.post("/api/customers/register", async function (request, response) {
+
     const body = request.body || {};
+
     const name = String(body.name || "").trim();
     const email = String(body.email || "").trim().toLowerCase();
-    const phone = normalizeKenyanPhone(body.phone);
+    const phone = String(body.phone || "").trim();
     const password = String(body.password || "");
-    const confirmPassword = String(body.confirmPassword || "");
 
-    if (!name || !email || !body.phone || !password || !confirmPassword) {
-        return response.status(400).json({ message: "Full name, email, phone, password and password confirmation are required." });
+    if (!name || !email || !password) {
+        return response.status(400).json({ message: "Name, email and password are required." });
     }
 
-    if (name.length < 2 || name.length > 120) {
-        return response.status(400).json({ message: "Enter a valid full name." });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return response.status(400).json({ message: "Enter a valid email address." });
     }
 
-    if (!isPlausibleEmail(email)) {
-        return response.status(400).json({ message: "Invalid email address." });
-    }
-
-    if (!phone) {
-        return response.status(400).json({ message: "Invalid Kenyan phone number." });
-    }
-
-    if (password !== confirmPassword) {
-        return response.status(400).json({ message: "Passwords do not match." });
-    }
-
-    if (!passwordIsStrong(password)) {
-        return response.status(400).json({ message: "Password must be at least 8 characters and contain at least one letter and one number." });
-    }
-
-    if (!emailVerificationConfigured()) {
-        return response.status(503).json({ message: "Email verification is not configured. Add the required email settings to the server .env." });
+    if (password.length < 8) {
+        return response.status(400).json({ message: "Password must be at least 8 characters." });
     }
 
     const existing = db.prepare("SELECT id FROM customers WHERE email = ?").get(email);
+
     if (existing) {
-        return response.status(409).json({ message: "This email is already registered." });
+        return response.status(409).json({ message: "An account with that email already exists." });
     }
 
-    const phoneOwner = db.prepare("SELECT id FROM customers WHERE phone = ?").get(phone);
-    if (phoneOwner) {
-        return response.status(409).json({ message: "This phone number is already registered." });
-    }
+    const passwordHash = await bcrypt.hash(password, 10);
+    const token = newToken();
 
-    const passwordHash = await bcrypt.hash(password, 12);
+    const result = db
+        .prepare(
+            `INSERT INTO customers (name, email, phone, password_hash, token, token_expires, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`
+        )
+        .run(name, email, phone, passwordHash, token, Date.now() + 7 * 24 * 60 * 60 * 1000, Date.now());
 
-    const result = db.prepare(
-        `INSERT INTO customers
-            (name, email, phone, password_hash, token, created_at)
-         VALUES (?, ?, ?, ?, NULL, ?)`
-    ).run(name, email, phone, passwordHash, Date.now());
-
-    const customerId = result.lastInsertRowid;
-    let customer = db.prepare("SELECT * FROM customers WHERE id = ?").get(customerId);
-
-    const emailToken = createEmailVerification(customerId);
-    try {
-        await sendVerificationEmail(customer, emailToken);
-    } catch (error) {
-        db.prepare(
-            "DELETE FROM customers WHERE id = ?"
-        ).run(customerId);
-        console.error("Verification email failed:", error.message);
-        return response.status(502).json({ message: "We could not send the verification email. Please try again." });
-    }
-
-    let phoneVerificationRequired = false;
-    if (smsVerificationConfigured()) {
-        const otp = createPhoneOtp(customerId);
-        try {
-            await sendSms(
-                phone,
-                "Your PHYNEX verification code is " + otp + ". It expires in 10 minutes."
-            );
-            phoneVerificationRequired = true;
-        } catch (error) {
-            db.prepare("DELETE FROM customers WHERE id = ?").run(customerId);
-            console.error("Verification SMS failed:", error.message);
-            return response.status(502).json({ message: "We could not send the phone verification code. Please try again." });
-        }
-    }
+    const customer = db.prepare("SELECT * FROM customers WHERE id = ?").get(result.lastInsertRowid);
 
     logLogin("customer", customer, "register");
 
-    response.status(201).json({
-        ok: true,
-        message: phoneVerificationRequired
-            ? "Verification email sent. We also sent an OTP to your phone."
-            : "Verification email sent.",
-        emailVerificationRequired: true,
-        phoneVerificationRequired: phoneVerificationRequired
-    });
-});
-
-app.get("/api/customers/verify-email", function (request, response) {
-    const token = String(request.query.token || "").trim();
-
-    if (!token || token.length < 40) {
-        return response.redirect("/customer-login.html?verified=0");
-    }
-
-    const customer = db.prepare(
-        `SELECT * FROM customers
-         WHERE email_verification_token_hash = ?
-           AND email_verification_expires > ?`
-    ).get(hashToken(token), Date.now());
-
-    if (!customer) {
-        return response.redirect("/customer-login.html?verified=0");
-    }
-
-    db.prepare(
-        `UPDATE customers
-         SET email_verified_at = ?, email_verification_token_hash = NULL, email_verification_expires = NULL
-         WHERE id = ?`
-    ).run(Date.now(), customer.id);
-
-    response.redirect("/customer-login.html?verified=1");
-});
-
-app.post("/api/customers/resend-verification", async function (request, response) {
-    if (sensitiveActionRateLimited(request, "email-verification")) {
-        return response.json({ ok: true, message: "If that account needs verification, a new verification email has been sent." });
-    }
-
-    const email = String((request.body || {}).email || "").trim().toLowerCase();
-
-    // Deliberately generic to avoid account enumeration.
-    if (!isPlausibleEmail(email)) {
-        return response.json({ ok: true, message: "If that account needs verification, a new verification email has been sent." });
-    }
-
-    const customer = db.prepare("SELECT * FROM customers WHERE email = ?").get(email);
-    if (!customer || customer.email_verified_at) {
-        return response.json({ ok: true, message: "If that account needs verification, a new verification email has been sent." });
-    }
-
-    const token = createEmailVerification(customer.id);
-    try {
-        await sendVerificationEmail(customer, token);
-    } catch (error) {
-        console.error("Verification resend failed:", error.message);
-    }
-
-    return response.json({ ok: true, message: "If that account needs verification, a new verification email has been sent." });
-});
-
-app.post("/api/customers/verify-phone", function (request, response) {
-    if (!smsVerificationConfigured()) {
-        return response.status(503).json({ message: "Phone verification is not configured on this server." });
-    }
-
-    const customer = getAuthenticatedCustomer(request);
-    if (!customer) {
-        return response.status(401).json({ message: "Please log in to continue." });
-    }
-
-    const code = String((request.body || {}).code || "").trim();
-    if (!/^\d{6}$/.test(code)) {
-        return response.status(400).json({ message: "Invalid phone verification code." });
-    }
-
-    if (customer.phone_verification_attempts >= 5) {
-        return response.status(429).json({ message: "Too many OTP attempts. Request a new code later." });
-    }
-
-    if (!customer.phone_verification_code_hash || !customer.phone_verification_expires ||
-        customer.phone_verification_expires <= Date.now()) {
-        return response.status(400).json({ message: "The phone verification code has expired. Request a new code." });
-    }
-
-    const valid = crypto.timingSafeEqual(
-        Buffer.from(customer.phone_verification_code_hash, "hex"),
-        Buffer.from(hashToken(code), "hex")
-    );
-
-    if (!valid) {
-        db.prepare("UPDATE customers SET phone_verification_attempts = COALESCE(phone_verification_attempts, 0) + 1 WHERE id = ?")
-            .run(customer.id);
-        return response.status(400).json({ message: "Invalid phone verification code." });
-    }
-
-    db.prepare(
-        `UPDATE customers
-         SET phone_verified_at = ?, phone_verification_code_hash = NULL,
-             phone_verification_expires = NULL, phone_verification_attempts = 0
-         WHERE id = ?`
-    ).run(Date.now(), customer.id);
-
-    response.json({ ok: true, message: "Your phone number has been verified." });
-});
-
-app.post("/api/customers/resend-phone-code", async function (request, response) {
-    if (sensitiveActionRateLimited(request, "phone-otp")) {
-        return response.status(429).json({ message: "Too many OTP requests. Please try again later." });
-    }
-    if (!smsVerificationConfigured()) {
-        return response.status(503).json({ message: "Phone verification is not configured on this server." });
-    }
-
-    const customer = getAuthenticatedCustomer(request);
-    if (!customer) return response.status(401).json({ message: "Please log in to continue." });
-    if (customer.phone_verified_at) return response.json({ ok: true, message: "Phone number is already verified." });
-
-    const otp = createPhoneOtp(customer.id);
-    try {
-        await sendSms(customer.phone, "Your PHYNEX verification code is " + otp + ". It expires in 10 minutes.");
-    } catch (error) {
-        console.error("Verification SMS resend failed:", error.message);
-        return response.status(502).json({ message: "Could not send a new verification code." });
-    }
-
-    response.json({ ok: true, message: "A new phone verification code has been sent." });
+    response.json({ token: token, customer: publicCustomer(customer) });
 });
 
 app.post("/api/customers/login", async function (request, response) {
+
     const body = request.body || {};
-    const identifier = String(body.identifier || body.email || body.phone || "").trim();
+
+    const email = String(body.email || "").trim().toLowerCase();
     const password = String(body.password || "");
-    const normalizedEmail = identifier.toLowerCase();
-    const normalizedPhone = normalizeKenyanPhone(identifier);
 
-    const lockMessage = checkLoginRateLimit(request, identifier);
-    if (lockMessage) return response.status(429).json({ message: lockMessage });
+    if (authRateLimited(request, email)) {
+        return response.status(429).json({ message: "Too many login attempts. Please try again in 15 minutes." });
+    }
 
-    const customer = db.prepare(
-        normalizedPhone
-            ? "SELECT * FROM customers WHERE phone = ? OR email = ?"
-            : "SELECT * FROM customers WHERE email = ?"
-    ).get(normalizedPhone || normalizedEmail, normalizedEmail);
+    const customer = db.prepare("SELECT * FROM customers WHERE email = ?").get(email);
 
     if (!customer) {
-        recordLoginFailure(request, identifier);
         return response.status(401).json({ message: "Incorrect email or password." });
     }
 
     const valid = await bcrypt.compare(password, customer.password_hash);
+
     if (!valid) {
-        recordLoginFailure(request, identifier);
         return response.status(401).json({ message: "Incorrect email or password." });
     }
 
-    if (!customer.email_verified_at) {
-        clearLoginFailures(request, identifier);
-        return response.status(403).json({ message: "Please verify your email before logging in." });
-    }
+    const token = newToken();
 
-    if (smsVerificationConfigured() && !customer.phone_verified_at) {
-        clearLoginFailures(request, identifier);
-        setCustomerSession(response, customer.id); // limited verification session; protected APIs still reject it
-        return response.status(403).json({
-            message: "Please verify your phone number before logging in.",
-            phoneVerificationRequired: true
-        });
-    }
-
-    clearLoginFailures(request, identifier);
-    setCustomerSession(response, customer.id);
+    db.prepare("UPDATE customers SET token = ?, token_expires = ? WHERE id = ?").run(token, Date.now() + 7 * 24 * 60 * 60 * 1000, customer.id);
 
     logLogin("customer", customer, "login");
 
-    response.json({ ok: true, customer: publicCustomer(customer) });
+    response.json({ token: token, customer: publicCustomer(customer) });
 });
 
 app.post("/api/customers/google", async function (request, response) {
+
     if (!googleConfigured() || !googleClient) {
-        return response.status(503).json({ message: "Google sign-in is not configured yet." });
+        return response.status(503).json({ message: "Google sign-in is not configured yet. Add GOOGLE_CLIENT_ID to .env." });
     }
 
     const credential = String((request.body || {}).credential || "");
-    if (!credential) return response.status(400).json({ message: "Missing Google credential." });
+
+    if (!credential) {
+        return response.status(400).json({ message: "Missing Google credential." });
+    }
 
     let payload;
+
     try {
         const ticket = await googleClient.verifyIdToken({
             idToken: credential,
@@ -1409,55 +740,59 @@ app.post("/api/customers/google", async function (request, response) {
     let customer = db.prepare("SELECT * FROM customers WHERE email = ?").get(email);
 
     if (customer) {
-        if (!customer.google_id || !customer.email_verified_at) {
-            db.prepare("UPDATE customers SET google_id = ?, email_verified_at = COALESCE(email_verified_at, ?) WHERE id = ?")
-                .run(googleId, Date.now(), customer.id);
+        if (!customer.google_id) {
+            db.prepare("UPDATE customers SET google_id = ? WHERE id = ?").run(googleId, customer.id);
         }
     } else {
-        const placeholderHash = await bcrypt.hash(crypto.randomBytes(24).toString("hex"), 12);
-        const result = db.prepare(
-            `INSERT INTO customers
-                (name, email, phone, password_hash, google_id, token, email_verified_at, created_at)
-             VALUES (?, ?, ?, ?, ?, NULL, ?, ?)`
-        ).run(name, email, "", placeholderHash, googleId, Date.now(), Date.now());
+        const placeholderHash = await bcrypt.hash(crypto.randomBytes(24).toString("hex"), 10);
+
+        const result = db
+            .prepare(
+                `INSERT INTO customers (name, email, phone, password_hash, google_id, token, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`
+            )
+            .run(name, email, "", placeholderHash, googleId, "", Date.now());
 
         customer = db.prepare("SELECT * FROM customers WHERE id = ?").get(result.lastInsertRowid);
     }
 
-    if (!customer.email_verified_at) {
-        return response.status(403).json({ message: "Please verify your email before logging in." });
-    }
+    const token = newToken();
 
-    setCustomerSession(response, customer.id);
+    db.prepare("UPDATE customers SET token = ?, token_expires = ? WHERE id = ?").run(token, Date.now() + 7 * 24 * 60 * 60 * 1000, customer.id);
+
     customer = db.prepare("SELECT * FROM customers WHERE id = ?").get(customer.id);
+
     logLogin("customer", customer, "google");
 
-    response.json({ ok: true, customer: publicCustomer(customer) });
+    response.json({ token: token, customer: publicCustomer(customer) });
 });
 
 app.post("/api/customers/forgot-password", async function (request, response) {
-    if (sensitiveActionRateLimited(request, "password-reset")) {
-        return response.json(genericPasswordResetResponse());
-    }
 
     const email = String((request.body || {}).email || "").trim().toLowerCase();
 
-    if (!isPlausibleEmail(email)) {
-        return response.json(genericPasswordResetResponse());
+    if (!email) {
+        return response.status(400).json({ message: "Enter your account email." });
     }
 
     const customer = db.prepare("SELECT * FROM customers WHERE email = ?").get(email);
-    if (!customer) return response.json(genericPasswordResetResponse());
 
-    const resetToken = newToken(32);
-    const expires = Date.now() + 60 * 60 * 1000;
+    // Always reply the same way whether or not the email exists,
+    // so this endpoint can't be used to check who has an account.
+    const genericReply = { ok: true, message: "If that email has an account, a reset link has been sent." };
 
-    // Store only a SHA-256 hash of the reset token.
+    if (!customer) {
+        return response.json(genericReply);
+    }
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const expires = Date.now() + 60 * 60 * 1000; // 1 hour
+
     db.prepare("UPDATE customers SET reset_token = ?, reset_token_expires = ? WHERE id = ?")
-        .run(hashToken(resetToken), expires, customer.id);
+        .run(resetToken, expires, customer.id);
 
-    const baseUrl = (process.env.APP_URL || "").replace(/\/$/, "");
-    const resetUrl = baseUrl + "/customer-reset-password.html?token=" + encodeURIComponent(resetToken);
+    const resetUrl = (process.env.APP_URL || "").replace(/\/$/, "") +
+        "/customer-reset-password.html?token=" + resetToken;
 
     if (mailTransporter) {
         try {
@@ -1465,61 +800,65 @@ app.post("/api/customers/forgot-password", async function (request, response) {
                 from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
                 to: customer.email,
                 subject: "Reset your PHYNEX password",
-                text: "Reset your PHYNEX password here:\n" + resetUrl + "\n\nThis link expires in 1 hour and can only be used once.",
+                text: "Reset your password here: " + resetUrl + "\n\nThis link expires in 1 hour. If you didn't request this, ignore this email.",
                 html: "<p>Reset your PHYNEX password by clicking the link below:</p>" +
-                    "<p><a href=\"" + resetUrl + "\">Reset password</a></p>" +
-                    "<p>This link expires in 1 hour and can only be used once.</p>"
+                    "<p><a href=\"" + resetUrl + "\">" + resetUrl + "</a></p>" +
+                    "<p>This link expires in 1 hour. If you didn't request this, you can ignore this email.</p>"
             });
         } catch (error) {
+            // Don't leak email-sending failures to the client — log it server-side instead.
             console.error("Password reset email failed:", error.message);
         }
+    } else {
+        console.log("PHYNEX password reset link for " + customer.email + ": " + resetUrl);
     }
 
-    response.json(genericPasswordResetResponse());
+    response.json(genericReply);
 });
 
 app.post("/api/customers/reset-password", async function (request, response) {
+
     const body = request.body || {};
     const token = String(body.token || "").trim();
     const password = String(body.password || "");
-    const confirmPassword = String(body.confirmPassword || "");
 
-    if (!token) return response.status(400).json({ message: "Missing or invalid reset link." });
-    if (password !== confirmPassword) return response.status(400).json({ message: "Passwords do not match." });
-    if (!passwordIsStrong(password)) {
-        return response.status(400).json({ message: "Password must be at least 8 characters and contain at least one letter and one number." });
+    if (!token) {
+        return response.status(400).json({ message: "Missing or invalid reset link." });
+    }
+
+    if (password.length < 8) {
+        return response.status(400).json({ message: "Password must be at least 8 characters." });
     }
 
     const customer = db.prepare(
         "SELECT * FROM customers WHERE reset_token = ? AND reset_token_expires > ?"
-    ).get(hashToken(token), Date.now());
+    ).get(token, Date.now());
 
     if (!customer) {
         return response.status(400).json({ message: "This reset link is invalid or has expired." });
     }
 
-    const passwordHash = await bcrypt.hash(password, 12);
+    const passwordHash = await bcrypt.hash(password, 10);
+    const sessionToken = newToken();
 
     db.prepare(
-        `UPDATE customers
-         SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL,
-             session_token_hash = NULL, session_expires = NULL, token = NULL
-         WHERE id = ?`
-    ).run(passwordHash, customer.id);
+        "UPDATE customers SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL, token = ? WHERE id = ?"
+    ).run(passwordHash, sessionToken, customer.id);
 
-    logLogin("customer", customer, "password_reset");
+    const updated = db.prepare("SELECT * FROM customers WHERE id = ?").get(customer.id);
 
-    response.json({ ok: true, message: "Password updated successfully. Please log in again." });
+    logLogin("customer", updated, "password_reset");
+
+    response.json({ token: sessionToken, customer: publicCustomer(updated) });
 });
 
 app.get("/api/customers/me", requireCustomer, function (request, response) {
     response.json({ customer: publicCustomer(request.customer) });
 });
 
-app.post("/api/customers/logout", function (request, response) {
-    const customer = getAuthenticatedCustomer(request);
-    if (customer) logLogin("customer", customer, "logout");
-    clearCustomerSession(response, customer && customer.id);
+app.post("/api/customers/logout", requireCustomer, function (request, response) {
+    db.prepare("UPDATE customers SET token = NULL WHERE id = ?").run(request.customer.id);
+    logLogin("customer", request.customer, "logout");
     response.json({ ok: true });
 });
 
@@ -1553,8 +892,8 @@ app.post("/api/sellers/register", async function (request, response) {
         return response.status(400).json({ message: "Enter a valid email address." });
     }
 
-    if (password.length < 6) {
-        return response.status(400).json({ message: "Password must be at least 6 characters." });
+    if (password.length < 8) {
+        return response.status(400).json({ message: "Password must be at least 8 characters." });
     }
 
     const existing = db.prepare("SELECT id FROM sellers WHERE email = ?").get(email);
@@ -1568,10 +907,10 @@ app.post("/api/sellers/register", async function (request, response) {
 
     const result = db
         .prepare(
-            `INSERT INTO sellers (business_name, email, phone, whatsapp, password_hash, token, status, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, 'approved', ?)`
+            `INSERT INTO sellers (business_name, email, phone, whatsapp, password_hash, token, token_expires, status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'approved', ?)`
         )
-        .run(businessName, email, phone, whatsapp, passwordHash, token, Date.now());
+        .run(businessName, email, phone, whatsapp, passwordHash, token, Date.now() + 7 * 24 * 60 * 60 * 1000, Date.now());
 
     const seller = db.prepare("SELECT * FROM sellers WHERE id = ?").get(result.lastInsertRowid);
 
@@ -1588,26 +927,21 @@ app.post("/api/sellers/login", async function (request, response) {
     const email = String(body.email || "").trim().toLowerCase();
     const password = String(body.password || "");
 
-    const lockMessage = checkLoginRateLimit(request, email);
-    if (lockMessage) {
-        return response.status(429).json({ message: lockMessage });
+    if (authRateLimited(request, email)) {
+        return response.status(429).json({ message: "Too many login attempts. Please try again in 15 minutes." });
     }
 
     const seller = db.prepare("SELECT * FROM sellers WHERE email = ?").get(email);
 
     if (!seller) {
-        recordLoginFailure(request, email);
         return response.status(401).json({ message: "Incorrect email or password." });
     }
 
     const valid = await bcrypt.compare(password, seller.password_hash);
 
     if (!valid) {
-        recordLoginFailure(request, email);
         return response.status(401).json({ message: "Incorrect email or password." });
     }
-
-    clearLoginFailures(request, email);
 
     if (seller.status === "suspended") {
         return response.status(403).json({ message: "Your seller account has been suspended. Contact PHYNEX support." });
@@ -1615,7 +949,7 @@ app.post("/api/sellers/login", async function (request, response) {
 
     const token = newToken();
 
-    db.prepare("UPDATE sellers SET token = ? WHERE id = ?").run(token, seller.id);
+    db.prepare("UPDATE sellers SET token = ?, token_expires = ? WHERE id = ?").run(token, Date.now() + 7 * 24 * 60 * 60 * 1000, seller.id);
 
     logLogin("seller", seller, "login");
 
@@ -1653,7 +987,6 @@ app.put("/api/sellers/me", requireSeller, function (request, response) {
    MEDIA UPLOAD (images + short videos)
 ========================= */
 
-const fs = require("fs");
 const multer = require("multer");
 
 const uploadsDir = path.join(__dirname, "uploads");
@@ -1713,85 +1046,6 @@ function handleAdminUpload(request, response, next) {
 }
 
 /* =========================
-   AUTOMATIC PRODUCT CATEGORIZATION
-   Guesses the right category from the product's name/description/brand/
-   tags so sellers and admin don't have to hand-pick one every time. A
-   manually chosen category (if the form sends one) always wins — this
-   only fills the gap when the category field is left blank.
-========================= */
-
-const CATEGORY_KEYWORDS = {
-    "Phones & Tablets": ["phone", "smartphone", "iphone", "samsung galaxy", "tablet", "ipad", "android phone"],
-    "Laptops & Computers": ["laptop", "notebook", "macbook", "desktop computer", "chromebook", "workstation", "ultrabook"],
-    "Computer Accessories": ["keyboard", "mouse", "laptop bag", "laptop stand", "docking station", "webcam", "usb hub"],
-    "Gaming Consoles": ["playstation", "ps5", "ps4", "xbox", "nintendo switch", "console"],
-    "Gaming Accessories": ["game controller", "gamepad", "gaming headset", "racing wheel", "vr headset"],
-    "Gaming Chairs": ["gaming chair", "racing chair", "ergonomic chair"],
-    "PC Gaming": ["graphics card", "gpu", "gaming pc", "motherboard", "cpu cooler", "rgb fan", "gaming rig"],
-    "Monitors": ["monitor", "display screen", "curved screen", "ultrawide"],
-    "TVs & Home Theater": ["television", " tv ", "smart tv", "home theater", "projector", "soundbar"],
-    "Audio & Headphones": ["headphone", "earphone", "earbud", "speaker", "bluetooth speaker", "microphone", "airpods"],
-    "Cameras & Photography": ["camera", "dslr", "mirrorless", "lens", "tripod", "gopro", "camcorder"],
-    "Smartwatches & Wearables": ["smartwatch", "fitness band", "smart band", "wearable", "apple watch"],
-    "Printers & Scanners": ["printer", "scanner", "ink cartridge", "toner"],
-    "Networking & Wi-Fi": ["router", "wifi", "wi-fi", "modem", "network switch", "access point", "ethernet"],
-    "Storage & Memory": ["hard drive", "ssd", "flash drive", "memory card", "external drive", "ram", "usb stick"],
-    "Power & Charging": ["charger", "power bank", "battery", "adapter", "inverter", "solar panel", "ups"],
-    "Office Equipment": ["office chair", "office desk", "shredder", "projector screen", "whiteboard"],
-    "Home Appliances": ["fridge", "refrigerator", "microwave", "washing machine", "blender", "cooker", "kettle", "vacuum"],
-    "Smart Home": ["smart bulb", "smart plug", "smart lock", "alexa", "google home", "smart home"],
-    "Drones & RC": ["drone", "quadcopter", "remote control car", "rc helicopter"],
-    "Car Electronics": ["car stereo", "dash cam", "car charger", "car speaker", "gps navigator"],
-    "Security & CCTV": ["cctv", "security camera", "alarm system", "doorbell camera", "surveillance"],
-    "Cables & Adapters": ["cable", "hdmi", "usb-c", "lightning cable", "converter", "adapter cable"],
-    "Software & Digital": ["software", "license key", "antivirus", "windows key", "digital download"]
-};
-
-const DEFAULT_CATEGORY = "Other Electronics";
-
-function guessCategory(fields) {
-    const text = [fields.name, fields.description, fields.brand, fields.tags, fields.subcategory]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-    if (!text.trim()) return DEFAULT_CATEGORY;
-
-    let bestCategory = DEFAULT_CATEGORY;
-    let bestScore = 0;
-
-    for (const categoryName in CATEGORY_KEYWORDS) {
-        const keywords = CATEGORY_KEYWORDS[categoryName];
-        let score = 0;
-        keywords.forEach(function (keyword) {
-            if (text.indexOf(keyword) !== -1) score += 1;
-        });
-        if (score > bestScore) {
-            bestScore = score;
-            bestCategory = categoryName;
-        }
-    }
-
-    return bestCategory;
-}
-
-// Makes sure the guessed/chosen category actually exists as a row in the
-// categories table (creates it if this is a brand-new category name), so
-// it immediately shows up in category browsing/filtering — not just on
-// the product itself.
-function ensureCategoryExists(categoryName) {
-    const name = String(categoryName || "").trim();
-    if (!name) return;
-
-    const existing = db.prepare("SELECT id FROM categories WHERE name = ?").get(name);
-    if (existing) return;
-
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-    db.prepare("INSERT INTO categories (name, slug, description, created_at) VALUES (?, ?, ?, ?)")
-        .run(name, slug, "", Date.now());
-}
-
-/* =========================
    SELLER — SUBMIT / VIEW OWN PRODUCTS
 ========================= */
 
@@ -1818,14 +1072,7 @@ app.post("/api/products", requireSeller, function (request, response, next) {
     const specifications = String(body.specifications || "").trim();
     const price = Math.round(Number(body.price));
     const oldPrice = body.oldPrice ? Math.round(Number(body.oldPrice)) : null;
-    const category = String(body.category || "").trim() || guessCategory({
-        name: name,
-        description: description,
-        brand: body.brand,
-        tags: body.tags,
-        subcategory: body.subcategory
-    });
-    ensureCategoryExists(category);
+    const category = resolveCategory(body.category, name, description, "");
     const stock = body.stock != null && body.stock !== "" ? Math.max(0, Math.round(Number(body.stock))) : 0;
 
     if (!name || !Number.isFinite(price) || price < 1) {
@@ -1869,7 +1116,7 @@ app.get("/api/seller/products", requireSeller, function (request, response) {
         .prepare("SELECT * FROM products WHERE seller_id = ? ORDER BY created_at DESC")
         .all(request.seller.id);
 
-    response.json({ products: publicProductList(products) });
+    response.json({ products: products.map(publicProduct) });
 });
 
 app.delete("/api/seller/products/:id", requireSeller, function (request, response) {
@@ -1885,34 +1132,6 @@ app.delete("/api/seller/products/:id", requireSeller, function (request, respons
     db.prepare("DELETE FROM products WHERE id = ?").run(product.id);
 
     response.json({ ok: true });
-});
-
-/* =========================
-   PUBLIC — CATEGORIES
-   Lets the storefront (homepage tiles, category browsing, the seller's
-   "add product" category list) always match whatever the admin has
-   configured, instead of a hardcoded list baked into each page.
-========================= */
-
-app.get("/api/categories", function (request, response) {
-
-    const rows = db.prepare("SELECT * FROM categories ORDER BY name ASC").all();
-
-    const countStmt = db.prepare(
-        "SELECT COUNT(*) AS c FROM products WHERE category = ? AND status = 'approved'"
-    );
-
-    response.json({
-        categories: rows.map(function (category) {
-            return {
-                id: category.id,
-                name: category.name,
-                slug: category.slug,
-                description: category.description,
-                productCount: countStmt.get(category.name).c
-            };
-        })
-    });
 });
 
 /* =========================
@@ -1937,7 +1156,7 @@ app.get("/api/products", function (request, response) {
              ORDER BY products.created_at DESC`
         ).all();
 
-    response.json({ products: publicProductList(rows) });
+    response.json({ products: rows.map(publicProduct) });
 });
 
 /* =========================
@@ -1961,181 +1180,6 @@ app.get("/api/products/:id", function (request, response) {
     }
 
     response.json({ product: publicProduct(product) });
-});
-
-/* =========================
-   PUBLIC — PRODUCT REVIEWS
-   Anyone can read approved reviews. Only a logged-in customer who
-   actually paid for that product can submit one — this is what makes
-   the ratings real instead of the old hardcoded "★★★★★ (24)" text.
-========================= */
-
-app.get("/api/products/:id/reviews", function (request, response) {
-
-    const productId = Number(request.params.id);
-
-    if (!Number.isFinite(productId)) {
-        return response.status(400).json({ message: "Invalid product id." });
-    }
-
-    const reviews = db
-        .prepare(
-            "SELECT id, customer_name, rating, comment, created_at FROM reviews WHERE product_id = ? AND status = 'approved' ORDER BY created_at DESC"
-        )
-        .all(productId);
-
-    const summary = getRatingSummary(productId);
-
-    response.json({
-        rating: summary.average,
-        reviewCount: summary.count,
-        reviews: reviews.map(function (review) {
-            return {
-                id: review.id,
-                customerName: review.customer_name,
-                rating: review.rating,
-                comment: review.comment,
-                createdAt: review.created_at
-            };
-        })
-    });
-});
-
-app.post("/api/products/:id/reviews", requireCustomer, function (request, response) {
-
-    const productId = Number(request.params.id);
-
-    if (!Number.isFinite(productId)) {
-        return response.status(400).json({ message: "Invalid product id." });
-    }
-
-    const product = db.prepare("SELECT id FROM products WHERE id = ? AND status = 'approved'").get(productId);
-
-    if (!product) {
-        return response.status(404).json({ message: "Product not found." });
-    }
-
-    const body = request.body || {};
-    const rating = Math.round(Number(body.rating));
-    const comment = String(body.comment || "").trim();
-
-    if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
-        return response.status(400).json({ message: "Please choose a rating from 1 to 5 stars." });
-    }
-
-    // Verified-purchase check: the customer must have a paid order that
-    // actually contains this product.
-    const purchased = db
-        .prepare(
-            `SELECT 1 FROM order_items
-             JOIN orders ON orders.id = order_items.order_id
-             WHERE order_items.product_id = ? AND orders.customer_id = ? AND orders.payment_status = 'paid'
-             LIMIT 1`
-        )
-        .get(productId, request.customer.id);
-
-    if (!purchased) {
-        return response.status(403).json({
-            message: "You can only review products you've actually bought and paid for."
-        });
-    }
-
-    const existing = db
-        .prepare("SELECT id FROM reviews WHERE product_id = ? AND customer_id = ?")
-        .get(productId, request.customer.id);
-
-    if (existing) {
-        db.prepare(
-            "UPDATE reviews SET rating = ?, comment = ?, status = 'pending', created_at = ? WHERE id = ?"
-        ).run(rating, comment, Date.now(), existing.id);
-    } else {
-        db.prepare(
-            `INSERT INTO reviews (product_id, product_name, customer_id, customer_name, rating, comment, status, created_at)
-             VALUES (?, (SELECT name FROM products WHERE id = ?), ?, ?, ?, ?, 'pending', ?)`
-        ).run(productId, productId, request.customer.id, request.customer.name, rating, comment, Date.now());
-    }
-
-    logActivity("review_submitted", request.customer.name + " reviewed a product (awaiting approval).");
-
-    response.json({
-        message: "Thanks! Your review has been submitted and will appear once approved."
-    });
-});
-
-/* =========================
-   PUBLIC — BLOG / NEWS
-   Real, persisted posts (replaces the old browser-only demo posts).
-   Anyone can read; only a signed-in customer can publish, so posts
-   are tied to a real account instead of being anonymous/fake.
-========================= */
-
-app.get("/api/blog", function (request, response) {
-
-    const rows = db
-        .prepare("SELECT * FROM blog_posts ORDER BY created_at DESC LIMIT 60")
-        .all();
-
-    response.json({
-        posts: rows.map(function (post) {
-            return {
-                id: post.id,
-                tag: post.tag || "PHYNEX · News",
-                title: post.title,
-                body: post.body,
-                imageUrl: post.image_url,
-                videoUrl: post.video_url,
-                authorName: post.author_name,
-                createdAt: post.created_at
-            };
-        })
-    });
-});
-
-app.post("/api/blog", requireCustomer, function (request, response) {
-
-    const body = request.body || {};
-
-    const tag = String(body.tag || "PHYNEX · News").trim().slice(0, 60);
-    const title = String(body.title || "").trim();
-    const postBody = String(body.body || "").trim();
-    const imageUrl = String(body.imageUrl || "").trim().slice(0, 2000);
-    const videoUrl = String(body.videoUrl || "").trim().slice(0, 2000);
-
-    if (!title || !postBody) {
-        return response.status(400).json({ message: "Add a headline and a story before publishing." });
-    }
-
-    if (title.length > 200) {
-        return response.status(400).json({ message: "Headline is too long." });
-    }
-
-    if (postBody.length > 5000) {
-        return response.status(400).json({ message: "Story is too long." });
-    }
-
-    const result = db
-        .prepare(
-            `INSERT INTO blog_posts (tag, title, body, image_url, video_url, customer_id, author_name, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-        )
-        .run(tag, title, postBody, imageUrl || null, videoUrl || null, request.customer.id, request.customer.name, Date.now());
-
-    logActivity("blog_post", request.customer.name + " published a blog update.");
-
-    const post = db.prepare("SELECT * FROM blog_posts WHERE id = ?").get(result.lastInsertRowid);
-
-    response.json({
-        post: {
-            id: post.id,
-            tag: post.tag,
-            title: post.title,
-            body: post.body,
-            imageUrl: post.image_url,
-            videoUrl: post.video_url,
-            authorName: post.author_name,
-            createdAt: post.created_at
-        }
-    });
 });
 
 /* =========================
@@ -2181,16 +1225,15 @@ app.get("/api/admin/dashboard", requireAdmin, function (request, response) {
         .all()
         .map(publicOrder);
 
-    const pendingProductsListRows = db
+    const pendingProductsList = db
         .prepare(
             `SELECT products.*, sellers.business_name, sellers.phone AS seller_phone, sellers.whatsapp AS seller_whatsapp FROM products
              JOIN sellers ON sellers.id = products.seller_id
              WHERE products.status = 'pending'
              ORDER BY products.created_at DESC LIMIT 6`
         )
-        .all();
-
-    const pendingProductsList = publicProductList(pendingProductsListRows);
+        .all()
+        .map(publicProduct);
 
     response.json({
         totalProducts: totalProducts,
@@ -2224,8 +1267,8 @@ app.get("/api/admin/products", requireAdmin, function (request, response) {
         ).all();
 
     response.json({
-        products: publicProductList(rows, function (mapped, row) {
-            return Object.assign(mapped, { sellerEmail: row.email });
+        products: rows.map(function (row) {
+            return Object.assign(publicProduct(row), { sellerEmail: row.email });
         })
     });
 });
@@ -2330,14 +1373,6 @@ app.post("/api/admin/products", requireAdmin, handleAdminUpload, function (reque
     }
 
     const systemSeller = ensureSystemSeller();
-    const category = String(body.category || "").trim() || guessCategory({
-        name: name,
-        description: body.description,
-        brand: body.brand,
-        tags: body.tags,
-        subcategory: body.subcategory
-    });
-    ensureCategoryExists(category);
 
     const mainImageFile = (files.image && files.image[0]) || null;
     const galleryFiles = files.gallery || [];
@@ -2374,7 +1409,7 @@ app.post("/api/admin/products", requireAdmin, handleAdminUpload, function (reque
             String(body.specifications || "").trim(),
             price,
             body.oldPrice ? Math.round(Number(body.oldPrice)) : null,
-            category,
+            resolveCategory(body.category, name, body.description, body.tags),
             firstImage,
             mediaJson,
             trackingCode,
@@ -2440,17 +1475,6 @@ app.put("/api/admin/products/:id", requireAdmin, handleAdminUpload, function (re
     const mediaJson = JSON.stringify(media);
     const firstImage = (media[0] && media[0].url) || existing.image || "";
 
-    const category = (body.category != null && String(body.category).trim())
-        ? String(body.category).trim()
-        : (existing.category || guessCategory({
-            name: name,
-            description: body.description != null ? body.description : existing.description,
-            brand: body.brand != null ? body.brand : existing.brand,
-            tags: body.tags != null ? body.tags : existing.tags,
-            subcategory: body.subcategory != null ? body.subcategory : existing.subcategory
-        }));
-    ensureCategoryExists(category);
-
     db.prepare(
         `UPDATE products SET
             name = ?, description = ?, specifications = ?, price = ?, old_price = ?, category = ?,
@@ -2463,7 +1487,12 @@ app.put("/api/admin/products/:id", requireAdmin, handleAdminUpload, function (re
         body.specifications != null ? String(body.specifications).trim() : existing.specifications,
         price,
         body.oldPrice ? Math.round(Number(body.oldPrice)) : existing.old_price,
-        category,
+        resolveCategory(
+            body.category != null ? body.category : existing.category,
+            name,
+            body.description != null ? body.description : existing.description,
+            body.tags != null ? body.tags : existing.tags
+        ),
         firstImage,
         mediaJson,
         body.stock != null && body.stock !== "" ? Math.max(0, Math.round(Number(body.stock))) : existing.stock,
@@ -2640,7 +1669,7 @@ app.get("/api/admin/customers", requireAdmin, function (request, response) {
                 name: customer.name,
                 email: customer.email,
                 phone: customer.phone,
-                loggedIn: Boolean(customer.token) || Boolean(customer.session_token_hash && customer.session_expires > Date.now()),
+                loggedIn: Boolean(customer.token),
                 status: "approved",
                 orderCount: orderCountStmt.get(customer.id).c
             };
@@ -2651,6 +1680,22 @@ app.get("/api/admin/customers", requireAdmin, function (request, response) {
 /* =========================
    ADMIN — CATEGORIES
 ========================= */
+
+app.get("/api/categories", function (request, response) {
+    const rows = db.prepare("SELECT id, name, slug, description FROM categories ORDER BY name ASC").all();
+    const countStmt = db.prepare("SELECT COUNT(*) AS c FROM products WHERE category = ? AND status = 'approved'");
+    response.json({
+        categories: rows.map(function (category) {
+            return {
+                id: category.id,
+                name: category.name,
+                slug: category.slug,
+                description: category.description || "",
+                productCount: countStmt.get(category.name).c
+            };
+        })
+    });
+});
 
 app.get("/api/admin/categories", requireAdmin, function (request, response) {
 
@@ -2894,22 +1939,15 @@ function mpesaConfigured() {
     );
 }
 
-// Tells you exactly which Daraja credential(s) are missing, instead of a
-// single generic "not configured" message — this is the #1 reason "Pay
-// with M-PESA" does nothing: one env var typo'd or never set on the host.
-function mpesaMissingVars() {
-    return [
-        ["MPESA_CONSUMER_KEY", process.env.MPESA_CONSUMER_KEY],
-        ["MPESA_CONSUMER_SECRET", process.env.MPESA_CONSUMER_SECRET],
-        ["MPESA_PASSKEY", process.env.MPESA_PASSKEY],
-        ["MPESA_SHORTCODE", process.env.MPESA_SHORTCODE],
-        ["MPESA_CALLBACK_URL", process.env.MPESA_CALLBACK_URL]
-    ].filter(function (pair) { return !pair[1]; }).map(function (pair) { return pair[0]; });
-}
-
 function normalizePhone(value) {
-    const normalized = normalizeKenyanPhone(value);
-    return normalized ? normalized.slice(1) : null;
+    const digits = String(value || "").replace(/\D/g, "");
+
+    if (/^07\d{8}$/.test(digits)) return "254" + digits.slice(1);
+    if (/^01\d{8}$/.test(digits)) return "254" + digits.slice(1);
+    if (/^2547\d{8}$/.test(digits)) return digits;
+    if (/^2541\d{8}$/.test(digits)) return digits;
+
+    return null;
 }
 
 function darajaBaseUrl() {
@@ -2956,126 +1994,140 @@ async function getAccessToken() {
    "order_items" row per cart line, then attempts payment.
 ========================= */
 
+function releaseExpiredReservations() {
+    const now = Date.now();
+    const expired = db.prepare(
+        "SELECT id FROM orders WHERE payment_status = 'pending' AND status = 'pending' AND reservation_expires IS NOT NULL AND reservation_expires < ?"
+    ).all(now);
+    if (!expired.length) return;
+
+    const release = db.prepare(
+        "UPDATE products SET reserved_stock = MAX(0, reserved_stock - ?) WHERE id = ?"
+    );
+    const items = db.prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?").all;
+    const tx = db.transaction(function () {
+        for (const order of expired) {
+            const rows = items(order.id);
+            for (const item of rows) {
+                if (item.product_id) release.run(item.quantity, item.product_id);
+            }
+            db.prepare("UPDATE orders SET payment_status = 'expired', status = 'cancelled', reservation_expires = NULL, updated_at = ? WHERE id = ?")
+                .run(now, order.id);
+        }
+    });
+    tx();
+}
+
 app.post("/api/mpesa/stkpush", async function (request, response) {
 
     if (!mpesaConfigured()) {
-        const missing = mpesaMissingVars();
-        return response.status(503).json({
-            message: "M-PESA is not fully configured yet. Missing from .env: " + missing.join(", ") + "."
-        });
+        return response.status(503).json({ message: "M-PESA is not configured yet. Add your Daraja credentials to .env." });
     }
 
-    // Two very common misconfigurations that Daraja will otherwise reject
-    // with a cryptic error, or that silently send requests to the wrong
-    // environment. Catch them here with a message that says exactly what
-    // to fix.
-    const callbackUrl = process.env.MPESA_CALLBACK_URL || "";
-    if (!/^https:\/\//i.test(callbackUrl) || /localhost|127\.0\.0\.1/i.test(callbackUrl)) {
-        return response.status(503).json({
-            message: "MPESA_CALLBACK_URL must be a public https:// URL that Safaricom can reach (not localhost) — e.g. https://your-deployed-domain.com/api/mpesa/callback."
-        });
-    }
-    if (!process.env.MPESA_ENV || process.env.MPESA_ENV.toLowerCase() === "sandbox") {
-        // Not an error — sandbox is valid for testing — but sandbox only
-        // sends a real phone prompt to Safaricom's test MSISDN
-        // (254708374149), never to a real customer's phone. If you're
-        // expecting a real prompt on a real number, set MPESA_ENV=production
-        // in .env with your live Daraja/paybill credentials.
-    }
+    releaseExpiredReservations();
 
     const payload = request.body || {};
+    const customer = optionalCustomer(request);
+    const customerInfo = payload.customer || {};
+    const delivery = payload.delivery || {};
+    const requestedItems = Array.isArray(payload.items) ? payload.items : [];
 
-    const phone = normalizePhone(payload.mpesaPhone);
-
-    if (!phone) {
-        return response.status(400).json({ message: "Enter a valid Kenyan M-PESA number." });
-    }
-
-    if (!Array.isArray(payload.items) || payload.items.length === 0) {
+    if (!requestedItems.length) {
         return response.status(400).json({ message: "Your cart is empty." });
     }
 
-    if (payload.items.length > 50) {
-        return response.status(400).json({ message: "Too many items in one order." });
+    const phone = normalizePhone(payload.mpesaPhone);
+    if (!phone) return response.status(400).json({ message: "Enter a valid Kenyan M-PESA number." });
+
+    const productIds = requestedItems.map(item => Number(item.id)).filter(Number.isInteger);
+    if (productIds.length !== requestedItems.length) {
+        return response.status(400).json({ message: "Your cart contains an invalid product." });
     }
 
-    // SECURITY / ACCURACY: never trust prices, names, images or totals sent
-    // by the browser. Re-resolve every cart line against the current
-    // approved product row so a tampered client can't pay less than the
-    // real price (or "buy" a product that no longer exists/was rejected).
-    const resolvedItems = [];
-    for (const rawItem of payload.items) {
-        const productId = Number(rawItem.id);
-        const quantity = Math.max(1, Math.min(50, Math.round(Number(rawItem.quantity) || 1)));
+    const placeholders = productIds.map(() => "?").join(",");
+    const rows = db.prepare(
+        `SELECT products.*, sellers.business_name, sellers.phone AS seller_phone, sellers.whatsapp AS seller_whatsapp
+         FROM products JOIN sellers ON sellers.id = products.seller_id
+         WHERE products.id IN (${placeholders}) AND products.status = 'approved'`
+    ).all(...productIds);
 
-        if (!Number.isFinite(productId)) {
-            return response.status(400).json({ message: "One of the items in your cart is invalid." });
-        }
+    const byId = new Map(rows.map(row => [row.id, row]));
+    const authoritativeItems = [];
+    let subtotal = 0;
 
-        const product = db
-            .prepare("SELECT * FROM products WHERE id = ? AND status = 'approved'")
-            .get(productId);
+    for (const item of requestedItems) {
+        const id = Number(item.id);
+        const product = byId.get(id);
+        const quantity = Math.max(1, Math.round(Number(item.quantity) || 1));
 
         if (!product) {
-            return response.status(409).json({ message: "An item in your cart is no longer available. Please refresh your cart." });
+            return response.status(400).json({ message: "One of the products is no longer available." });
         }
 
-        resolvedItems.push({
-            productId: product.id,
-            sellerId: product.seller_id,
-            name: product.name,
-            image: product.image || "",
-            price: product.price,
-            quantity: quantity
+        const available = Math.max(0, Number(product.stock || 0) - Number(product.reserved_stock || 0));
+        if (available < quantity) {
+            return response.status(409).json({ message: product.name + " has only " + available + " available." });
+        }
+
+        subtotal += Number(product.price) * quantity;
+        authoritativeItems.push({
+            product,
+            quantity
         });
     }
 
-    const subtotal = resolvedItems.reduce(function (sum, item) {
-        return sum + item.price * item.quantity;
-    }, 0);
-    const amount = subtotal + DELIVERY_FEE;
+    const total = Math.round(subtotal + DELIVERY_FEE);
+    const orderNumber = generateOrderNumber();
+    const reservationExpires = Date.now() + 30 * 60 * 1000;
 
-    if (!Number.isFinite(amount) || amount < 1) {
-        return response.status(400).json({ message: "The order total must be at least KSh 1." });
-    }
-
-    // ACCURACY: reserve stock atomically (single conditional UPDATE per
-    // item — safe even under concurrent checkouts) before we ever contact
-    // M-PESA, so two customers can't both "successfully" pay for the same
-    // last unit. Anything reserved here is released again if the STK push
-    // fails to send or if the payment is later declined/expires.
-    const reservation = reserveStock(resolvedItems);
-    if (!reservation.ok) {
-        const outOfStockItem = resolvedItems.find(function (item) { return item.productId === reservation.productId; });
-        return response.status(409).json({
-            message: (outOfStockItem ? outOfStockItem.name : "An item") + " doesn't have enough stock for that quantity."
-        });
-    }
-
-    const customer = getAuthenticatedCustomer(request); // optional — guest checkout is allowed
-    const guestInfo = payload.customer || {};
-    const customerInfo = {
-        name: String((customer && customer.name) || guestInfo.name || "").trim(),
-        email: String((customer && customer.email) || guestInfo.email || "").trim(),
-        phone: String((customer && customer.phone) || guestInfo.phone || "").trim()
-    };
-
-    if (!customerInfo.name) {
-        return response.status(400).json({ message: "Enter your full name." });
-    }
-    if (!customerInfo.phone) {
-        return response.status(400).json({ message: "Enter your phone number." });
-    }
-    // Email is optional for guest checkout — only used for an order
-    // confirmation email if it's supplied.
-
-    const delivery = payload.delivery || {};
+    let orderId;
 
     try {
+        const createOrder = db.transaction(function () {
+            const result = db.prepare(
+                `INSERT INTO orders
+                    (order_number, customer_id, customer_name, customer_email, customer_phone,
+                     county, location, address, instructions, subtotal, delivery_fee, total,
+                     payment_method, payment_status, status, reservation_expires, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'mpesa', 'pending', 'pending', ?, ?, ?)`
+            ).run(
+                orderNumber,
+                customer ? customer.id : null,
+                String(customerInfo.name || (customer && customer.name) || "").trim(),
+                String(customerInfo.email || (customer && customer.email) || "").trim(),
+                String(customerInfo.phone || payload.mpesaPhone || "").trim(),
+                String(delivery.county || "").trim(),
+                String(delivery.location || "").trim(),
+                String(delivery.address || "").trim(),
+                String(delivery.instructions || "").trim(),
+                subtotal,
+                DELIVERY_FEE,
+                total,
+                reservationExpires,
+                Date.now(),
+                Date.now()
+            );
+
+            const id = result.lastInsertRowid;
+            const insertItem = db.prepare(
+                "INSERT INTO order_items (order_id, product_id, seller_id, name, image, price, quantity) VALUES (?, ?, ?, ?, ?, ?, ?)"
+            );
+            const reserve = db.prepare(
+                "UPDATE products SET reserved_stock = COALESCE(reserved_stock, 0) + ? WHERE id = ? AND (stock - COALESCE(reserved_stock, 0)) >= ?"
+            );
+
+            for (const item of authoritativeItems) {
+                const changed = reserve.run(item.quantity, item.product.id, item.quantity);
+                if (changed.changes !== 1) throw new Error("Stock changed while your order was being prepared. Please try again.");
+                insertItem.run(id, item.product.id, item.product.seller_id, item.product.name, item.product.image || "", item.product.price, item.quantity);
+            }
+            return id;
+        });
+
+        orderId = createOrder();
 
         const accessToken = await getAccessToken();
         const requestTimestamp = timestamp();
-
         const password = Buffer.from(
             process.env.MPESA_SHORTCODE + process.env.MPESA_PASSKEY + requestTimestamp
         ).toString("base64");
@@ -3090,7 +2142,7 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
                     Password: password,
                     Timestamp: requestTimestamp,
                     TransactionType: "CustomerPayBillOnline",
-                    Amount: amount,
+                    Amount: total,
                     PartyA: phone,
                     PartyB: process.env.MPESA_SHORTCODE,
                     PhoneNumber: phone,
@@ -3104,63 +2156,23 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
         const result = await darajaResponse.json();
 
         if (!darajaResponse.ok || !result.CheckoutRequestID) {
-            releaseStock(resolvedItems);
-            return response.status(502).json({
-                message: result.errorMessage || result.ResponseDescription || "M-PESA rejected the STK Push request."
-            });
+            db.prepare("UPDATE orders SET payment_status = 'failed', status = 'cancelled', reservation_expires = NULL, updated_at = ? WHERE id = ?")
+                .run(Date.now(), orderId);
+            const items = db.prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?").all(orderId);
+            const release = db.prepare("UPDATE products SET reserved_stock = MAX(0, reserved_stock - ?) WHERE id = ?");
+            items.forEach(item => { if (item.product_id) release.run(item.quantity, item.product_id); });
+            return response.status(502).json({ message: result.errorMessage || result.ResponseDescription || "M-PESA rejected the STK Push request." });
         }
 
-        const orderNumber = generateOrderNumber();
-
-        const orderResult = db
-            .prepare(
-                `INSERT INTO orders
-                    (order_number, customer_id, customer_name, customer_email, customer_phone,
-                     county, location, address, instructions, subtotal, delivery_fee, total,
-                     payment_method, payment_status, status, checkout_request_id, stock_deducted, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'mpesa', 'pending', 'pending', ?, 1, ?)`
-            )
-            .run(
-                orderNumber,
-                customer ? customer.id : null,
-                String(customerInfo.name || (customer && customer.name) || "").trim(),
-                String(customerInfo.email || (customer && customer.email) || "").trim(),
-                String(customerInfo.phone || payload.mpesaPhone || "").trim(),
-                String(delivery.county || "").trim(),
-                String(delivery.location || "").trim(),
-                String(delivery.address || "").trim(),
-                String(delivery.instructions || "").trim(),
-                subtotal,
-                DELIVERY_FEE,
-                amount,
-                result.CheckoutRequestID,
-                Date.now()
-            );
-
-        const orderId = orderResult.lastInsertRowid;
-
-        const insertItem = db.prepare(
-            "INSERT INTO order_items (order_id, product_id, seller_id, name, image, price, quantity) VALUES (?, ?, ?, ?, ?, ?, ?)"
-        );
-
-        resolvedItems.forEach(function (item) {
-            insertItem.run(
-                orderId,
-                item.productId,
-                item.sellerId,
-                item.name,
-                item.image,
-                item.price,
-                item.quantity
-            );
-        });
+        db.prepare("UPDATE orders SET checkout_request_id = ?, updated_at = ? WHERE id = ?")
+            .run(result.CheckoutRequestID, Date.now(), orderId);
 
         payments.set(result.CheckoutRequestID, {
             status: "pending",
-            orderNumber: orderNumber,
-            orderId: orderId,
-            amount: amount,
-            phone: phone,
+            orderNumber,
+            orderId,
+            amount: total,
+            phone,
             createdAt: Date.now()
         });
 
@@ -3168,13 +2180,19 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
 
         return response.json({
             checkoutRequestId: result.CheckoutRequestID,
-            orderNumber: orderNumber,
+            orderNumber,
             customerMessage: result.CustomerMessage || "M-PESA payment request sent."
         });
 
     } catch (error) {
-        releaseStock(resolvedItems);
-        return response.status(502).json({ message: error.message || "Unable to reach M-PESA." });
+        if (orderId) {
+            const items = db.prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?").all(orderId);
+            const release = db.prepare("UPDATE products SET reserved_stock = MAX(0, reserved_stock - ?) WHERE id = ?");
+            items.forEach(item => { if (item.product_id) release.run(item.quantity, item.product_id); });
+            db.prepare("UPDATE orders SET payment_status = 'failed', status = 'cancelled', reservation_expires = NULL, updated_at = ? WHERE id = ?")
+                .run(Date.now(), orderId);
+        }
+        return response.status(502).json({ message: error.message || "Unable to process your order." });
     }
 });
 
@@ -3191,70 +2209,22 @@ function deductStockForOrder(orderId) {
     const order = db.prepare("SELECT * FROM orders WHERE id = ?").get(orderId);
 
     if (!order || order.stock_deducted) {
-        return; // already reserved/deducted before, or order missing — never deduct twice
+        return; // already paid+deducted before, or order missing — never deduct twice
     }
 
     const items = db.prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?").all(orderId);
 
     const updateStock = db.prepare(
-        "UPDATE products SET stock = MAX(0, stock - ?) WHERE id = ?"
+        "UPDATE products SET stock = MAX(0, stock - ?), reserved_stock = MAX(0, COALESCE(reserved_stock, 0) - ?) WHERE id = ?"
     );
 
     items.forEach(function (item) {
         if (item.product_id) {
-            updateStock.run(item.quantity, item.product_id);
+            updateStock.run(item.quantity, item.quantity, item.product_id);
         }
     });
 
     db.prepare("UPDATE orders SET stock_deducted = 1 WHERE id = ?").run(orderId);
-}
-
-// ACCURACY: atomic stock reservation so two concurrent checkouts can never
-// both "win" the last unit of a product. better-sqlite3 runs each
-// statement synchronously/to completion, so a single conditional UPDATE
-// (stock >= requested quantity) is a safe compare-and-swap even under
-// concurrent requests — there's no window for another request to read a
-// stale stock value between the check and the write.
-function reserveStock(items) {
-    const reserved = [];
-    const reserveStmt = db.prepare(
-        "UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?"
-    );
-
-    for (const item of items) {
-        const result = reserveStmt.run(item.quantity, item.productId, item.quantity);
-        if (result.changes !== 1) {
-            releaseStock(reserved);
-            return { ok: false, productId: item.productId };
-        }
-        reserved.push(item);
-    }
-
-    return { ok: true };
-}
-
-function releaseStock(items) {
-    const releaseStmt = db.prepare("UPDATE products SET stock = stock + ? WHERE id = ?");
-    (items || []).forEach(function (item) {
-        if (item.productId) releaseStmt.run(item.quantity, item.productId);
-    });
-}
-
-// Undo a reservation made at STK-push time for an order whose payment
-// ultimately failed or was never completed (declined, cancelled, or the
-// customer simply never entered their M-PESA PIN so no callback arrives).
-function releaseStockForOrder(orderId) {
-    const order = db.prepare("SELECT * FROM orders WHERE id = ?").get(orderId);
-    if (!order || !order.stock_deducted) return;
-
-    const items = db.prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?").all(orderId);
-    releaseStock(
-        items
-            .filter(function (item) { return item.product_id; })
-            .map(function (item) { return { productId: item.product_id, quantity: item.quantity }; })
-    );
-
-    db.prepare("UPDATE orders SET stock_deducted = 0 WHERE id = ?").run(orderId);
 }
 
 app.post("/api/mpesa/callback", function (request, response) {
@@ -3263,10 +2233,15 @@ app.post("/api/mpesa/callback", function (request, response) {
 
     if (callback && callback.CheckoutRequestID) {
 
-        const payment = payments.get(callback.CheckoutRequestID) || {
-            status: "pending",
-            createdAt: Date.now()
-        };
+        let payment = payments.get(callback.CheckoutRequestID);
+        if (!payment) {
+            const order = db.prepare("SELECT id, order_number AS orderNumber, total AS amount, customer_phone AS phone FROM orders WHERE checkout_request_id = ?").get(callback.CheckoutRequestID);
+            if (order) {
+                payment = Object.assign({}, order, { status: "pending", createdAt: Date.now() });
+            } else {
+                payment = { status: "pending", createdAt: Date.now() };
+            }
+        }
 
         const paid = Number(callback.ResultCode) === 0;
 
@@ -3277,13 +2252,17 @@ app.post("/api/mpesa/callback", function (request, response) {
 
         if (payment.orderId) {
             db.prepare(
-                "UPDATE orders SET payment_status = ?, status = ? WHERE id = ?"
-            ).run(paid ? "paid" : "failed", paid ? "paid" : "cancelled", payment.orderId);
+                "UPDATE orders SET payment_status = ?, status = ?, reservation_expires = NULL, updated_at = ? WHERE id = ?"
+            ).run(paid ? "paid" : "failed", paid ? "paid" : "cancelled", Date.now(), payment.orderId);
 
             if (paid) {
-                deductStockForOrder(payment.orderId); // no-op safety net; stock was already reserved at checkout
+                deductStockForOrder(payment.orderId);
             } else {
-                releaseStockForOrder(payment.orderId); // payment declined/cancelled — give the stock back
+                const failedItems = db.prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?").all(payment.orderId);
+                const release = db.prepare("UPDATE products SET reserved_stock = MAX(0, COALESCE(reserved_stock, 0) - ?) WHERE id = ?");
+                failedItems.forEach(function (item) {
+                    if (item.product_id) release.run(item.quantity, item.product_id);
+                });
             }
 
             logActivity(
@@ -3302,9 +2281,6 @@ app.post("/api/mpesa/callback", function (request, response) {
 
 app.get("/api/mpesa/status/:checkoutRequestId", function (request, response) {
 
-    // No login required (guest checkout): the CheckoutRequestID itself is
-    // an unguessable value only known to the browser that started this
-    // specific payment, so it already acts as the access token here.
     const payment = payments.get(request.params.checkoutRequestId);
 
     if (!payment) {
@@ -3353,7 +2329,7 @@ app.post("/api/contact", async function (request, response) {
 
     if (!contactMailConfigured()) {
         return response.status(503).json({
-            message: "Contact form is not configured yet. Add EMAIL_USER and EMAIL_PASSWORD to .env."
+            message: "Contact form is not configured yet. Add EMAIL_USER and EMAIL_PASS to .env."
         });
     }
 
@@ -3410,9 +2386,7 @@ app.get("/api/health", function (_request, response) {
         ok: true,
         mpesaConfigured: mpesaConfigured(),
         contactMailConfigured: contactMailConfigured(),
-        emailVerificationConfigured: emailVerificationConfigured(),
         googleConfigured: googleConfigured(),
-        phoneVerificationConfigured: smsVerificationConfigured(),
         adminConfigured: Boolean(process.env.ADMIN_PASSWORD)
     });
 });
@@ -3430,40 +2404,9 @@ app.get("/api/config", function (_request, response) {
 });
 
 /* =========================
-   STALE RESERVATION SWEEP
-   If a customer abandons the M-PESA prompt (never enters their PIN, or
-   the callback simply never arrives), stock reserved for that order would
-   otherwise stay locked forever and show as falsely out of stock. Every
-   few minutes, release the reservation on any mpesa order that has sat
-   "pending" too long.
-========================= */
-
-const STALE_ORDER_MS = 20 * 60 * 1000; // 20 minutes with no callback
-
-function releaseStaleReservations() {
-    const cutoff = Date.now() - STALE_ORDER_MS;
-    const stale = db
-        .prepare(
-            `SELECT id, order_number FROM orders
-             WHERE payment_method = 'mpesa' AND status = 'pending'
-               AND stock_deducted = 1 AND created_at < ?`
-        )
-        .all(cutoff);
-
-    stale.forEach(function (order) {
-        releaseStockForOrder(order.id);
-        db.prepare("UPDATE orders SET status = 'cancelled', payment_status = 'failed' WHERE id = ?").run(order.id);
-        logActivity("order_expired", "Order " + order.order_number + " expired with no payment confirmation; stock released.");
-    });
-}
-
-setInterval(releaseStaleReservations, 5 * 60 * 1000);
-
-/* =========================
    START SERVER
 ========================= */
 
 app.listen(port, function () {
     console.log("PHYNEX server running at http://localhost:" + port);
-    releaseStaleReservations();
 });
