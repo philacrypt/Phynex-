@@ -9,7 +9,7 @@
     'use strict';
 
     const CART_KEY = 'phynexCart';
-    const CUSTOMER_NAME_KEY = 'phynexCustomerName';
+    const CUSTOMER_TOKEN_KEY = 'phynexCustomerToken';
     const DELIVERY_FEE = 300; // must match DELIVERY_FEE in server.js
 
     /* =====================================================
@@ -51,7 +51,6 @@
        ===================================================== */
 
     function buildProductCard(product) {
-    product = uniqueProductImages(product);
 
         const card = document.createElement('div');
 
@@ -64,15 +63,7 @@
         card.dataset.sellerName = product.sellerName || '';
         card.dataset.sellerPhone = product.sellerPhone || '';
         card.dataset.sellerWhatsapp = product.sellerWhatsapp || '';
-        // Store normalized slugs (e.g. "Phones & Tablets" -> "phones-tablets")
-        // so category-tile filtering works no matter how the category name
-        // is capitalized or punctuated. Space-separated so filterCategory()
-        // can still do a simple "does this list contain that slug" check.
-        card.dataset.category = [
-            slugify(product.category || ''),
-            slugify(product.subcategory || '')
-        ].filter(Boolean).join(' ');
-        card.dataset.categoryLabel = product.category || '';
+        card.dataset.category = (product.category || '') + ' ' + (product.subcategory || '');
 
         const priceHtml = money(product.price) +
             (product.oldPrice
@@ -89,8 +80,7 @@
             '</div>' +
             '<div class="product-info">' +
                 '<div class="product-name">' + escapeHtml(product.name) + '</div>' +
-                '' +
-                '<div class="sold-by">Sold by PHYNEX</div>' +
+                '<div class="rating">' + (product.sellerName ? 'Sold by ' + escapeHtml(product.sellerName) : '') + '</div>' +
                 '<div class="price">' + priceHtml + '</div>' +
                 '<div class="stock-status' + (inStock ? '' : ' sold-out') + '">' +
                     (inStock ? 'In stock' : 'Sold out') +
@@ -107,27 +97,67 @@
         return card;
     }
 
-    // Products written directly in index.html are the storefront source of truth.
-    // Seller/API products are added after the HTML products instead of replacing them.
-    function getExistingProductNames(grid) {
-        const names = new Set();
-        if (!grid) return names;
-        grid.querySelectorAll('.product .product-name').forEach(function (el) {
-            const name = String(el.textContent || '').trim().toLowerCase();
-            if (name) names.add(name);
-        });
-        return names;
+    async function hydrateStaticProductIds() {
+        const staticCards = Array.from(document.querySelectorAll('.product:not([data-product-id])'));
+        if (!staticCards.length) return;
+
+        try {
+            const response = await fetch('/api/products', { cache: 'no-store' });
+            if (!response.ok) return;
+            const data = await response.json();
+            const products = Array.isArray(data.products) ? data.products : [];
+
+            staticCards.forEach(function (card) {
+                const nameEl = card.querySelector('.product-name');
+                if (!nameEl) return;
+                const name = nameEl.textContent.trim();
+                const match = products.find(function (product) {
+                    return String(product.name || '').trim() === name;
+                });
+                if (match && match.id != null) {
+                    card.dataset.productId = String(match.id);
+                    card.dataset.stock = String(match.stock == null ? 0 : match.stock);
+                    card.dataset.trackingCode = match.trackingCode || card.dataset.trackingCode || '';
+                }
+            });
+        } catch (error) {
+            console.warn('PHYNEX: Could not hydrate storefront product IDs.', error);
+        }
     }
 
-    function appendUniqueApiProducts(grid, products) {
-        if (!grid) return;
-        const existingNames = getExistingProductNames(grid);
-        products.forEach(function (product) {
-            const key = String(product.name || '').trim().toLowerCase();
-            if (!key || existingNames.has(key)) return;
-            grid.appendChild(buildProductCard(product));
-            existingNames.add(key);
-        });
+    async function loadStoreCategories() {
+        const container = document.querySelector('.categories');
+        if (!container) return;
+
+        try {
+            const response = await fetch('/api/categories', { cache: 'no-store' });
+            if (!response.ok) throw new Error('Could not load categories');
+            const data = await response.json();
+            const categories = Array.isArray(data.categories) ? data.categories : [];
+
+            container.innerHTML = categories.map(function (category) {
+                return '<div class="category" data-category="' + escapeHtml(category.name) + '" role="button" tabindex="0">' +
+                    '<span class="cat-badge"><i class="fa-solid fa-layer-group"></i></span>' +
+                    '<span>' + escapeHtml(category.name) + '</span>' +
+                    '<small>' + Number(category.productCount || 0) + ' products</small>' +
+                '</div>';
+            }).join('');
+
+            container.querySelectorAll('.category').forEach(function (card) {
+                function openCategory() {
+                    window.location.href = 'category.html?category=' + encodeURIComponent(card.dataset.category);
+                }
+                card.addEventListener('click', openCategory);
+                card.addEventListener('keydown', function (event) {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        openCategory();
+                    }
+                });
+            });
+        } catch (error) {
+            console.error('PHYNEX: Could not load categories.', error);
+        }
     }
 
     async function loadMarketplaceProducts() {
@@ -137,69 +167,42 @@
         const sponsoredGrid = document.getElementById('sponsoredGrid');
         const sponsoredSection = document.getElementById('sponsoredSection');
 
+        // Only run this on pages that actually have the marketplace grids.
         if (!flashGrid && !newGrid && !sponsoredGrid) return;
 
         try {
-            const response = await fetch('/api/products', { cache: 'no-store' });
-            if (!response.ok) throw new Error('Products request failed: ' + response.status);
+
+            const response = await fetch('/api/products');
             const data = await response.json();
             const products = Array.isArray(data.products) ? data.products : [];
 
-            // Keep every product manually added to index.html.
-            // API products are appended only when they are not already present.
-            if (flashGrid) {
-                appendUniqueApiProducts(flashGrid, products);
-            }
-
             if (newGrid) {
-                // Do not clear the HTML New Arrivals cards. Add API products after them.
-                const newProducts = products.filter(function (product) {
-                    return String(product.category || '').toLowerCase().includes('new') || product.newArrival;
+                newGrid.innerHTML = '';
+                products.forEach(function (product) {
+                    newGrid.appendChild(buildProductCard(product));
                 });
-                appendUniqueApiProducts(newGrid, newProducts.slice(0, 8));
             }
 
             const sponsored = products.filter(function (product) { return product.sponsored; });
+
             if (sponsoredGrid && sponsored.length) {
-                appendUniqueApiProducts(sponsoredGrid, sponsored);
+                sponsoredGrid.innerHTML = '';
+                sponsored.forEach(function (product) {
+                    sponsoredGrid.appendChild(buildProductCard(product));
+                });
                 sponsoredGrid.style.display = '';
                 if (sponsoredSection) sponsoredSection.style.display = '';
             }
 
-            applyUrlProductAndCategoryParams();
+            if (flashGrid) {
+                flashGrid.innerHTML = '';
+                products.forEach(function (product) {
+                    flashGrid.appendChild(buildProductCard(product));
+                });
+            }
 
         } catch (error) {
             console.error('PHYNEX: Could not load live marketplace products.', error);
-            // HTML products remain visible even when the API is unavailable.
-        }
-    }
-
-    /* =====================================================
-       DEEP LINKS FROM OTHER PAGES (category.html, categories.html)
-       Supports index.html?category=<slug> to auto-filter to a
-       category, and index.html?product=<id> to open a specific
-       product's details popup, once real listings have loaded.
-       ===================================================== */
-
-    function applyUrlProductAndCategoryParams() {
-
-        const params = new URLSearchParams(location.search);
-        const categoryParam = params.get('category');
-        const productParam = params.get('product');
-
-        if (categoryParam) {
-            filterCategory(categoryParam);
-        }
-
-        if (productParam) {
-
-            const card = document.querySelector(
-                '.product[data-product-id="' + CSS.escape(productParam) + '"]'
-            );
-
-            if (card) {
-                openProductPopup(getProductFromCard(card));
-            }
         }
     }
 
@@ -236,6 +239,16 @@
        ===================================================== */
 
     function goToCheckout() {
+
+        if (!localStorage.getItem(CUSTOMER_TOKEN_KEY)) {
+
+            window.location.href =
+                'customer-login.html?redirect=' +
+                encodeURIComponent('checkout.html');
+
+            return;
+        }
+
         window.location.href = 'checkout.html';
     }
 
@@ -290,29 +303,6 @@
             document.getElementById('checkoutItems');
 
         if (!itemsBox) return; // not on checkout.html
-
-        // Guest checkout is allowed — if a session cookie happens to be
-        // present, prefill the known fields; otherwise the customer just
-        // fills the form in themselves. No login/account required to buy.
-        fetch('/api/customers/me', { credentials: 'include' })
-            .then(function (response) {
-                if (!response.ok) return null;
-                return response.json();
-            })
-            .then(function (data) {
-                if (!data || !data.customer) return;
-                const c = data.customer;
-                const nameField = document.getElementById('customerName');
-                const emailField = document.getElementById('customerEmail');
-                const phoneField = document.getElementById('customerPhone');
-                if (nameField && !nameField.value) nameField.value = c.name || '';
-                if (emailField && !emailField.value) emailField.value = c.email || '';
-                if (phoneField && !phoneField.value) phoneField.value = c.phone || '';
-                localStorage.setItem(CUSTOMER_NAME_KEY, c.name || '');
-            })
-            .catch(function () {
-                // Not logged in / request failed — that's fine, guest checkout continues.
-            });
 
         const emptyMsg =
             document.getElementById('checkoutEmpty');
@@ -713,134 +703,6 @@
     };
 
     /* =====================================================
-       PRODUCT POPUP — REAL RATINGS & REVIEWS
-       Replaces the old hardcoded "★★★★★ (24)" text. Reviews come
-       from real, admin-approved customer feedback, and only a
-       customer who actually paid for the product can submit one.
-       ===================================================== */
-
-    function starString(rating) {
-        const rounded = Math.max(0, Math.min(5, Math.round(Number(rating) || 0)));
-        return '★'.repeat(rounded) + '☆'.repeat(5 - rounded);
-    }
-
-    async function loadProductReviews(productId) {
-
-        const summaryBox = document.getElementById('ppReviewSummary');
-        const listBox = document.getElementById('ppReviewList');
-        const formWrap = document.getElementById('ppReviewFormWrap');
-
-        if (!summaryBox || !listBox || !formWrap) return;
-
-        summaryBox.innerHTML = '';
-        listBox.innerHTML = '';
-        formWrap.innerHTML = '';
-
-        const numericId = Number(productId);
-
-        if (!Number.isFinite(numericId)) {
-            listBox.innerHTML = '<p class="pp-reviews-empty">Reviews aren\u2019t available for this item.</p>';
-            return;
-        }
-
-        try {
-
-            const response = await fetch('/api/products/' + numericId + '/reviews');
-            const data = await response.json();
-
-            if (data.reviewCount) {
-                summaryBox.innerHTML =
-                    '' +
-                    '<span>' + data.rating + ' out of 5 &middot; ' + data.reviewCount +
-                    ' review' + (data.reviewCount === 1 ? '' : 's') + '</span>';
-            }
-
-            if (Array.isArray(data.reviews) && data.reviews.length) {
-                listBox.innerHTML = data.reviews.map(function (review) {
-                    return '' +
-                        (review.comment ? '<p>' + escapeHtml(review.comment) + '</p>' : '') +
-                    '</div>';
-                }).join('');
-            } else {
-                listBox.innerHTML = '<p class="pp-reviews-empty">No reviews yet for this product. Be the first to leave one after your order.</p>';
-            }
-
-        } catch (error) {
-            listBox.innerHTML = '<p class="pp-reviews-empty">Could not load reviews right now.</p>';
-        }
-
-        renderReviewForm(numericId, formWrap);
-    }
-
-    async function renderReviewForm(productId, formWrap) {
-
-        try {
-            const authResponse = await fetch('/api/customers/me', { credentials: 'include' });
-            if (!authResponse.ok) throw new Error('not authenticated');
-        } catch (error) {
-            formWrap.innerHTML =
-                '<p class="pp-review-note">' +
-                '<a href="customer-login.html">Log in</a> and buy this product to leave a review.' +
-                '</p>';
-            return;
-        }
-
-        formWrap.innerHTML =
-            '<p class="pp-review-note">Bought this? Rate and review it below — only verified buyers can submit.</p>' +
-            '<form class="pp-review-form" id="ppReviewForm">' +
-                '<label for="ppReviewRating">Your rating</label>' +
-                '<select id="ppReviewRating">' +
-                    '<option value="5">\u2605\u2605\u2605\u2605\u2605 — Excellent</option>' +
-                    '<option value="4">\u2605\u2605\u2605\u2605\u2606 — Good</option>' +
-                    '<option value="3">\u2605\u2605\u2605\u2606\u2606 — Okay</option>' +
-                    '<option value="2">\u2605\u2605\u2606\u2606\u2606 — Poor</option>' +
-                    '<option value="1">\u2605\u2606\u2606\u2606\u2606 — Bad</option>' +
-                '</select>' +
-                '<label for="ppReviewComment">Your review (optional)</label>' +
-                '<textarea id="ppReviewComment" rows="3" placeholder="What did you think of this product?"></textarea>' +
-                '<button type="submit">Submit Review</button>' +
-                '<p class="pp-review-note" id="ppReviewFeedback"></p>' +
-            '</form>';
-
-        const form = document.getElementById('ppReviewForm');
-
-        form.addEventListener('submit', async function (event) {
-
-            event.preventDefault();
-
-            const feedback = document.getElementById('ppReviewFeedback');
-            const rating = Number(document.getElementById('ppReviewRating').value);
-            const comment = document.getElementById('ppReviewComment').value.trim();
-
-            feedback.textContent = 'Submitting...';
-
-            try {
-
-                const response = await fetch('/api/products/' + productId + '/reviews', {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ rating: rating, comment: comment })
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    feedback.textContent = data.message || 'Could not submit your review.';
-                    return;
-                }
-
-                feedback.textContent = data.message || 'Thanks for your review!';
-
-            } catch (error) {
-                feedback.textContent = 'Network error — please try again.';
-            }
-        });
-    }
-
-    /* =====================================================
        PRODUCT POPUP
        ===================================================== */
 
@@ -849,8 +711,6 @@
     function openProductPopup(product) {
 
         currentProduct = product;
-
-        loadProductReviews(product.id);
 
         const image =
             document.getElementById(
@@ -986,7 +846,8 @@
         const sellerCall =
             document.getElementById('modalSellerCall');
 
-        const displayName = 'PHYNEX';
+        const displayName =
+            product.sellerName || 'PHYNEX';
 
         if (sellerName) {
             sellerName.textContent = displayName;
@@ -1114,8 +975,6 @@
 
         let found = 0;
 
-        const target = slugify(category);
-
         getProducts().forEach(
             function (card) {
 
@@ -1123,17 +982,12 @@
                     (
                         card.dataset.category ||
                         ''
-                    ).split(' ').filter(Boolean);
+                    ).split(' ');
 
-                // Exact slug match, or either slug containing the other,
-                // so a broad tile key like "phones" still matches a fuller
-                // category slug like "phones-tablets", and vice versa.
                 const match =
-                    categories.some(function (slug) {
-                        return slug === target ||
-                            slug.indexOf(target) !== -1 ||
-                            target.indexOf(slug) !== -1;
-                    });
+                    categories.includes(
+                        category
+                    );
 
                 card.style.display =
                     match ? '' : 'none';
@@ -1162,10 +1016,6 @@
 
     function searchProducts() {
 
-        // Search needs to look across every product in the marketplace,
-        // not just whatever is currently rendered on this page, so it
-        // hands off to a dedicated results page (same pattern as the
-        // category links) instead of filtering the homepage in place.
         const input =
             document.getElementById(
                 'searchInput'
@@ -1173,12 +1023,57 @@
 
         if (!input) return;
 
-        const query = input.value.trim();
+        const query =
+            input.value
+                .trim()
+                .toLowerCase();
 
-        if (!query) return;
+        if (!query) {
 
-        window.location.href =
-            'category.html?search=' + encodeURIComponent(query);
+            showAllProducts();
+
+            return;
+        }
+
+        let found = 0;
+
+        getProducts().forEach(
+            function (card) {
+
+                const nameElement =
+                    card.querySelector(
+                        '.product-name'
+                    );
+
+                const name =
+                    nameElement
+                        ? nameElement.textContent
+                            .toLowerCase()
+                        : '';
+
+                const match =
+                    name.includes(query);
+
+                card.style.display =
+                    match ? '' : 'none';
+
+                if (match) found++;
+            }
+        );
+
+        scrollToProducts();
+
+        showToast(
+            found +
+            (
+                found === 1
+                    ? ' result'
+                    : ' results'
+            ) +
+            ' for "' +
+            input.value.trim() +
+            '"'
+        );
     }
 
     /* =====================================================
@@ -1638,17 +1533,25 @@
 
             setMessage('Sending the M-PESA payment request...');
 
-            let response;
+            const customerToken =
+                localStorage.getItem(CUSTOMER_TOKEN_KEY);
+
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+
+            if (customerToken) {
+                headers['Authorization'] = 'Bearer ' + customerToken;
+            }
+
             try {
-                response =
+
+                const response =
                     await fetch('/api/mpesa/stkpush', {
 
                         method: 'POST',
 
-                        credentials: 'include',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
+                        headers: headers,
 
                         body: JSON.stringify({
 
@@ -1695,52 +1598,41 @@
                                 })
                         })
                     });
-            } catch (error) {
-                // fetch() itself only throws for a genuine connectivity
-                // problem — offline, DNS failure, server unreachable.
-                setMessage('Could not reach the PHYNEX server. Check your internet connection and try again.');
-                payButton.disabled = false;
-                payButton.textContent = 'Pay with M-PESA';
-                return;
-            }
 
-            let data;
-            try {
-                data = await response.json();
-            } catch (error) {
-                // Reached the server and got a response, but it wasn't
-                // valid JSON — a host/proxy error page, not a network
-                // problem on your end.
-                setMessage('The server sent back an unexpected response (status ' + response.status + '). Please wait a moment and try again.');
-                payButton.disabled = false;
-                payButton.textContent = 'Pay with M-PESA';
-                return;
-            }
+                const data = await response.json();
 
-            if (!response.ok) {
+                if (!response.ok) {
+
+                    setMessage(
+                        data.message ||
+                        'Could not send the M-PESA request.'
+                    );
+
+                    payButton.disabled = false;
+                    payButton.textContent = 'Pay with M-PESA';
+
+                    return;
+                }
 
                 setMessage(
-                    data.message ||
-                    'Could not send the M-PESA request.'
+                    data.customerMessage ||
+                    'Check your phone and enter your M-PESA PIN.'
                 );
+
+                payButton.textContent = 'Waiting for payment...';
+
+                pollPaymentStatus(
+                    data.checkoutRequestId,
+                    data.orderNumber
+                );
+
+            } catch (error) {
+
+                setMessage('Network error. Please try again.');
 
                 payButton.disabled = false;
                 payButton.textContent = 'Pay with M-PESA';
-
-                return;
             }
-
-            setMessage(
-                data.customerMessage ||
-                'Check your phone and enter your M-PESA PIN.'
-            );
-
-            payButton.textContent = 'Waiting for payment...';
-
-            pollPaymentStatus(
-                data.checkoutRequestId,
-                data.orderNumber
-            );
         });
 
         form.addEventListener('submit', function (event) {
@@ -1764,6 +1656,7 @@
             updateCartCount();
 
             loadMarketplaceProducts();
+            hydrateStaticProductIds();
 
             renderCheckoutPage();
 
@@ -1936,29 +1829,6 @@
                     closeProductPopup
                 );
             }
-
-            /* ---------------------------------------------
-               POPUP TABS (Description / Specifications / Reviews)
-               --------------------------------------------- */
-
-            document.querySelectorAll('.pp-tab').forEach(function (tabButton) {
-
-                tabButton.addEventListener('click', function () {
-
-                    document.querySelectorAll('.pp-tab').forEach(function (btn) {
-                        btn.classList.remove('active');
-                    });
-
-                    document.querySelectorAll('.pp-tab-panel').forEach(function (panel) {
-                        panel.classList.remove('active');
-                    });
-
-                    tabButton.classList.add('active');
-
-                    const target = document.getElementById(tabButton.dataset.tab);
-                    if (target) target.classList.add('active');
-                });
-            });
 
             document.addEventListener(
                 'keydown',
@@ -2144,20 +2014,3 @@
     );
 
 })();
-
-
-/* PHYNEX: prevent duplicate product images in cards/gallery data. */
-function uniqueProductImages(product) {
-    if (!product || !Array.isArray(product.images)) return product;
-    const seen = new Set();
-    product.images = product.images.filter(function (url) {
-        const key = String(url || '').trim().toLowerCase();
-        if (!key || seen.has(key)) return false;
-        seen.add(key);
-        return true;
-    });
-    if (product.image && !seen.has(String(product.image).trim().toLowerCase())) {
-        product.images.unshift(product.image);
-    }
-    return product;
-}

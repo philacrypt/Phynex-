@@ -363,6 +363,85 @@ function ensureSystemSeller() {
     return db.prepare("SELECT * FROM sellers WHERE id = ?").get(result.lastInsertRowid);
 }
 
+/* =========================
+   LEGACY STOREFRONT PRODUCTS
+   The original homepage contains five built-in products. They were
+   displayed correctly, but had no database product ID, so checkout
+   rejected their cart IDs as invalid. Seed them into the real products
+   table once so they can be ordered and stock can be validated normally.
+========================= */
+function seedLegacyStorefrontProducts() {
+    const seller = ensureSystemSeller();
+    const legacyProducts = [
+        {
+            name: "Dell Vostro 15 3500 i7 11th Gen 8GB 400GB SSD",
+            price: 35000, oldPrice: 40000,
+            category: "Computers & Laptops", image: "/images/13.jpeg",
+            description: "A dependable Dell laptop for work, study and everyday productivity.",
+            specifications: "Intel Core i7 11th Gen | 8GB RAM | 400GB SSD"
+        },
+        {
+            name: "HP EliteDesk 830 G5 i5 8th Gen 8GB 256GB SSD",
+            price: 32500, oldPrice: 36000,
+            category: "Computers & Laptops", image: "/images/18.jpeg",
+            description: "A professionally refurbished HP desktop with responsive performance for office and home use.",
+            specifications: "Intel Core i5 8th Gen | 8GB RAM | 256GB SSD"
+        },
+        {
+            name: "BT Speaker HF226",
+            price: 2000, oldPrice: 2500,
+            category: "Electronics", image: "/images/19.jpeg",
+            description: "A portable Bluetooth speaker with clear sound for music, calls and everyday entertainment.",
+            specifications: "Bluetooth wireless audio | Portable design | Rechargeable battery"
+        },
+        {
+            name: "MacBook Air i5 2017 256GB SSD 8GB RAM",
+            price: 20500, oldPrice: 35000,
+            category: "Computers & Laptops", image: "/images/17.jpeg",
+            description: "A compact MacBook with a sharp display and reliable performance for everyday computing.",
+            specifications: "Intel Core i5 | 8GB RAM | 256GB SSD"
+        },
+        {
+            name: "Lenovo Thinkpad T460 256GB SSD 8GB RAM",
+            price: 23000, oldPrice: 25000,
+            category: "Computers & Laptops", image: "/images/20.jpeg",
+            description: "A durable Lenovo ThinkPad with a comfortable keyboard and fast SSD storage for work on the go.",
+            specifications: "Intel Core i5 | 8GB RAM | 256GB SSD"
+        }
+    ];
+
+    const exists = db.prepare("SELECT id FROM products WHERE name = ? LIMIT 1");
+    const insert = db.prepare(`
+        INSERT INTO products
+        (seller_id, name, description, specifications, price, old_price, category, image, media,
+         status, sponsored, tracking_code, stock, low_stock_threshold, featured, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', 0, ?, ?, 5, 1, ?)
+    `);
+
+    const tx = db.transaction(function () {
+        for (const product of legacyProducts) {
+            if (exists.get(product.name)) continue;
+            insert.run(
+                seller.id,
+                product.name,
+                product.description,
+                product.specifications,
+                product.price,
+                product.oldPrice,
+                product.category,
+                product.image,
+                JSON.stringify([{ url: product.image, type: "image" }]),
+                generateTrackingCode(),
+                10,
+                Date.now()
+            );
+        }
+    });
+    tx();
+}
+
+seedLegacyStorefrontProducts();
+
 const DEFAULT_SETTINGS = {
     storeName: "PHYNEX",
     supportEmail: "",
@@ -2039,9 +2118,26 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
     const phone = normalizePhone(payload.mpesaPhone);
     if (!phone) return response.status(400).json({ message: "Enter a valid Kenyan M-PESA number." });
 
-    const productIds = requestedItems.map(item => Number(item.id)).filter(Number.isInteger);
-    if (productIds.length !== requestedItems.length) {
-        return response.status(400).json({ message: "Your cart contains an invalid product." });
+    // Older PHYNEX carts stored a slug/string ID for the built-in homepage
+    // products. Resolve those legacy cart lines by product name before
+    // validating the database IDs. This keeps old carts usable after the
+    // storefront products were moved into the real products table.
+    const resolvedItems = requestedItems.map(function (item) {
+        const rawId = Number(item.id);
+        if (Number.isInteger(rawId) && rawId > 0) return Object.assign({}, item, { id: rawId });
+
+        const name = String(item.name || "").trim();
+        if (!name) return Object.assign({}, item, { id: NaN });
+
+        const match = db.prepare(
+            "SELECT id FROM products WHERE name = ? AND status = 'approved' LIMIT 1"
+        ).get(name);
+        return Object.assign({}, item, { id: match ? match.id : NaN });
+    });
+
+    const productIds = resolvedItems.map(item => Number(item.id)).filter(id => Number.isInteger(id) && id > 0);
+    if (productIds.length !== resolvedItems.length) {
+        return response.status(400).json({ message: "Your cart contains an invalid product. Please remove the old item and add it again." });
     }
 
     const placeholders = productIds.map(() => "?").join(",");
@@ -2055,7 +2151,7 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
     const authoritativeItems = [];
     let subtotal = 0;
 
-    for (const item of requestedItems) {
+    for (const item of resolvedItems) {
         const id = Number(item.id);
         const product = byId.get(id);
         const quantity = Math.max(1, Math.round(Number(item.quantity) || 1));

@@ -492,9 +492,12 @@
       total: total
     };
 
+    // Resolve old cart entries whose IDs were slugs instead of real
+    // database product IDs. The server performs the same validation, but
+    // resolving here also keeps the request clean for existing carts.
     const payload = {
       items: cart.map(function (item) {
-        return { id: item.id, quantity: itemQty(item) };
+        return { id: item.id, name: item.name, quantity: itemQty(item) };
       }),
       customer: {
         name: data.get("name") || "",
