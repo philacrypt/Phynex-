@@ -1697,7 +1697,9 @@
                 );
 
             /* ---------------------------------------------
-               CATEGORY TILES
+               CATEGORY TILES (Shop by Category images) —
+               open the category's own page directly instead
+               of filtering/scrolling on the homepage.
                --------------------------------------------- */
 
             document
@@ -1714,9 +1716,11 @@
                             'click',
                             function () {
 
-                                filterCategory(
-                                    tile.dataset.category
-                                );
+                                window.location.href =
+                                    'category.html?category=' +
+                                    encodeURIComponent(
+                                        tile.dataset.category
+                                    );
 
                             }
                         );
@@ -1740,9 +1744,11 @@
                             'click',
                             function () {
 
-                                filterCategory(
-                                    tile.dataset.category
-                                );
+                                window.location.href =
+                                    'category.html?category=' +
+                                    encodeURIComponent(
+                                        tile.dataset.category
+                                    );
 
                             }
                         );
@@ -1753,6 +1759,12 @@
             /* ---------------------------------------------
                TOP CATEGORY NAV BAR (All Categories,
                Phones & Tablets, Computers, Electronics, ...)
+               — tapping a category opens that category's own
+               page directly instead of scrolling down the
+               homepage. "All Categories" opens the full
+               categories page; "Deals" still filters the
+               homepage's Flash Deals section since deals
+               aren't a real category on category.html.
                --------------------------------------------- */
 
             document
@@ -1775,8 +1787,8 @@
                                 if (
                                     category === 'all'
                                 ) {
-                                    showAllProducts();
-                                    scrollToProducts();
+                                    window.location.href =
+                                        'categories.html';
                                 } else if (
                                     category === 'deals'
                                 ) {
@@ -1784,9 +1796,11 @@
                                         'deals'
                                     );
                                 } else {
-                                    filterCategory(
-                                        category
-                                    );
+                                    window.location.href =
+                                        'category.html?category=' +
+                                        encodeURIComponent(
+                                            category
+                                        );
                                 }
 
                             }
