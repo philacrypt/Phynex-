@@ -1900,9 +1900,12 @@
 <nav class="nav" id="categoryNav">
 
     <div class="nav-item" data-category="all"><i class="fa-solid fa-bars"></i> All Categories</div>
-    <!-- The real categories (every one the business actually has) are
-         fetched from /api/categories and inserted here at load time,
-         instead of a hardcoded, easily-outdated shortlist. -->
+    <div class="nav-item" data-category="phones">Phones & Tablets</div>
+    <div class="nav-item" data-category="computers">Computers</div>
+    <div class="nav-item" data-category="electronics">Electronics</div>
+    <div class="nav-item" data-category="gaming">Gaming</div>
+    <div class="nav-item" data-category="accessories">Accessories</div>
+    <div class="nav-item" data-category="home-office">Home & Office</div>
     <div class="nav-item deals" data-category="deals">Deals</div>
 
 </nav>
@@ -1971,7 +1974,7 @@
 <section class="showcase">
     <div class="showcase-grid">
 
-        <a class="showcase-tile" href="category.html?category=phones" data-category="phones">
+        <a class="showcase-tile" href="javascript:void(0)" data-category="phones">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
@@ -1983,7 +1986,7 @@
             </div>
         </a>
 
-        <a class="showcase-tile" href="category.html?category=computers" data-category="computers">
+        <a class="showcase-tile" href="javascript:void(0)" data-category="computers">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
@@ -1995,7 +1998,7 @@
             </div>
         </a>
 
-        <a class="showcase-tile" href="category.html?category=gaming" data-category="gaming">
+        <a class="showcase-tile" href="javascript:void(0)" data-category="gaming">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
@@ -2007,7 +2010,7 @@
             </div>
         </a>
 
-        <a class="showcase-tile" href="category.html?category=accessories" data-category="accessories">
+        <a class="showcase-tile" href="javascript:void(0)" data-category="accessories">
             <div class="showcase-tile-placeholder">
                 <i class="fa-regular fa-image"></i>
                 <span>Add photo<small>~800×900px</small></span>
@@ -2035,7 +2038,7 @@
 
     <h2><span class="heading-icon"><i class="fa-solid fa-star"></i></span>New Arrivals</h2>
 
-    <a href="category.html?category=all" class="view-all">
+    <a href="#newArrivalsSection" class="view-all">
         View All New Arrivals
     </a>
 
@@ -2104,95 +2107,222 @@
 </div>
 
 
-<!--
-    PRODUCTS — HTML IS THE SOURCE OF TRUTH
-    --------------------------------------
-    Add Product 6, Product 7, Product 8, etc. by copying one .product
-    block below and changing the name, image, price, description,
-    specifications and category. You do NOT need to edit script.js.
--->
-<div class="products" id="flashDealsGrid">
+<div class="section-heading" id="productsSection">
 
-    <!-- PRODUCT 1 -->
-    <div class="product" data-product-id="html-product-1" data-category="computers laptops home-office deals new" data-description="A dependable Dell laptop for work, study and everyday productivity." data-specifications="Intel Core i7 11th Gen | 8GB RAM | 400GB SSD">
-        <div class="product-image"><img src="images/13.jpeg" alt="Dell Vostro 15 3500 i7 11th Gen 8GB 400GB SSD" loading="lazy"></div>
-        <div class="product-info">
-            <div class="product-name">Dell Vostro 15 3500 i7 11th Gen 8GB 400GB SSD</div>
-            
-            <div class="price">KSh 35,000 <span class="old-price">KSh 40,000</span></div>
-            <div class="express">PHYNEX EXPRESS</div>
-            <div class="stock-status">In stock</div>
-            <div class="product-actions"><button type="button" class="cart-btn" onclick="addToCart(this)">Add to Cart</button><button type="button" class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button></div>
-        </div>
+    <div class="flash-title">
+
+        <h2><span class="heading-icon"><i class="fa-solid fa-bolt"></i></span>Flash Deals</h2>
+
+        <span class="timer" id="flashDealsTimer">
+            <i class="fa-regular fa-clock"></i> Ends in: 03 : 00 : 00
+        </span>
+
     </div>
 
-    <!-- PRODUCT 2 -->
-    <div class="product" data-product-id="html-product-2" data-category="computers desktops home-office deals new" data-description="A professionally refurbished HP desktop with responsive performance for office and home use." data-specifications="Intel Core i5 8th Gen | 8GB RAM | 256GB SSD">
-        <div class="product-image"><img src="images/18.jpeg" alt="HP EliteDesk 830 G5 i5 8th Gen 8GB 256GB SSD" loading="lazy"></div>
-        <div class="product-info">
-            <div class="product-name">HP EliteDesk 830 G5 i5 8th Gen 8GB 256GB SSD</div>
-            
-            <div class="price">KSh 32,500 <span class="old-price">KSh 36,000</span></div>
-            <div class="express">PHYNEX EXPRESS</div>
-            <div class="stock-status">In stock</div>
-            <div class="product-actions"><button type="button" class="cart-btn" onclick="addToCart(this)">Add to Cart</button><button type="button" class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button></div>
-        </div>
-    </div>
-
-    <!-- PRODUCT 3 -->
-    <div class="product" data-product-id="html-product-3" data-category="electronics audio accessories deals" data-description="A portable Bluetooth speaker with clear sound for music, calls and everyday entertainment." data-specifications="Bluetooth wireless audio | Portable design | Rechargeable battery">
-        <div class="product-image"><img src="images/19.jpeg" alt="BT Speaker HF226" loading="lazy"></div>
-        <div class="product-info">
-            <div class="product-name">BT Speaker HF226</div>
-            
-            <div class="price">KSh 2,000 <span class="old-price">KSh 2,500</span></div>
-            <div class="express">PHYNEX EXPRESS</div>
-            <div class="stock-status">In stock</div>
-            <div class="product-actions"><button type="button" class="cart-btn" onclick="addToCart(this)">Add to Cart</button><button type="button" class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button></div>
-        </div>
-    </div>
-
-    <!-- PRODUCT 4 -->
-    <div class="product" data-product-id="html-product-4" data-category="computers laptops home-office deals new" data-description="A compact MacBook with a sharp display and reliable performance for everyday computing." data-specifications="Intel Core i5 | 8GB RAM | 256GB SSD">
-        <div class="product-image"><img src="images/17.jpeg" alt="MacBook Air i5 2017 256GB SSD 8GB RAM" loading="lazy"></div>
-        <div class="product-info">
-            <div class="product-name">MacBook Air i5 2017 256GB SSD 8GB RAM</div>
-            
-            <div class="price">KSh 20,500 <span class="old-price">KSh 35,000</span></div>
-            <div class="express">PHYNEX EXPRESS</div>
-            <div class="stock-status">In stock</div>
-            <div class="product-actions"><button type="button" class="cart-btn" onclick="addToCart(this)">Add to Cart</button><button type="button" class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button></div>
-        </div>
-    </div>
-
-    <!-- PRODUCT 5 -->
-    <div class="product" data-product-id="html-product-5" data-category="computers laptops home-office deals" data-description="A durable Lenovo ThinkPad with a comfortable keyboard and fast SSD storage for work on the go." data-specifications="Intel Core i5 | 8GB RAM | 256GB SSD">
-        <div class="product-image"><img src="images/20.jpeg" alt="Lenovo Thinkpad T460 256GB SSD 8GB RAM" loading="lazy"></div>
-        <div class="product-info">
-            <div class="product-name">Lenovo Thinkpad T460 256GB SSD 8GB RAM</div>
-            
-            <div class="price">KSh 23,000 <span class="old-price">KSh 25,000</span></div>
-            <div class="express">PHYNEX EXPRESS</div>
-            <div class="stock-status">In stock</div>
-            <div class="product-actions"><button type="button" class="cart-btn" onclick="addToCart(this)">Add to Cart</button><button type="button" class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button></div>
-        </div>
-    </div>
-
-    <!-- PRODUCT 6 — COPY THIS BLOCK TO ADD PRODUCT 7, 8, 9... -->
-    <div class="product" data-product-id="html-product-6" data-category="electronics deals" data-description="Write your product description here." data-specifications="Write product specifications here.">
-        <div class="product-image"><img src="images/pic 41.jpeg" alt="Product 6" loading="lazy"></div>
-        <div class="product-info">
-            <div class="product-name">Thrift Dress</div>
-            
-            <div class="price">KSh 350 <span class="old-price">350</span></div>
-            <div class="express">PHYNEX EXPRESS</div>
-            <div class="stock-status">In stock</div>
-            <div class="product-actions"><button type="button" class="cart-btn" onclick="addToCart(this)">Add to Cart</button><button type="button" class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button></div>
-        </div>
-    </div>
+    <a href="#productsSection" class="view-all">
+        View All Deals
+    </a>
 
 </div>
 
+
+<div class="products" id="flashDealsGrid">
+
+    <!-- PRODUCT 1 -->
+
+    <div class="product" data-category="computers laptops home-office deals new" data-description="A dependable Dell laptop for work, study and everyday productivity." data-specifications="Intel Core i7 11th Gen | 8GB RAM | 400GB SSD">
+
+        <div class="product-image">
+            <img src="images/13.jpeg" alt="Laptop" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                Dell Vostro 15 3500 i7 11th Gen 8GB 400GB SSD
+            </div>
+
+            <div class="rating">
+                ★★★★★ (24)
+            </div>
+
+            <div class="price">
+                KSh 35,000
+                <span class="old-price">KSh 40,000</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 2 -->
+
+    <div class="product" data-category="computers desktops home-office deals new" data-description="A professionally refurbished HP desktop with responsive performance for office and home use." data-specifications="Intel Core i5 8th Gen | 8GB RAM | 256GB SSD">
+
+        <div class="product-image">
+            <img src="images/18.jpeg" alt="Laptop" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                HP EliteDesk 830 G5 i5 8th Gen 8GB 256GB SSD
+            </div>
+
+            <div class="rating">
+                ★★★★★ (18)
+            </div>
+
+            <div class="price">
+                KSh 32,500
+                <span class="old-price">KSh 36,000</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 3 -->
+
+    <div class="product" data-category="electronics audio accessories deals new" data-description="A portable Bluetooth speaker with clear sound for music, calls and everyday entertainment." data-specifications="Bluetooth wireless audio | Portable design | Rechargeable battery">
+
+        <div class="product-image">
+            <img src="images/19.jpeg" alt="BT speaker" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                BT Speaker HF226
+            </div>
+
+            <div class="rating">
+                ★★★★★ (31)
+            </div>
+
+            <div class="price">
+                KSh 2,000
+                <span class="old-price">KSh 2,500</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 4 -->
+
+    <div class="product" data-category="computers laptops deals new" data-description="A compact MacBook with a sharp display and reliable performance for everyday computing." data-specifications="Intel Core i5 | 8GB RAM | 256GB SSD">
+
+        <div class="product-image">
+            <img src="images/17.jpeg" alt="MacBook" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+                MacBook Air i5 2017 256GB SSD 8GB RAM
+            </div>
+
+            <div class="rating">
+                ★★★★★ (15)
+            </div>
+
+            <div class="price">
+                KSh 20,500
+                <span class="old-price">KSh 35,000</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRODUCT 5 -->
+
+    <div class="product" data-category="computers laptops deals new" data-description="A durable Lenovo ThinkPad with a comfortable keyboard and fast SSD storage for work on the go." data-specifications="Intel Core i5 | 8GB RAM | 256GB SSD">
+
+        <div class="product-image">
+            <img src="images/20.jpeg" alt="Laptop" loading="lazy">
+        </div>
+
+        <div class="product-info">
+
+            <div class="product-name">
+             Lenovo Thinkpad T460 256GB SSD 8GB RAM   
+            </div>
+
+            <div class="rating">
+                ★★★★★ (41)
+            </div>
+
+            <div class="price">
+                KSh 23,000
+                <span class="old-price">KSh 25,000</span>
+            </div>
+
+            <div class="express">
+                PHYNEX EXPRESS
+            </div>
+
+            <div class="stock-status">In stock</div>
+            <div class="product-actions">
+                <button class="cart-btn" onclick="addToCart(this)">Add to Cart</button>
+                <button class="buy-btn" onclick="buyNowFromCard(this)">Buy Now</button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+  
+
+    
+
+</div>
 <p id="searchMessage" hidden style="padding:24px;text-align:center;color:#687083;background:white;border:1px solid #e1e4e8;">No products found.</p>
 
 
@@ -2304,7 +2434,7 @@
             </div>
 
             <h2 class="product-popup-title" id="modalProductName"></h2>
-            
+            <div class="product-popup-rating" id="modalProductRating"></div>
 
             <span class="pp-express-badge" id="modalProductExpress">PHYNEX EXPRESS</span>
         </div>
@@ -2333,9 +2463,7 @@
         </div>
 
         <div class="pp-tab-panel" id="ppReviews">
-            
-            
-            
+            <p class="pp-reviews-empty">No reviews yet for this product. Be the first to leave one after your order.</p>
         </div>
 
         <div class="pp-section">
@@ -2414,7 +2542,7 @@
         Home
     </a>
 
-    <a class="mbn-item" href="categories.html">
+    <a class="mbn-item" href="#categoryNav">
         <i class="fa-solid fa-list"></i>
         Category
     </a>
@@ -2618,145 +2746,41 @@
 </script>
 
 <script>
-    // Anything styled to look clickable (category bar, category cards,
-    // promo buttons) should actually open a page, not just scroll or
-    // do nothing. Everything below navigates to category.html with the
-    // matching category, the same page the showcase tiles already use.
+    // Promo buttons use the store's real category/filter controls.
+    // Clicking Explore Gaming selects Gaming in the existing product store
+    // and brings the matching products into view instead of doing nothing.
     document.addEventListener('DOMContentLoaded', function () {
-
-        function goToCategory(cat) {
-            // "deals" has no real product category behind it — the Flash
-            // Deals section shows every product, so send it to "all" too.
-            var target = (!cat || cat === 'deals') ? 'all' : cat;
-            window.location.href = 'category.html?category=' + encodeURIComponent(target);
-        }
-
-        // Top category bar (All Categories, Deals, and every real category)
-        document.querySelectorAll('.nav-item[data-category]').forEach(function (item) {
-            item.addEventListener('click', function () {
-                goToCategory(item.getAttribute('data-category'));
-            });
-        });
-
-        // Fill in the rest of the bar with every category the store
-        // actually has, so it's never out of sync with what's for sale.
-        var categoryNav = document.getElementById('categoryNav');
-        var dealsTab = document.querySelector('.nav-item.deals');
-
-        if (categoryNav) {
-            fetch('/api/categories')
-                .then(function (response) { return response.json(); })
-                .then(function (data) {
-                    var categories = Array.isArray(data.categories) ? data.categories : [];
-
-                    categories.forEach(function (category) {
-                        var item = document.createElement('div');
-                        item.className = 'nav-item';
-                        item.setAttribute('data-category', category.slug || category.name);
-                        item.textContent = category.name;
-
-                        item.addEventListener('click', function () {
-                            goToCategory(category.slug || category.name);
-                        });
-
-                        categoryNav.insertBefore(item, dealsTab || null);
-                    });
-                })
-                .catch(function (error) {
-                    console.error('PHYNEX: Could not load categories for the nav bar.', error);
-                });
-        }
-
-        // Homepage category cards (Phones & Tablets, Laptops, Gaming...)
-        document.querySelectorAll('.category[data-category]').forEach(function (item) {
-            item.addEventListener('click', function () {
-                goToCategory(item.getAttribute('data-category'));
-            });
-        });
-
-        // Promo buttons
         var gamingButton = document.getElementById('gamingButton');
+        var gamingNav = document.querySelector('.nav-item[data-category="gaming"]');
+
         if (gamingButton) {
             gamingButton.addEventListener('click', function () {
-                goToCategory('gaming');
+                if (gamingNav) {
+                    gamingNav.click();
+                }
+
+                var productsSection = document.getElementById('productsSection');
+                if (productsSection) {
+                    setTimeout(function () {
+                        productsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 80);
+                }
             });
         }
 
         var newArrivalsButton = document.getElementById('newArrivalsButton');
         if (newArrivalsButton) {
             newArrivalsButton.addEventListener('click', function () {
-                goToCategory('all');
+                var newArrivals = document.getElementById('newArrivalsSection');
+                if (newArrivals) {
+                    newArrivals.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
             });
         }
     });
 </script>
 
 <script src="script.js"></script>
-
-
-<!-- CUSTOMER REVIEWS -->
-<section id="customerReviews" class="customer-reviews" style="max-width:1100px;margin:40px auto;padding:24px;">
-  <h2>Customer Reviews</h2>
-  <p>Only customers who have completed a purchase can submit a review.</p>
-  <div id="reviewsList"></div>
-  <form id="reviewForm" style="display:none;margin-top:20px;">
-    <input id="reviewProductId" type="hidden">
-    <label>Rating
-      <select id="reviewRating" required>
-        <option value="">Choose rating</option>
-        <option value="1">1 star</option>
-        <option value="2">2 stars</option>
-        <option value="3">3 stars</option>
-        <option value="4">4 stars</option>
-        <option value="5">5 stars</option>
-      </select>
-    </label>
-    <textarea id="reviewText" placeholder="Write your review..." required></textarea>
-    <button type="submit">Submit review</button>
-  </form>
-</section>
-<script>
-(function () {
-  const STORAGE_KEY = 'phynex_customer_reviews_v1';
-  function loadReviews() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
-    catch (e) { return []; }
-  }
-  function saveReviews(items) { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); }
-  function renderReviews(productId) {
-    const list = document.getElementById('reviewsList');
-    if (!list) return;
-    const reviews = loadReviews().filter(r => r.productId === String(productId));
-    list.innerHTML = reviews.length ? reviews.map(r =>
-      '<article style="padding:12px 0;border-bottom:1px solid #ddd">' +
-      '<strong>' + '★'.repeat(Number(r.rating)) + '</strong> ' +
-      '<span>' + (r.text || '').replace(/[&<>"]/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]}) + '</span>' +
-      '<small style="display:block;opacity:.7">' + new Date(r.date).toLocaleDateString() + '</small>' +
-      '</article>'
-    ).join('') : '<p>No reviews yet.</p>';
-  }
-  window.PHYNEX_SHOW_REVIEWS = function(productId, canReview) {
-    document.getElementById('reviewProductId').value = productId;
-    document.getElementById('reviewForm').style.display = canReview ? '' : 'none';
-    renderReviews(productId);
-    document.getElementById('customerReviews').scrollIntoView({behavior:'smooth'});
-  };
-  const form = document.getElementById('reviewForm');
-  if (form) form.addEventListener('submit', function(e) {
-    e.preventDefault();
-    const rating = Number(document.getElementById('reviewRating').value);
-    const text = document.getElementById('reviewText').value.trim();
-    const productId = document.getElementById('reviewProductId').value;
-    if (!productId || !rating || !text) return;
-    const reviews = loadReviews();
-    reviews.push({ productId, rating, text, date: new Date().toISOString() });
-    saveReviews(reviews);
-    form.reset();
-    document.getElementById('reviewProductId').value = productId;
-    renderReviews(productId);
-  });
-})();
-</script>
 
 </body>
 </html>
