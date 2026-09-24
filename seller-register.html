@@ -72,17 +72,38 @@
             color: #888;
         }
 
-        input {
+        input, select {
             width: 100%;
             padding: 11px 13px;
             border: 1px solid #d9dde5;
             border-radius: 5px;
             font-size: 14px;
+            font-family: inherit;
+            background: #fff;
         }
 
-        input:focus {
+        input:focus, select:focus {
             outline: none;
             border-color: #073bce;
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .two-col label { margin-top: 0; }
+
+        .section-title {
+            margin-top: 20px;
+            font-size: 13px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .03em;
+            color: #073bce;
+            border-top: 1px solid #eee;
+            padding-top: 16px;
         }
 
         .field-note {
@@ -189,6 +210,70 @@
                     <label for="sameAsPhone">My WhatsApp number is the same as my phone number</label>
                 </div>
 
+                <div class="section-title">Business location</div>
+                <div class="two-col">
+                    <div>
+                        <label for="sellerCounty">County</label>
+                        <select id="sellerCounty" required>
+                            <option value="" disabled selected>Select county</option>
+                            <option value="Baringo">Baringo</option>
+                            <option value="Bomet">Bomet</option>
+                            <option value="Bungoma">Bungoma</option>
+                            <option value="Busia">Busia</option>
+                            <option value="Elgeyo-Marakwet">Elgeyo-Marakwet</option>
+                            <option value="Embu">Embu</option>
+                            <option value="Garissa">Garissa</option>
+                            <option value="Homa Bay">Homa Bay</option>
+                            <option value="Isiolo">Isiolo</option>
+                            <option value="Kajiado">Kajiado</option>
+                            <option value="Kakamega">Kakamega</option>
+                            <option value="Kericho">Kericho</option>
+                            <option value="Kiambu">Kiambu</option>
+                            <option value="Kilifi">Kilifi</option>
+                            <option value="Kirinyaga">Kirinyaga</option>
+                            <option value="Kisii">Kisii</option>
+                            <option value="Kisumu">Kisumu</option>
+                            <option value="Kitui">Kitui</option>
+                            <option value="Kwale">Kwale</option>
+                            <option value="Laikipia">Laikipia</option>
+                            <option value="Lamu">Lamu</option>
+                            <option value="Machakos">Machakos</option>
+                            <option value="Makueni">Makueni</option>
+                            <option value="Mandera">Mandera</option>
+                            <option value="Marsabit">Marsabit</option>
+                            <option value="Meru">Meru</option>
+                            <option value="Migori">Migori</option>
+                            <option value="Mombasa">Mombasa</option>
+                            <option value="Murang'a">Murang'a</option>
+                            <option value="Nairobi">Nairobi</option>
+                            <option value="Nakuru">Nakuru</option>
+                            <option value="Nandi">Nandi</option>
+                            <option value="Narok">Narok</option>
+                            <option value="Nyamira">Nyamira</option>
+                            <option value="Nyandarua">Nyandarua</option>
+                            <option value="Nyeri">Nyeri</option>
+                            <option value="Samburu">Samburu</option>
+                            <option value="Siaya">Siaya</option>
+                            <option value="Taita-Taveta">Taita-Taveta</option>
+                            <option value="Tana River">Tana River</option>
+                            <option value="Tharaka-Nithi">Tharaka-Nithi</option>
+                            <option value="Trans Nzoia">Trans Nzoia</option>
+                            <option value="Turkana">Turkana</option>
+                            <option value="Uasin Gishu">Uasin Gishu</option>
+                            <option value="Vihiga">Vihiga</option>
+                            <option value="Wajir">Wajir</option>
+                            <option value="West Pokot">West Pokot</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="sellerSubCounty">Sub-county</label>
+                        <select id="sellerSubCounty" required disabled>
+                            <option value="" disabled selected>Select county first</option>
+                        </select>
+                    </div>
+                </div>
+                <p class="field-note">Shown to buyers so they know where to expect their order from.</p>
+
                 <label for="password">Password</label>
                 <input type="password" id="password" minlength="6" required>
 
@@ -201,7 +286,58 @@
         </div>
     </main>
 
+    <script src="js/kenya-locations.js"></script>
     <script>
+        (function setupCountyDropdowns() {
+            var countySelect = document.getElementById('sellerCounty');
+            var subCountySelect = document.getElementById('sellerSubCounty');
+            var counties = (typeof window !== 'undefined' && window.KENYA_COUNTIES) || {};
+
+            if (!countySelect || !subCountySelect) return;
+
+            if (!Object.keys(counties).length) {
+                subCountySelect.required = false;
+                subCountySelect.querySelector('option').textContent = 'Not available';
+                return;
+            }
+
+            function populateSubCounties(countyName) {
+                subCountySelect.innerHTML = '';
+                var subCounties = counties[countyName] || [];
+
+                if (!countyName || !subCounties.length) {
+                    var placeholder = document.createElement('option');
+                    placeholder.value = '';
+                    placeholder.disabled = true;
+                    placeholder.selected = true;
+                    placeholder.textContent = 'Select county first';
+                    subCountySelect.appendChild(placeholder);
+                    subCountySelect.disabled = true;
+                    return;
+                }
+
+                var ph = document.createElement('option');
+                ph.value = '';
+                ph.disabled = true;
+                ph.selected = true;
+                ph.textContent = 'Select sub-county';
+                subCountySelect.appendChild(ph);
+
+                subCounties.forEach(function (subCountyName) {
+                    var opt = document.createElement('option');
+                    opt.value = subCountyName;
+                    opt.textContent = subCountyName;
+                    subCountySelect.appendChild(opt);
+                });
+
+                subCountySelect.disabled = false;
+            }
+
+            countySelect.addEventListener('change', function () {
+                populateSubCounties(countySelect.value);
+            });
+        })();
+
         var phoneInput = document.getElementById('phone');
         var whatsappInput = document.getElementById('whatsapp');
         var sameAsPhone = document.getElementById('sameAsPhone');
@@ -245,6 +381,15 @@
                 return;
             }
 
+            var county = document.getElementById('sellerCounty').value;
+            var subCounty = document.getElementById('sellerSubCounty').value;
+
+            if (!county || !subCounty) {
+                msg.className = 'msg error';
+                msg.textContent = 'Select your business county and sub-county.';
+                return;
+            }
+
             btn.disabled = true;
             btn.textContent = 'Creating account...';
 
@@ -257,6 +402,8 @@
                         email: document.getElementById('email').value.trim(),
                         phone: phone,
                         whatsapp: whatsapp,
+                        county: county,
+                        subCounty: subCounty,
                         password: document.getElementById('password').value
                     })
                 });
