@@ -156,7 +156,7 @@
 (function () {
   "use strict";
 
-  const CART_KEYS = ["phynexCart", "cart", "cartItems"];
+  const CART_KEYS = ["phynexBuyNow", "phynexCart", "cart", "cartItems"];
   const DELIVERY_FEE = 300; // Must match DELIVERY_FEE in server.js and script.js.
 
   function readCart() {
@@ -189,8 +189,14 @@
     return Number.isFinite(n) ? n : 0;
   }
 
+  function validProductId(value) {
+    const n = Number(value);
+    return Number.isInteger(n) && n > 0 ? n : null;
+  }
+
   function itemId(item, index) {
-    return String(item.id ?? item.productId ?? item.sku ?? item._id ?? index);
+    const id = validProductId(item.id ?? item.productId ?? item.sku ?? item._id);
+    return id !== null ? String(id) : String(index);
   }
 
   function itemName(item) {
@@ -211,14 +217,22 @@
   }
 
   function normalize(cart) {
-    return cart.map((item, i) => ({
-      ...item,
-      id: item.id ?? item.productId ?? item.sku ?? item._id ?? i,
-      quantity: itemQty(item)
-    }));
+    // Drop any line whose id isn't a real, whole-number product id
+    // (e.g. stale/corrupted entries from an older cart format). Falling
+    // back to the array index here used to send a fake "id" to the
+    // server, which is what caused "Your cart contains an invalid
+    // product" at checkout.
+    return cart
+      .map((item) => ({
+        ...item,
+        id: validProductId(item.id ?? item.productId ?? item.sku ?? item._id)
+      }))
+      .filter((item) => item.id !== null)
+      .map((item) => ({ ...item, quantity: itemQty(item) }));
   }
 
   let cart = normalize(readCart());
+  localStorage.removeItem("phynexBuyNow");
 
   function renderCart() {
     const container = document.getElementById("checkoutItems");
@@ -408,6 +422,7 @@
 
     cart = [];
     saveCart(cart);
+    localStorage.removeItem("phynexBuyNow");
     renderCart();
   }
 
@@ -492,12 +507,9 @@
       total: total
     };
 
-    // Resolve old cart entries whose IDs were slugs instead of real
-    // database product IDs. The server performs the same validation, but
-    // resolving here also keeps the request clean for existing carts.
     const payload = {
       items: cart.map(function (item) {
-        return { id: item.id, name: item.name, quantity: itemQty(item) };
+        return { id: item.id, quantity: itemQty(item) };
       }),
       customer: {
         name: data.get("name") || "",

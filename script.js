@@ -97,34 +97,6 @@
         return card;
     }
 
-    async function hydrateStaticProductIds() {
-        const staticCards = Array.from(document.querySelectorAll('.product:not([data-product-id])'));
-        if (!staticCards.length) return;
-
-        try {
-            const response = await fetch('/api/products', { cache: 'no-store' });
-            if (!response.ok) return;
-            const data = await response.json();
-            const products = Array.isArray(data.products) ? data.products : [];
-
-            staticCards.forEach(function (card) {
-                const nameEl = card.querySelector('.product-name');
-                if (!nameEl) return;
-                const name = nameEl.textContent.trim();
-                const match = products.find(function (product) {
-                    return String(product.name || '').trim() === name;
-                });
-                if (match && match.id != null) {
-                    card.dataset.productId = String(match.id);
-                    card.dataset.stock = String(match.stock == null ? 0 : match.stock);
-                    card.dataset.trackingCode = match.trackingCode || card.dataset.trackingCode || '';
-                }
-            });
-        } catch (error) {
-            console.warn('PHYNEX: Could not hydrate storefront product IDs.', error);
-        }
-    }
-
     async function loadStoreCategories() {
         const container = document.querySelector('.categories');
         if (!container) return;
@@ -212,7 +184,25 @@
                 localStorage.getItem(CART_KEY)
             );
 
-            return Array.isArray(cart) ? cart : [];
+            if (!Array.isArray(cart)) return [];
+
+            // Drop any stale/corrupted line that doesn't have a real
+            // numeric product id (e.g. left over from an older cart
+            // format). Sending one of these to checkout is what causes
+            // "Your cart contains an invalid product".
+            const cleaned = cart.filter(function (item) {
+                const id = Number(item && item.id);
+                return Number.isInteger(id) && id > 0;
+            });
+
+            if (cleaned.length !== cart.length) {
+                localStorage.setItem(
+                    CART_KEY,
+                    JSON.stringify(cleaned)
+                );
+            }
+
+            return cleaned;
         } catch (error) {
             return [];
         }
@@ -229,26 +219,11 @@
     }
 
     /* =====================================================
-       CHECKOUT GATE
-       Browsing, cart and Add to Cart stay open to everyone.
-       Only the moment someone tries to actually go to checkout
-       (Buy Now on a card, or Order Now in the product popup)
-       do we require a signed-in customer. Anonymous shoppers
-       are sent to log in / sign up, then bounced straight back
-       into checkout.html afterward.
+       CHECKOUT
+       Guests can check out without signing in.
        ===================================================== */
 
     function goToCheckout() {
-
-        if (!localStorage.getItem(CUSTOMER_TOKEN_KEY)) {
-
-            window.location.href =
-                'customer-login.html?redirect=' +
-                encodeURIComponent('checkout.html');
-
-            return;
-        }
-
         window.location.href = 'checkout.html';
     }
 
@@ -1656,7 +1631,6 @@
             updateCartCount();
 
             loadMarketplaceProducts();
-            hydrateStaticProductIds();
 
             renderCheckoutPage();
 
