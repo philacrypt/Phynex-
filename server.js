@@ -7,7 +7,6 @@ const bcrypt = require("bcryptjs");
 const Database = require("better-sqlite3");
 const { OAuth2Client } = require("google-auth-library");
 require("dotenv").config();
-const KENYA_COUNTIES = require("./js/kenya-locations.js");
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
@@ -924,14 +923,6 @@ app.post("/api/customers/logout", requireCustomer, function (request, response) 
     response.json({ ok: true });
 });
 
-function isValidKenyaSubCounty(county, subCounty) {
-    return Boolean(
-        county &&
-        subCounty &&
-        Array.isArray(KENYA_COUNTIES[county]) &&
-        KENYA_COUNTIES[county].includes(subCounty)
-    );
-}
 
 /* =========================
    SELLER REGISTER / LOGIN
@@ -947,18 +938,13 @@ app.post("/api/sellers/register", async function (request, response) {
     const whatsapp = String(body.whatsapp || "").trim();
     const password = String(body.password || "");
     const county = String(body.county || "").trim();
-    const subCounty = String(body.subCounty || "").trim();
 
     if (!businessName || !email || !password) {
         return response.status(400).json({ message: "Business name, email and password are required." });
     }
 
-    if (!county || !subCounty) {
-        return response.status(400).json({ message: "Select your business county and sub-county." });
-    }
-
-    if (!isValidKenyaSubCounty(county, subCounty)) {
-        return response.status(400).json({ message: "The selected sub-county does not belong to the selected county." });
+    if (!county) {
+        return response.status(400).json({ message: "Select your business county." });
     }
 
     if (!phone) {
@@ -989,9 +975,9 @@ app.post("/api/sellers/register", async function (request, response) {
     const result = db
         .prepare(
             `INSERT INTO sellers (business_name, email, phone, whatsapp, county, sub_county, password_hash, token, token_expires, status, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?)`
+             VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?, 'approved', ?)`
         )
-        .run(businessName, email, phone, whatsapp, county, subCounty, passwordHash, token, Date.now() + 7 * 24 * 60 * 60 * 1000, Date.now());
+        .run(businessName, email, phone, whatsapp, county, passwordHash, token, Date.now() + 7 * 24 * 60 * 60 * 1000, Date.now());
 
     const seller = db.prepare("SELECT * FROM sellers WHERE id = ?").get(result.lastInsertRowid);
 
@@ -2152,14 +2138,8 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
     const requestedItems = Array.isArray(payload.items) ? payload.items : [];
 
     const deliveryCounty = String(delivery.county || "").trim();
-    const deliverySubCounty = String(delivery.subCounty || "").trim();
-
-    if (!deliveryCounty || !deliverySubCounty) {
-        return response.status(400).json({ message: "Select your county and sub-county." });
-    }
-
-    if (!isValidKenyaSubCounty(deliveryCounty, deliverySubCounty)) {
-        return response.status(400).json({ message: "The selected sub-county does not belong to the selected county." });
+    if (!deliveryCounty) {
+        return response.status(400).json({ message: "Select your county." });
     }
 
     if (!requestedItems.length) {
@@ -2227,7 +2207,7 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
                 String(customerInfo.email || (customer && customer.email) || "").trim(),
                 String(customerInfo.phone || payload.mpesaPhone || "").trim(),
                 deliveryCounty,
-                deliverySubCounty,
+                null,
                 String(delivery.location || "").trim(),
                 String(delivery.address || "").trim(),
                 String(delivery.instructions || "").trim(),
