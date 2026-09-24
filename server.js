@@ -1094,7 +1094,14 @@ const uploadMedia = multer({
 const uploadAdminProductFiles = multer({
     storage: mediaStorage,
     limits: { fileSize: 25 * 1024 * 1024, files: 7 },
-    fileFilter: mediaFileFilter
+    fileFilter: function (request, file, callback) {
+        // Admin product uploads are images only. This keeps the form simple
+        // and gives a clear error instead of silently failing on the upload.
+        if (/^image\//.test(file.mimetype)) {
+            return callback(null, true);
+        }
+        return callback(new Error("Only JPG, PNG, WEBP or GIF images can be uploaded here."));
+    }
 }).fields([
     { name: "image", maxCount: 1 },
     { name: "gallery", maxCount: 6 }
@@ -1477,9 +1484,13 @@ app.post("/api/admin/products", requireAdmin, handleAdminUpload, function (reque
         return response.status(400).json({ message: "Product name and a valid price are required." });
     }
 
+    const mainImageFile = (files.image && files.image[0]) || null;
+    if (!mainImageFile) {
+        return response.status(400).json({ message: "Please choose a main product image before saving the product." });
+    }
+
     const systemSeller = ensureSystemSeller();
 
-    const mainImageFile = (files.image && files.image[0]) || null;
     const galleryFiles = files.gallery || [];
 
     const media = [];

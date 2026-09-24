@@ -251,14 +251,14 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
         <label style="grid-column:1/-1">Main product image*
           <div class="image-upload">
             <input id="productImageFile" name="imageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif" required>
-            <div class="upload-help">Choose an image from the device — no image URL is required. JPG, PNG, WEBP or GIF.</div>
+            <div class="upload-help">Choose an image from your device. JPG, PNG, WEBP or GIF, up to 25MB.</div>
             <div id="productImagePreview" class="image-preview-grid"></div>
           </div>
         </label>
         <label style="grid-column:1/-1">Additional product images
           <div class="image-upload">
             <input id="productGalleryFiles" name="galleryFiles" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple>
-            <div class="upload-help">Add multiple photos to show the product from different angles.</div>
+            <div class="upload-help">Add up to 6 additional JPG, PNG, WEBP or GIF images (25MB each).</div>
             <div id="productGalleryPreview" class="image-preview-grid"></div>
           </div>
         </label>
@@ -410,21 +410,41 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
   $('addProductBtn').onclick=()=>openProductModal();
   $('productForm').onsubmit=async e=>{
     e.preventDefault();
-    const f=e.target, fd=new FormData();
-    const id=f.elements.id.value;
+    const f=e.target, id=f.elements.id.value;
+    const mainFile=f.elements.imageFile.files[0] || null;
+    const gallery=[...f.elements.galleryFiles.files];
+    const MAX_FILE_SIZE=25*1024*1024;
+
+    if(!f.elements.name.value.trim()){toast('Enter the product name.','error');return;}
+    if(!Number.isFinite(Number(f.elements.price.value)) || Number(f.elements.price.value)<1){toast('Enter a valid product price.','error');return;}
+    if(!id && !mainFile){toast('Choose a main product image before saving.','error');return;}
+    if(mainFile && (!mainFile.type.startsWith('image/') || mainFile.size>MAX_FILE_SIZE)){toast('Main image must be an image smaller than 25MB.','error');return;}
+    if(gallery.some(file=>!file.type.startsWith('image/') || file.size>MAX_FILE_SIZE)){toast('Every gallery image must be an image smaller than 25MB.','error');return;}
+    if(gallery.length>6){toast('You can add up to 6 additional images.','error');return;}
+
+    const fd=new FormData();
     [...f.elements].forEach(el=>{
       if(!el.name || el.name==='id' || el.type==='file')return;
       fd.append(el.name,el.value);
     });
-    if(f.elements.imageFile.files[0]) fd.append('image',f.elements.imageFile.files[0]);
-    [...f.elements.galleryFiles.files].forEach(file=>fd.append('gallery',file));
+    if(mainFile) fd.append('image',mainFile);
+    gallery.forEach(file=>fd.append('gallery',file));
     fd.append('price',String(Number(f.elements.price.value||0)));
     fd.append('oldPrice',String(Number(f.elements.oldPrice.value||0)));
     fd.append('stock',String(Number(f.elements.stock.value||0)));
+
+    const submit=e.submitter;
+    if(submit){submit.disabled=true;submit.textContent='Saving…';}
     try {
       const d=await api(id?`/api/admin/products/${id}`:'/api/admin/products',{method:id?'PUT':'POST',body:fd});
-      closeModal('productModal');toast(d.message||'Product saved');loadProducts();
-    } catch(e){toast(e.message,'error');}
+      closeModal('productModal');
+      toast(d.message||'Product saved successfully');
+      loadProducts();
+    } catch(err){
+      toast(err.message||'Could not save product.','error');
+    } finally {
+      if(submit){submit.disabled=false;submit.textContent='Save product';}
+    }
   };
 
   async function loadOrders(){
