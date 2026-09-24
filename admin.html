@@ -405,7 +405,7 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
     $('productImagePreview').innerHTML=p?.image?`<img src="${esc(p.image)}" alt="Current product image">`:'';
     $('productGalleryPreview').innerHTML='';
     $('productGalleryFiles').value='';
-    $('productModal').classList.add('show'); $('productModal').setAttribute('aria-hidden','false');
+    $('productModal').classList.add('show'); $('productModal').setAttribute('aria-hidden','false'); $('productModal').scrollTop=0;
   }
   $('addProductBtn').onclick=()=>openProductModal();
   $('productForm').onsubmit=async e=>{
@@ -585,7 +585,7 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
 
   $('addCategoryBtn').onclick=()=>openSimple('Add category',[['name','Category name','text'],['slug','Slug','text'],['description','Description','text']]);
   $('addPromotionBtn').onclick=()=>openSimple('New promotion',[['name','Promotion name','text'],['type','Type (banner, discount, sponsored)','text'],['value','Value','text']]);
-  function openSimple(title,fields){$('simpleModalTitle').textContent=title;$('simpleFields').innerHTML=fields.map(f=>`<label>${esc(f[1])}<input name="${esc(f[0])}" type="${esc(f[2])}" required></label>`).join('');$('simpleModal').classList.add('show');}
+  function openSimple(title,fields){$('simpleModalTitle').textContent=title;$('simpleFields').innerHTML=fields.map(f=>`<label>${esc(f[1])}<input name="${esc(f[0])}" type="${esc(f[2])}" required></label>`).join('');$('simpleModal').classList.add('show');$('simpleModal').scrollTop=0;}
   $('simpleForm').onsubmit=async e=>{e.preventDefault();const data=Object.fromEntries(new FormData(e.target).entries());try{const endpoint=$('simpleModalTitle').textContent.includes('category')?'/api/admin/categories':'/api/admin/promotions';await api(endpoint,{method:'POST',body:JSON.stringify(data)});closeModal('simpleModal');toast('Saved successfully');currentSection==='categories'?loadCategories():loadPromotions();}catch(x){toast(x.message,'error');}};
 
   $('saveSettings').onclick=async()=>{const data=Object.fromEntries(new FormData($('settingsForm').querySelector('form')||$('settingsForm')).entries());document.querySelectorAll('#settingsForm input[type=checkbox]').forEach(x=>data[x.name]=x.checked);try{await api('/api/admin/settings',{method:'PUT',body:JSON.stringify(data)});toast('Settings saved');}catch(e){toast(e.message,'error');}};
