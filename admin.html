@@ -30,7 +30,7 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px}.panel{background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px}.panel h2{font-size:15px;color:var(--navy)}.panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}.mini-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid #edf0f4}.mini-row:first-child{border-top:0}.mini-row img{width:44px;height:44px;object-fit:contain;background:#f4f6f8;border-radius:6px}.mini-row>div{min-width:0;flex:1}.mini-row strong,.mini-row small{display:block}.mini-row strong{font-size:13px}.mini-row small{color:var(--muted);font-size:11px}.mini-row.no-img{justify-content:space-between}.empty{padding:32px 18px;text-align:center;color:var(--muted);font-size:13px;background:#fff;border:1px dashed #dfe4ec;border-radius:10px}
 
 .toolbar{display:flex;gap:9px;margin-bottom:15px;flex-wrap:wrap}.toolbar input{flex:1;min-width:220px}.toolbar select{width:auto;min-width:145px}
-.list{display:grid;gap:12px}.product-row{background:#fff;border:1px solid var(--border);border-radius:12px;padding:15px;display:flex;gap:15px;align-items:center}.product-row>img{width:90px;height:90px;object-fit:contain;background:#f5f6f8;border-radius:8px;flex-shrink:0}.product-info{flex:1;min-width:0}.product-info h3{font-size:15px;margin:5px 0 2px;color:var(--navy)}.product-info p,.product-info small{display:block;color:var(--muted);font-size:12px}.product-info>strong{font-size:14px}.product-info small{margin-top:3px}.row-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.row-actions button{border:1px solid #d9dee8;background:#fff;border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:#39455b}.row-actions button.success,.row-actions button.danger{border:0}.pill{display:inline-block;border-radius:20px;padding:3px 8px;background:#eef1f5;color:#566174;font-size:10px;font-weight:800;text-transform:uppercase;margin-right:5px}.pill.pending{background:#fff4e0;color:var(--amber)}.pill.approved,.pill.paid,.pill.delivered{background:#e8f6ec;color:var(--green)}.pill.rejected,.pill.cancelled{background:#fdeaea;color:var(--red)}.pill.sponsored{background:#eaf1ff;color:var(--blue)}.pill.suspended{background:#fdeaea;color:var(--red)}
+.list{display:grid;gap:12px}.product-row{background:#fff;border:1px solid var(--border);border-radius:12px;padding:15px;display:flex;gap:15px;align-items:center}.product-row>img{width:90px;height:90px;object-fit:contain;background:#f5f6f8;border-radius:8px;flex-shrink:0}.product-info{flex:1;min-width:0}.product-info h3{font-size:15px;margin:5px 0 2px;color:var(--navy)}.product-info p,.product-info small{display:block;color:var(--muted);font-size:12px}.product-info>strong{font-size:14px}.product-info small{margin-top:3px}.row-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.row-actions button{border:1px solid #d9dee8;background:#fff;border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:#39455b}.row-actions button.success,.row-actions button.danger{border:0}.pill{display:inline-block;border-radius:20px;padding:3px 8px;background:#eef1f5;color:#566174;font-size:10px;font-weight:800;text-transform:uppercase;margin-right:5px}.pill.pending{background:#fff4e0;color:var(--amber)}.pill.approved,.pill.paid,.pill.delivered{background:#e8f6ec;color:var(--green)}.pill.rejected,.pill.cancelled,.pill.failed{background:#fdeaea;color:var(--red)}.pill.sponsored{background:#eaf1ff;color:var(--blue)}.pill.suspended{background:#fdeaea;color:var(--red)}
 .table-wrap{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:auto}table{width:100%;border-collapse:collapse;min-width:700px}th,td{text-align:left;padding:13px 15px;border-bottom:1px solid #edf0f4;font-size:12px;vertical-align:middle}th{background:#f8f9fb;color:#596477;font-size:11px;text-transform:uppercase;letter-spacing:.3px}td small{display:block;color:var(--muted);font-size:10px}td button{border:1px solid #d9dee8;background:#fff;border-radius:7px;padding:6px 9px;font-weight:700;font-size:11px}.danger-text{color:var(--red)}.warn-text{color:var(--amber)}
 .category-grid,.promo-admin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}.category-card,.promo-admin{background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px}.category-card{display:flex;gap:12px;align-items:center}.cat-icon{width:42px;height:42px;border-radius:10px;background:#eaf1ff;color:var(--blue);display:grid;place-items:center;font-size:20px}.category-card>div:nth-child(2){flex:1}.category-card h3,.promo-admin h3{font-size:14px;color:var(--navy)}.category-card p,.promo-admin p{font-size:11px;color:var(--muted)}.category-card button,.promo-admin button{margin-top:10px;border:1px solid #d9dee8;background:#fff;border-radius:7px;padding:6px 10px;font-weight:700;font-size:11px}
 .review-row{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px}.review-row+.review-row{margin-top:10px}.stars{letter-spacing:2px;color:#f2a900}.review-row p{font-size:13px;margin:7px 0}.review-row small{color:var(--muted)}
@@ -86,6 +86,8 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
       <button class="nav-item active" data-section="overview"><i>⌂</i> Overview</button>
       <button class="nav-item" data-section="products"><i>▣</i> Products</button>
       <button class="nav-item" data-section="orders"><i>▤</i> Orders <b id="ordersBadge"></b></button>
+      <button class="nav-item" data-section="transactions"><i>$</i> Transactions</button>
+      <button class="nav-item" data-section="messages"><i>✉</i> Messages <b id="messagesBadge"></b></button>
       <button class="nav-item" data-section="inventory"><i>◫</i> Inventory</button>
       <button class="nav-item" data-section="sellers"><i>♙</i> Sellers</button>
       <button class="nav-item" data-section="customers"><i>♧</i> Customers</button>
@@ -143,6 +145,30 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
         <button class="secondary" id="refreshOrders">Refresh</button>
       </div>
       <div id="ordersList" class="table-wrap"></div>
+    </section>
+
+    <section class="section" id="section-transactions">
+      <div class="page-head"><div><h1>Transactions</h1><p>Trace every payment — amount, M-PESA receipt and status — across all orders.</p></div></div>
+      <div class="stat-grid compact">
+        <article class="stat-card"><span>Paid (received)</span><strong id="txPaidTotal">—</strong><small id="txPaidCount"></small></article>
+        <article class="stat-card"><span>Pending payments</span><strong id="txPendingTotal">—</strong><small id="txPendingCount"></small></article>
+        <article class="stat-card"><span>Failed / cancelled</span><strong id="txFailedTotal">—</strong><small id="txFailedCount"></small></article>
+      </div>
+      <div class="toolbar">
+        <input id="txSearch" placeholder="Search order number, customer or M-PESA receipt…">
+        <select id="txStatus"><option value="">All payment statuses</option><option value="paid">paid</option><option value="pending">pending</option><option value="failed">failed</option></select>
+        <button class="secondary" id="refreshTransactions">Refresh</button>
+      </div>
+      <div id="transactionsList" class="table-wrap"></div>
+    </section>
+
+    <section class="section" id="section-messages">
+      <div class="page-head"><div><h1>Messages</h1><p>Every message submitted through the site's contact form.</p></div></div>
+      <div class="toolbar">
+        <input id="messageSearch" placeholder="Search name, email or message…">
+        <button class="secondary" id="refreshMessages">Refresh</button>
+      </div>
+      <div id="messagesList" class="list"></div>
     </section>
 
     <section class="section" id="section-inventory">
@@ -213,7 +239,7 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
         <div class="form-section-title">Basic product information</div>
         <label>Product name*<input name="name" required placeholder="e.g. PlayStation 5 Slim"></label>
         <label>Brand<input name="brand" placeholder="Sony, Samsung, HP…"></label>
-        <label>Category<select name="category" id="productCategorySelect" class="category-select"><option value="">Auto-detect from name/description</option></select></label>
+        <label>Category*<select name="category" id="productCategorySelect" class="category-select" required><option value="">Select category</option></select></label>
         <label>Subcategory<input name="subcategory" placeholder="e.g. Consoles, Smartphones, Laptops"></label>
         <label>Price (KSh)*<input name="price" type="number" min="0" required></label>
         <label>Old price<input name="oldPrice" type="number" min="0"></label>
@@ -242,7 +268,7 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
       </div>
       <label>Description<textarea name="description" rows="4" placeholder="Describe the product, what is included and its condition."></textarea></label>
       <label>Specifications<textarea name="specifications" rows="4" placeholder="Model, storage, RAM, colour, dimensions, warranty…"></textarea></label>
-      <div class="modal-actions"><button type="button" class="secondary" data-close="productModal">Cancel</button><button type="submit" class="secondary small" id="saveAndAddAnotherBtn">Save & add another</button><button class="primary small" type="submit">Save product</button></div>
+      <div class="modal-actions"><button type="button" class="secondary" data-close="productModal">Cancel</button><button class="primary small" type="submit">Save product</button></div>
     </form>
   </div>
 </div>
@@ -257,7 +283,7 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
   const TOKEN_KEY = 'phynexAdminToken';
   let token = localStorage.getItem(TOKEN_KEY);
   let currentSection = 'overview';
-  let products = [], orders = [], sellers = [], customers = [], categories = [], reviews = [], promotions = [], activity = [];
+  let products = [], orders = [], sellers = [], customers = [], categories = [], reviews = [], promotions = [], activity = [], messages = [];
 
   const $ = id => document.getElementById(id);
   const esc = value => { const d=document.createElement('div'); d.textContent=value ?? ''; return d.innerHTML; };
@@ -275,7 +301,7 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
   }
 
   function showLogin() { $('loginScreen').hidden=false; $('adminApp').hidden=true; }
-  function showApp() { $('loginScreen').hidden=true; $('adminApp').hidden=false; loadOverview(); loadCategories(); }
+  function showApp() { $('loginScreen').hidden=true; $('adminApp').hidden=false; loadOverview(); }
 
   $('loginForm').addEventListener('submit', async e => {
     e.preventDefault(); const btn=$('loginBtn'), msg=$('loginMsg'); btn.disabled=true; btn.textContent='Signing in…'; msg.className='msg';
@@ -293,7 +319,7 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
     document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active',s.id==='section-'+section));
     $('mobileTitle').textContent=section[0].toUpperCase()+section.slice(1);
     $('sidebar').classList.remove('open');
-    const loaders={overview:loadOverview,products:loadProducts,orders:loadOrders,inventory:loadInventory,sellers:loadSellers,customers:loadCustomers,categories:loadCategories,promotions:loadPromotions,reviews:loadReviews,settings:loadSettings,activity:loadActivity,loginlog:()=>{loadLoginLog();loadOnlineUsers();}};
+    const loaders={overview:loadOverview,products:loadProducts,orders:loadOrders,transactions:loadTransactions,messages:loadMessages,inventory:loadInventory,sellers:loadSellers,customers:loadCustomers,categories:loadCategories,promotions:loadPromotions,reviews:loadReviews,settings:loadSettings,activity:loadActivity,loginlog:()=>{loadLoginLog();loadOnlineUsers();}};
     (loaders[section]||(()=>{}))();
     if(opts.filter && section==='products') $('productStatus').value=opts.filter;
     if(opts.openProduct) openProductModal();
@@ -310,6 +336,7 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
       $('statPending').textContent=data.pendingProducts ?? '—';
       $('statOrders').textContent=data.totalOrders ?? data.orders?.length ?? '—';
       $('statRevenue').textContent=data.revenue != null ? money(data.revenue) : '—';
+      const messagesBadge=$('messagesBadge'); if(messagesBadge) messagesBadge.textContent=data.unreadMessages ? data.unreadMessages : '';
       renderOrders(data.recentOrders || data.orders || []);
       renderPending(data.pendingProductsList || []);
     } catch {
@@ -353,15 +380,10 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
   const PRODUCT_CATEGORIES = [
     'Phones & Tablets','Laptops & Computers','Computer Accessories','Gaming Consoles','Gaming Accessories','Gaming Chairs','PC Gaming','Monitors','TVs & Home Theater','Audio & Headphones','Cameras & Photography','Smartwatches & Wearables','Printers & Scanners','Networking & Wi-Fi','Storage & Memory','Power & Charging','Office Equipment','Home Appliances','Smart Home','Drones & RC','Car Electronics','Security & CCTV','Cables & Adapters','Software & Digital','Other Electronics'
   ];
-  // Combines the built-in starter list with whatever categories the
-  // admin has added/exist in the database, so newly added categories
-  // immediately become selectable/filterable — not just visible on
-  // the Categories tab.
-  function allCategoryNames(){ return [...new Set([...PRODUCT_CATEGORIES,...categories.map(c=>c.name).filter(Boolean)])]; }
-  function fillFilterCategories(){ const sel=$('productCategory'); if(!sel)return; const current=sel.value; sel.innerHTML='<option value="">All categories</option>'+allCategoryNames().map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join(''); if(current)sel.value=current; }
+  function fillFilterCategories(){ const sel=$('productCategory'); if(!sel)return; const current=sel.value; sel.innerHTML='<option value="">All categories</option>'+PRODUCT_CATEGORIES.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join(''); if(current)sel.value=current; }
   function fillCategorySelect(selected=''){
     const sel=$('productCategorySelect'); if(!sel)return;
-    sel.innerHTML='<option value="">Select category</option>'+allCategoryNames().map(c=>`<option value="${esc(c)}" ${c===selected?'selected':''}>${esc(c)}</option>`).join('');
+    sel.innerHTML='<option value="">Select category</option>'+PRODUCT_CATEGORIES.map(c=>`<option value="${esc(c)}" ${c===selected?'selected':''}>${esc(c)}</option>`).join('');
   }
   function previewFiles(input, target){
     const el=$(target); el.innerHTML='';
@@ -388,7 +410,6 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
   $('addProductBtn').onclick=()=>openProductModal();
   $('productForm').onsubmit=async e=>{
     e.preventDefault();
-    const addAnother = e.submitter && e.submitter.id === 'saveAndAddAnotherBtn';
     const f=e.target, fd=new FormData();
     const id=f.elements.id.value;
     [...f.elements].forEach(el=>{
@@ -400,27 +421,10 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
     fd.append('price',String(Number(f.elements.price.value||0)));
     fd.append('oldPrice',String(Number(f.elements.oldPrice.value||0)));
     fd.append('stock',String(Number(f.elements.stock.value||0)));
-    const submitBtns=[...f.querySelectorAll('button[type=submit]')];
-    submitBtns.forEach(b=>b.disabled=true);
     try {
       const d=await api(id?`/api/admin/products/${id}`:'/api/admin/products',{method:id?'PUT':'POST',body:fd});
-      toast(d.message||'Product saved');
-      loadProducts();
-      if(addAnother && !id){
-        // Keep category/brand/condition/warranty/tags — sellers usually
-        // list several similar products in a row — but clear everything
-        // that must be unique per product (name, price, stock, images,
-        // description) so the admin can't accidentally duplicate a listing.
-        ['name','price','oldPrice','stock','sku','description','specifications'].forEach(n=>{ if(f.elements[n]) f.elements[n].value = n==='stock' ? 0 : ''; });
-        f.elements.imageFile.value=''; f.elements.imageFile.required=true;
-        f.elements.galleryFiles.value='';
-        $('productImagePreview').innerHTML=''; $('productGalleryPreview').innerHTML='';
-        f.elements.name.focus();
-      } else {
-        closeModal('productModal');
-      }
+      closeModal('productModal');toast(d.message||'Product saved');loadProducts();
     } catch(e){toast(e.message,'error');}
-    finally { submitBtns.forEach(b=>b.disabled=false); }
   };
 
   async function loadOrders(){
@@ -434,6 +438,65 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
     const id=e.target.dataset.orderView;if(!id)return;
     try{ const d=await api(`/api/admin/orders/${id}`); alert(JSON.stringify(d.order,null,2)); }
     catch(x){ const o=orders.find(x2=>String(x2.id)===String(id)); alert(JSON.stringify(o,null,2)); }
+  };
+
+  async function loadTransactions(){
+    const el=$('transactionsList');el.innerHTML=empty('Loading transactions…');
+    try{
+      const d=await api('/api/admin/orders');
+      orders=d.orders||[];renderTransactionsTable();
+    } catch(e){ el.innerHTML=empty(e.message||'Could not load transactions.'); }
+  }
+  function renderTransactionsTable(){
+    const s=$('txSearch').value.toLowerCase();
+    const statusFilter=$('txStatus').value;
+    const r=orders.filter(o=>(!statusFilter||o.paymentStatus===statusFilter)&&(!s||[o.id,o.orderNumber,o.customerName,o.customerEmail,o.mpesaReceipt].join(' ').toLowerCase().includes(s)));
+
+    const paid=orders.filter(o=>o.paymentStatus==='paid');
+    const pending=orders.filter(o=>o.paymentStatus==='pending');
+    const failed=orders.filter(o=>o.paymentStatus==='failed'||o.paymentStatus==='cancelled');
+    $('txPaidTotal').textContent=money(paid.reduce((sum,o)=>sum+Number(o.total||0),0));
+    $('txPaidCount').textContent=paid.length+' order'+(paid.length===1?'':'s');
+    $('txPendingTotal').textContent=money(pending.reduce((sum,o)=>sum+Number(o.total||0),0));
+    $('txPendingCount').textContent=pending.length+' order'+(pending.length===1?'':'s');
+    $('txFailedTotal').textContent=money(failed.reduce((sum,o)=>sum+Number(o.total||0),0));
+    $('txFailedCount').textContent=failed.length+' order'+(failed.length===1?'':'s');
+
+    $('transactionsList').innerHTML=r.length?`<table><thead><tr><th>Order</th><th>Customer</th><th>Amount</th><th>Method</th><th>Payment status</th><th>M-PESA receipt</th><th>Paid at</th></tr></thead><tbody>${r.map(o=>`<tr><td><strong>${esc(o.orderNumber||'#'+o.id)}</strong><small>${esc(new Date(o.createdAt||Date.now()).toLocaleString('en-KE'))}</small></td><td>${esc(o.customerName||'—')}<small>${esc(o.customerPhone||o.customerEmail||'')}</small></td><td><strong>${money(o.total)}</strong></td><td>${esc((o.paymentMethod||'mpesa').toUpperCase())}</td><td><span class="pill ${esc(o.paymentStatus||'pending')}">${esc(o.paymentStatus||'—')}</span></td><td>${o.mpesaReceipt?`<strong>${esc(o.mpesaReceipt)}</strong>`:'<span class="muted">—</span>'}${o.mpesaPhone?`<small>${esc(o.mpesaPhone)}</small>`:''}</td><td>${o.mpesaTransactionDate?esc(o.mpesaTransactionDate):'<span class="muted">—</span>'}</td></tr>`).join('')}</tbody></table>`:empty('No transactions found.');
+  }
+
+  async function loadMessages(){
+    const el=$('messagesList');el.innerHTML=empty('Loading messages…');
+    try{ const d=await api('/api/admin/messages'); messages=d.messages||[]; renderMessages(); }
+    catch(e){ el.innerHTML=empty(e.message||'Could not load messages.'); }
+  }
+  function renderMessages(){
+    const s=$('messageSearch').value.toLowerCase();
+    const r=messages.filter(m=>!s||[m.name,m.email,m.message].join(' ').toLowerCase().includes(s));
+    $('messagesList').innerHTML=r.length?r.map(m=>`<div class="product-row" style="align-items:flex-start;${m.isRead?'':'border-left:3px solid var(--blue);'}">
+      <div class="product-info" style="width:100%;">
+        <strong>${esc(m.name)}</strong> ${m.isRead?'':'<span class="pill pending">unread</span>'}
+        <small>${esc(m.email)} · ${esc(new Date(m.createdAt||Date.now()).toLocaleString('en-KE'))}</small>
+        <p style="white-space:pre-wrap;margin:8px 0 0;color:#39455b;">${esc(m.message)}</p>
+      </div>
+      <div class="row-actions">
+        <button data-msg-read="${esc(m.id)}" data-value="${m.isRead?'0':'1'}">${m.isRead?'Mark unread':'Mark read'}</button>
+        <button class="danger" data-msg-delete="${esc(m.id)}">Delete</button>
+      </div>
+    </div>`).join(''):empty('No messages yet.');
+  }
+  $('messagesList').onclick=async e=>{
+    const readId=e.target.dataset.msgRead;
+    const deleteId=e.target.dataset.msgDelete;
+    if(readId){
+      try{ await api(`/api/admin/messages/${readId}/read`,{method:'POST',body:JSON.stringify({read:e.target.dataset.value==='1'})}); loadMessages(); }
+      catch(x){ toast(x.message,'error'); }
+    }
+    if(deleteId){
+      if(!confirm('Delete this message?'))return;
+      try{ await api(`/api/admin/messages/${deleteId}`,{method:'DELETE'}); toast('Message deleted'); loadMessages(); }
+      catch(x){ toast(x.message,'error'); }
+    }
   };
 
   async function loadInventory(){const el=$('inventoryList');try{const d=await api('/api/admin/inventory');const list=d.products||d.inventory||[];const low=list.filter(x=>Number(x.stock)<=Number(x.lowStockThreshold??5)&&Number(x.stock)>0);$('lowStockCount').textContent=low.length;$('outStockCount').textContent=list.filter(x=>Number(x.stock)<=0).length;el.innerHTML=tableInventory(list);}catch(e){$('lowStockCount').textContent='—';$('outStockCount').textContent='—';el.innerHTML=empty(e.message||'Inventory API not available.');}}
@@ -528,10 +591,12 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
   $('saveSettings').onclick=async()=>{const data=Object.fromEntries(new FormData($('settingsForm').querySelector('form')||$('settingsForm')).entries());document.querySelectorAll('#settingsForm input[type=checkbox]').forEach(x=>data[x.name]=x.checked);try{await api('/api/admin/settings',{method:'PUT',body:JSON.stringify(data)});toast('Settings saved');}catch(e){toast(e.message,'error');}};
   $('settingsForm').onsubmit=e=>e.preventDefault();
 
-  const refreshMap={refreshProducts:loadProducts,refreshOrders:loadOrders,refreshSellers:loadSellers,refreshCustomers:loadCustomers,refreshReviews:loadReviews};
+  const refreshMap={refreshProducts:loadProducts,refreshOrders:loadOrders,refreshSellers:loadSellers,refreshCustomers:loadCustomers,refreshReviews:loadReviews,refreshTransactions:loadTransactions,refreshMessages:loadMessages};
   Object.entries(refreshMap).forEach(([id,fn])=>$(id).onclick=fn);
   ['productSearch','productStatus','productCategory'].forEach(id=>$(id).addEventListener('input',renderProducts));
   ['orderSearch','orderStatus'].forEach(id=>$(id).addEventListener('input',()=>{if(orders.length)renderOrdersTable();else loadOrders();}));
+  ['txSearch','txStatus'].forEach(id=>$(id).addEventListener('input',()=>{if(orders.length)renderTransactionsTable();else loadTransactions();}));
+  $('messageSearch').addEventListener('input',()=>{if(messages.length)renderMessages();else loadMessages();});
   $('sellerStatus').onchange=loadSellers; $('reviewStatus').onchange=loadReviews;
   document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal.show').forEach(m=>closeModal(m.id));});
 

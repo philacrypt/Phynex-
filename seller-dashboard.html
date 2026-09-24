@@ -308,6 +308,7 @@
 
         .upload-box input[type=file] { border: 0; padding: 0; background: transparent; }
         .upload-help { font-size: 11px; color: #687083; margin-top: 5px; }
+        .field-hint { font-size: 11.5px; color: #687083; margin: -8px 0 4px; }
 
         .preview-grid {
             display: grid;
@@ -438,7 +439,7 @@
 
                 <label for="pCategory">Category</label>
                 <select id="pCategory" name="category">
-                    <option value="">Auto-detect from name/description</option>
+                    <option value="">Select category</option>
                     <option>Phones & Tablets</option>
                     <option>Laptops & Computers</option>
                     <option>Computer Accessories</option>
@@ -467,10 +468,11 @@
                 </select>
 
                 <label for="pDescription">Description</label>
-                <textarea id="pDescription" name="description" placeholder="Describe the product, what's included, and its condition."></textarea>
+                <textarea id="pDescription" name="description" required minlength="20" placeholder="Describe the product, what's included, and its condition."></textarea>
 
                 <label for="pSpecs">Specifications</label>
-                <textarea id="pSpecs" name="specifications" placeholder="Model, storage, RAM, colour, dimensions, warranty…"></textarea>
+                <textarea id="pSpecs" name="specifications" required minlength="15" placeholder="Model, storage, RAM, colour, dimensions, warranty…"></textarea>
+                <p class="field-hint">Enter the real specifications for this exact item. Listings with placeholder, copied, or inaccurate specs (e.g. "N/A", "test") will be rejected during review.</p>
 
                 <label class="full-field" for="pMedia">Photos / video (up to 6 files)</label>
                 <div class="upload-box">
@@ -765,40 +767,10 @@
         });
 
         /* ===================================================
-           CATEGORY OPTIONS (live from admin-managed categories)
-           Keeps the hardcoded list above as a fallback if this
-           fetch fails, so the form still works either way.
-           =================================================== */
-
-        async function loadCategoryOptions() {
-            const select = document.getElementById('pCategory');
-            if (!select) return;
-
-            try {
-                const response = await fetch('/api/categories');
-                const data = await response.json();
-                const categories = Array.isArray(data.categories) ? data.categories : [];
-
-                if (!categories.length) return;
-
-                const current = select.value;
-                select.innerHTML = '<option value="">Select category</option>' +
-                    categories.map(function (c) {
-                        return '<option>' + c.name.replace(/</g, '&lt;') + '</option>';
-                    }).join('');
-
-                if (current) select.value = current;
-            } catch (error) {
-                // Keep the built-in fallback options if this fails.
-            }
-        }
-
-        /* ===================================================
            INIT
            =================================================== */
 
         function init() {
-            loadCategoryOptions();
             loadProducts();
         }
 

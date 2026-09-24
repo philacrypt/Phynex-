@@ -145,6 +145,16 @@ db.exec(`
         action TEXT NOT NULL,
         created_at INTEGER NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        message TEXT NOT NULL,
+        source TEXT NOT NULL DEFAULT 'contact',
+        is_read INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL
+    );
 `);
 
 /* =========================
@@ -186,6 +196,13 @@ ensureColumn("products", "deleted_at", "INTEGER");
 ensureColumn("orders", "updated_at", "INTEGER");
 ensureColumn("orders", "reservation_expires", "INTEGER");
 ensureColumn("products", "reserved_stock", "INTEGER DEFAULT 0");
+
+// M-PESA transaction details, captured from the Daraja callback so
+// admin can trace exactly which payment (receipt number, phone,
+// transaction time) paid for which order.
+ensureColumn("orders", "mpesa_receipt", "TEXT");
+ensureColumn("orders", "mpesa_transaction_date", "TEXT");
+ensureColumn("orders", "mpesa_phone", "TEXT");
 
 const DEFAULT_CATEGORIES = [
     ["Phones & Tablets","phones-tablets","Mobile phones, tablets and accessories"],
@@ -363,85 +380,6 @@ function ensureSystemSeller() {
     return db.prepare("SELECT * FROM sellers WHERE id = ?").get(result.lastInsertRowid);
 }
 
-/* =========================
-   LEGACY STOREFRONT PRODUCTS
-   The original homepage contains five built-in products. They were
-   displayed correctly, but had no database product ID, so checkout
-   rejected their cart IDs as invalid. Seed them into the real products
-   table once so they can be ordered and stock can be validated normally.
-========================= */
-function seedLegacyStorefrontProducts() {
-    const seller = ensureSystemSeller();
-    const legacyProducts = [
-        {
-            name: "Dell Vostro 15 3500 i7 11th Gen 8GB 400GB SSD",
-            price: 35000, oldPrice: 40000,
-            category: "Computers & Laptops", image: "/images/13.jpeg",
-            description: "A dependable Dell laptop for work, study and everyday productivity.",
-            specifications: "Intel Core i7 11th Gen | 8GB RAM | 400GB SSD"
-        },
-        {
-            name: "HP EliteDesk 830 G5 i5 8th Gen 8GB 256GB SSD",
-            price: 32500, oldPrice: 36000,
-            category: "Computers & Laptops", image: "/images/18.jpeg",
-            description: "A professionally refurbished HP desktop with responsive performance for office and home use.",
-            specifications: "Intel Core i5 8th Gen | 8GB RAM | 256GB SSD"
-        },
-        {
-            name: "BT Speaker HF226",
-            price: 2000, oldPrice: 2500,
-            category: "Electronics", image: "/images/19.jpeg",
-            description: "A portable Bluetooth speaker with clear sound for music, calls and everyday entertainment.",
-            specifications: "Bluetooth wireless audio | Portable design | Rechargeable battery"
-        },
-        {
-            name: "MacBook Air i5 2017 256GB SSD 8GB RAM",
-            price: 20500, oldPrice: 35000,
-            category: "Computers & Laptops", image: "/images/17.jpeg",
-            description: "A compact MacBook with a sharp display and reliable performance for everyday computing.",
-            specifications: "Intel Core i5 | 8GB RAM | 256GB SSD"
-        },
-        {
-            name: "Lenovo Thinkpad T460 256GB SSD 8GB RAM",
-            price: 23000, oldPrice: 25000,
-            category: "Computers & Laptops", image: "/images/20.jpeg",
-            description: "A durable Lenovo ThinkPad with a comfortable keyboard and fast SSD storage for work on the go.",
-            specifications: "Intel Core i5 | 8GB RAM | 256GB SSD"
-        }
-    ];
-
-    const exists = db.prepare("SELECT id FROM products WHERE name = ? LIMIT 1");
-    const insert = db.prepare(`
-        INSERT INTO products
-        (seller_id, name, description, specifications, price, old_price, category, image, media,
-         status, sponsored, tracking_code, stock, low_stock_threshold, featured, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', 0, ?, ?, 5, 1, ?)
-    `);
-
-    const tx = db.transaction(function () {
-        for (const product of legacyProducts) {
-            if (exists.get(product.name)) continue;
-            insert.run(
-                seller.id,
-                product.name,
-                product.description,
-                product.specifications,
-                product.price,
-                product.oldPrice,
-                product.category,
-                product.image,
-                JSON.stringify([{ url: product.image, type: "image" }]),
-                generateTrackingCode(),
-                10,
-                Date.now()
-            );
-        }
-    });
-    tx();
-}
-
-seedLegacyStorefrontProducts();
-
 const DEFAULT_SETTINGS = {
     storeName: "PHYNEX",
     supportEmail: "",
@@ -575,6 +513,9 @@ function publicOrder(order) {
         total: order.total,
         paymentMethod: order.payment_method,
         paymentStatus: order.payment_status,
+        mpesaReceipt: order.mpesa_receipt || null,
+        mpesaTransactionDate: order.mpesa_transaction_date || null,
+        mpesaPhone: order.mpesa_phone || null,
         status: order.status,
         createdAt: order.created_at
     };
@@ -1128,6 +1069,28 @@ function handleAdminUpload(request, response, next) {
    SELLER — SUBMIT / VIEW OWN PRODUCTS
 ========================= */
 
+/* =========================
+   LISTING QUALITY CHECK
+   Sellers must describe the exact item they're selling — this
+   rejects blank, too-short, or obviously placeholder specs/
+   descriptions before a listing is even saved for admin review.
+========================= */
+
+const PLACEHOLDER_PATTERNS = [
+    /^(n\/?a|none|null|undefined|test|testing|asdf+|xxx+|tbd|todo|-+|\.+|\?+|sample|lorem\s?ipsum)$/i
+];
+
+function isPlaceholderText(value) {
+    const text = String(value || "").trim();
+    if (!text) return true;
+    if (PLACEHOLDER_PATTERNS.some(function (pattern) { return pattern.test(text); })) return true;
+    // A string made of one character repeated (e.g. "aaaaaaaa") or with
+    // no letters at all isn't a real specification.
+    if (/^(.)\1{4,}$/i.test(text)) return true;
+    if (!/[a-z]/i.test(text)) return true;
+    return false;
+}
+
 app.post("/api/products", requireSeller, function (request, response, next) {
 
     uploadMedia.array("media", 6)(request, response, function (error) {
@@ -1156,6 +1119,18 @@ app.post("/api/products", requireSeller, function (request, response, next) {
 
     if (!name || !Number.isFinite(price) || price < 1) {
         return response.status(400).json({ message: "Product name and a valid price are required." });
+    }
+
+    if (description.length < 20 || isPlaceholderText(description)) {
+        return response.status(400).json({
+            message: "Please write a real description of this exact item (at least 20 characters) — placeholder text like \"N/A\" or \"test\" isn't allowed."
+        });
+    }
+
+    if (specifications.length < 15 || isPlaceholderText(specifications)) {
+        return response.status(400).json({
+            message: "Please add real specifications for this exact item (at least 15 characters) — placeholder text isn't allowed. Listings with fake or copied specs get rejected during admin review."
+        });
     }
 
     const files = request.files || [];
@@ -1298,6 +1273,8 @@ app.get("/api/admin/dashboard", requireAdmin, function (request, response) {
     const pendingProducts = db.prepare("SELECT COUNT(*) AS c FROM products WHERE status = 'pending'").get().c;
     const totalOrders = db.prepare("SELECT COUNT(*) AS c FROM orders").get().c;
     const revenue = db.prepare("SELECT COALESCE(SUM(total), 0) AS s FROM orders WHERE payment_status = 'paid'").get().s;
+    const pendingPayments = db.prepare("SELECT COALESCE(SUM(total), 0) AS s FROM orders WHERE payment_status = 'pending'").get().s;
+    const unreadMessages = db.prepare("SELECT COUNT(*) AS c FROM messages WHERE is_read = 0").get().c;
 
     const recentOrders = db
         .prepare("SELECT * FROM orders ORDER BY created_at DESC LIMIT 6")
@@ -1319,6 +1296,8 @@ app.get("/api/admin/dashboard", requireAdmin, function (request, response) {
         pendingProducts: pendingProducts,
         totalOrders: totalOrders,
         revenue: revenue,
+        pendingPayments: pendingPayments,
+        unreadMessages: unreadMessages,
         recentOrders: recentOrders,
         pendingProductsList: pendingProductsList
     });
@@ -2118,26 +2097,9 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
     const phone = normalizePhone(payload.mpesaPhone);
     if (!phone) return response.status(400).json({ message: "Enter a valid Kenyan M-PESA number." });
 
-    // Older PHYNEX carts stored a slug/string ID for the built-in homepage
-    // products. Resolve those legacy cart lines by product name before
-    // validating the database IDs. This keeps old carts usable after the
-    // storefront products were moved into the real products table.
-    const resolvedItems = requestedItems.map(function (item) {
-        const rawId = Number(item.id);
-        if (Number.isInteger(rawId) && rawId > 0) return Object.assign({}, item, { id: rawId });
-
-        const name = String(item.name || "").trim();
-        if (!name) return Object.assign({}, item, { id: NaN });
-
-        const match = db.prepare(
-            "SELECT id FROM products WHERE name = ? AND status = 'approved' LIMIT 1"
-        ).get(name);
-        return Object.assign({}, item, { id: match ? match.id : NaN });
-    });
-
-    const productIds = resolvedItems.map(item => Number(item.id)).filter(id => Number.isInteger(id) && id > 0);
-    if (productIds.length !== resolvedItems.length) {
-        return response.status(400).json({ message: "Your cart contains an invalid product. Please remove the old item and add it again." });
+    const productIds = requestedItems.map(item => Number(item.id)).filter(Number.isInteger);
+    if (productIds.length !== requestedItems.length) {
+        return response.status(400).json({ message: "Your cart contains an invalid product." });
     }
 
     const placeholders = productIds.map(() => "?").join(",");
@@ -2151,7 +2113,7 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
     const authoritativeItems = [];
     let subtotal = 0;
 
-    for (const item of resolvedItems) {
+    for (const item of requestedItems) {
         const id = Number(item.id);
         const product = byId.get(id);
         const quantity = Math.max(1, Math.round(Number(item.quantity) || 1));
@@ -2344,12 +2306,33 @@ app.post("/api/mpesa/callback", function (request, response) {
         payment.status = paid ? "paid" : "failed";
         payment.message = callback.ResultDesc || "M-PESA callback received.";
 
+        // On success, M-PESA sends the real transaction details (receipt
+        // number, amount actually paid, phone, timestamp) in
+        // CallbackMetadata.Item — this is the source of truth admin needs
+        // to trace a payment, so pull it out and keep it on the order.
+        let mpesaReceipt = null;
+        let mpesaTransactionDate = null;
+        let mpesaPhone = null;
+
+        const metadataItems = callback.CallbackMetadata && Array.isArray(callback.CallbackMetadata.Item)
+            ? callback.CallbackMetadata.Item
+            : [];
+
+        metadataItems.forEach(function (item) {
+            if (!item || !item.Name) return;
+            if (item.Name === "MpesaReceiptNumber") mpesaReceipt = String(item.Value);
+            if (item.Name === "TransactionDate") mpesaTransactionDate = String(item.Value);
+            if (item.Name === "PhoneNumber") mpesaPhone = String(item.Value);
+        });
+
+        payment.mpesaReceipt = mpesaReceipt;
+
         payments.set(callback.CheckoutRequestID, payment);
 
         if (payment.orderId) {
             db.prepare(
-                "UPDATE orders SET payment_status = ?, status = ?, reservation_expires = NULL, updated_at = ? WHERE id = ?"
-            ).run(paid ? "paid" : "failed", paid ? "paid" : "cancelled", Date.now(), payment.orderId);
+                "UPDATE orders SET payment_status = ?, status = ?, reservation_expires = NULL, updated_at = ?, mpesa_receipt = COALESCE(?, mpesa_receipt), mpesa_transaction_date = COALESCE(?, mpesa_transaction_date), mpesa_phone = COALESCE(?, mpesa_phone) WHERE id = ?"
+            ).run(paid ? "paid" : "failed", paid ? "paid" : "cancelled", Date.now(), mpesaReceipt, mpesaTransactionDate, mpesaPhone, payment.orderId);
 
             if (paid) {
                 deductStockForOrder(payment.orderId);
@@ -2363,7 +2346,7 @@ app.post("/api/mpesa/callback", function (request, response) {
 
             logActivity(
                 paid ? "order_paid" : "order_payment_failed",
-                "Order " + (payment.orderNumber || payment.orderId) + (paid ? " was paid." : " payment failed.")
+                "Order " + (payment.orderNumber || payment.orderId) + (paid ? (" was paid" + (mpesaReceipt ? " (receipt " + mpesaReceipt + ")" : "") + ".") : " payment failed.")
             );
         }
     }
@@ -2423,12 +2406,6 @@ function isRateLimited(ip) {
 
 app.post("/api/contact", async function (request, response) {
 
-    if (!contactMailConfigured()) {
-        return response.status(503).json({
-            message: "Contact form is not configured yet. Add EMAIL_USER and EMAIL_PASS to .env."
-        });
-    }
-
     if (isRateLimited(request.ip)) {
         return response.status(429).json({ message: "Too many messages sent. Please try again later." });
     }
@@ -2455,22 +2432,82 @@ app.post("/api/contact", async function (request, response) {
         return response.status(400).json({ message: "Message is too long." });
     }
 
-    try {
+    // Always keep a copy in the database first — this is what lets admin
+    // see every message that comes in, whether or not outgoing email is
+    // configured on this deployment.
+    db.prepare(
+        "INSERT INTO messages (name, email, message, source, is_read, created_at) VALUES (?, ?, ?, 'contact', 0, ?)"
+    ).run(name, email, message, Date.now());
 
-        await mailTransporter.sendMail({
-            from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-            to: process.env.CONTACT_TO || process.env.EMAIL_USER,
-            replyTo: email,
-            subject: "New PHYNEX contact form message from " + name,
-            text: "From: " + name + " <" + email + ">\n\n" + message
-        });
+    logActivity("message_received", "New contact message from " + name + " <" + email + ">.");
 
-        return response.json({ ok: true });
-
-    } catch (error) {
-        console.error("Contact form email failed:", error.message);
-        return response.status(502).json({ message: "Could not send message. Please try again later." });
+    if (contactMailConfigured()) {
+        try {
+            await mailTransporter.sendMail({
+                from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+                to: process.env.CONTACT_TO || process.env.EMAIL_USER,
+                replyTo: email,
+                subject: "New PHYNEX contact form message from " + name,
+                text: "From: " + name + " <" + email + ">\n\n" + message
+            });
+        } catch (error) {
+            // Email is best-effort — the message is already saved and
+            // visible to admin, so a mail-relay hiccup shouldn't fail
+            // the whole request.
+            console.error("Contact form email failed:", error.message);
+        }
     }
+
+    return response.json({ ok: true });
+});
+
+/* =========================
+   ADMIN — MESSAGES
+   Every contact-form submission, stored so admin can see them all
+   even when outgoing email isn't configured.
+========================= */
+
+app.get("/api/admin/messages", requireAdmin, function (request, response) {
+
+    const rows = db.prepare("SELECT * FROM messages ORDER BY created_at DESC").all();
+
+    response.json({
+        messages: rows.map(function (row) {
+            return {
+                id: row.id,
+                name: row.name,
+                email: row.email,
+                message: row.message,
+                source: row.source,
+                isRead: Boolean(row.is_read),
+                createdAt: row.created_at
+            };
+        })
+    });
+});
+
+app.post("/api/admin/messages/:id/read", requireAdmin, function (request, response) {
+
+    const read = (request.body || {}).read === false ? 0 : 1;
+
+    const result = db.prepare("UPDATE messages SET is_read = ? WHERE id = ?").run(read, request.params.id);
+
+    if (result.changes === 0) {
+        return response.status(404).json({ message: "Message not found." });
+    }
+
+    response.json({ ok: true });
+});
+
+app.delete("/api/admin/messages/:id", requireAdmin, function (request, response) {
+
+    const result = db.prepare("DELETE FROM messages WHERE id = ?").run(request.params.id);
+
+    if (result.changes === 0) {
+        return response.status(404).json({ message: "Message not found." });
+    }
+
+    response.json({ ok: true });
 });
 
 /* =========================
