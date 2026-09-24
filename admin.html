@@ -454,11 +454,11 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
     if(gallery.some(file=>!file.type.startsWith('image/') || file.size>MAX_FILE_SIZE)){toast('Every gallery image must be an image smaller than 25MB.','error');return;}
     if(gallery.length>6){toast('You can add up to 6 additional images.','error');return;}
 
-    const fd=new FormData();
-    [...f.elements].forEach(el=>{
-      if(!el.name || el.name==='id' || el.type==='file')return;
-      fd.append(el.name,el.value);
-    });
+    // Build FormData directly from the form so every text field (especially
+    // product name and price) is submitted correctly together with the images.
+    const fd=new FormData(f);
+    fd.delete('image');
+    fd.delete('gallery');
     if(mainFile) fd.append('image',mainFile);
     gallery.forEach(file=>fd.append('gallery',file));
     fd.append('price',String(Number(f.elements.price.value||0)));
