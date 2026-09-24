@@ -7,6 +7,7 @@ const bcrypt = require("bcryptjs");
 const Database = require("better-sqlite3");
 const { OAuth2Client } = require("google-auth-library");
 require("dotenv").config();
+const KENYA_COUNTIES = require("./js/kenya-locations.js");
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
@@ -923,6 +924,15 @@ app.post("/api/customers/logout", requireCustomer, function (request, response) 
     response.json({ ok: true });
 });
 
+function isValidKenyaSubCounty(county, subCounty) {
+    return Boolean(
+        county &&
+        subCounty &&
+        Array.isArray(KENYA_COUNTIES[county]) &&
+        KENYA_COUNTIES[county].includes(subCounty)
+    );
+}
+
 /* =========================
    SELLER REGISTER / LOGIN
 ========================= */
@@ -945,6 +955,10 @@ app.post("/api/sellers/register", async function (request, response) {
 
     if (!county || !subCounty) {
         return response.status(400).json({ message: "Select your business county and sub-county." });
+    }
+
+    if (!isValidKenyaSubCounty(county, subCounty)) {
+        return response.status(400).json({ message: "The selected sub-county does not belong to the selected county." });
     }
 
     if (!phone) {
@@ -2137,6 +2151,17 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
     const delivery = payload.delivery || {};
     const requestedItems = Array.isArray(payload.items) ? payload.items : [];
 
+    const deliveryCounty = String(delivery.county || "").trim();
+    const deliverySubCounty = String(delivery.subCounty || "").trim();
+
+    if (!deliveryCounty || !deliverySubCounty) {
+        return response.status(400).json({ message: "Select your county and sub-county." });
+    }
+
+    if (!isValidKenyaSubCounty(deliveryCounty, deliverySubCounty)) {
+        return response.status(400).json({ message: "The selected sub-county does not belong to the selected county." });
+    }
+
     if (!requestedItems.length) {
         return response.status(400).json({ message: "Your cart is empty." });
     }
@@ -2201,8 +2226,8 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
                 String(customerInfo.name || (customer && customer.name) || "").trim(),
                 String(customerInfo.email || (customer && customer.email) || "").trim(),
                 String(customerInfo.phone || payload.mpesaPhone || "").trim(),
-                String(delivery.county || "").trim(),
-                String(delivery.subCounty || "").trim(),
+                deliveryCounty,
+                deliverySubCounty,
                 String(delivery.location || "").trim(),
                 String(delivery.address || "").trim(),
                 String(delivery.instructions || "").trim(),
