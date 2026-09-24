@@ -1388,11 +1388,15 @@
 
             document.getElementById('confirmationDelivery')
                 .textContent =
-                    document.getElementById('deliveryAddress').value.trim() +
-                    ', ' +
-                    document.getElementById('deliveryLocation').value.trim() +
-                    ', ' +
-                    document.getElementById('deliveryCounty').value.trim();
+                    [
+                        document.getElementById('deliveryAddress').value.trim(),
+                        document.getElementById('deliveryLocation').value.trim(),
+                        (function () {
+                            var el = document.getElementById('deliverySubCounty');
+                            return el ? el.value.trim() : '';
+                        })(),
+                        document.getElementById('deliveryCounty').value.trim()
+                    ].filter(Boolean).join(', ');
 
             document.getElementById('confirmationItems').innerHTML =
                 cart.map(function (item) {
@@ -1544,6 +1548,10 @@
 
                             delivery: {
                                 county: document.getElementById('deliveryCounty').value.trim(),
+                                subCounty: (function () {
+                                    var el = document.getElementById('deliverySubCounty');
+                                    return el ? el.value.trim() : '';
+                                })(),
                                 location: document.getElementById('deliveryLocation').value.trim(),
                                 address: document.getElementById('deliveryAddress').value.trim(),
                                 instructions: document.getElementById('deliveryInstructions').value.trim()
@@ -1709,6 +1717,77 @@
                                 filterCategory(
                                     tile.dataset.category
                                 );
+
+                            }
+                        );
+
+                    }
+                );
+
+            /* ---------------------------------------------
+               SHOWCASE TILES (big Phones & Tablets /
+               Computers / Gaming / Accessories cards)
+               --------------------------------------------- */
+
+            document
+                .querySelectorAll(
+                    '.showcase-tile[data-category]'
+                )
+                .forEach(
+                    function (tile) {
+
+                        tile.addEventListener(
+                            'click',
+                            function () {
+
+                                filterCategory(
+                                    tile.dataset.category
+                                );
+
+                            }
+                        );
+
+                    }
+                );
+
+            /* ---------------------------------------------
+               TOP CATEGORY NAV BAR (All Categories,
+               Phones & Tablets, Computers, Electronics, ...)
+               --------------------------------------------- */
+
+            document
+                .querySelectorAll(
+                    '#categoryNav .nav-item[data-category]'
+                )
+                .forEach(
+                    function (navItem) {
+
+                        navItem.style.cursor =
+                            'pointer';
+
+                        navItem.addEventListener(
+                            'click',
+                            function () {
+
+                                const category =
+                                    navItem.dataset.category;
+
+                                if (
+                                    category === 'all'
+                                ) {
+                                    showAllProducts();
+                                    scrollToProducts();
+                                } else if (
+                                    category === 'deals'
+                                ) {
+                                    filterCategory(
+                                        'deals'
+                                    );
+                                } else {
+                                    filterCategory(
+                                        category
+                                    );
+                                }
 
                             }
                         );

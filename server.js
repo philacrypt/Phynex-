@@ -204,6 +204,17 @@ ensureColumn("orders", "mpesa_receipt", "TEXT");
 ensureColumn("orders", "mpesa_transaction_date", "TEXT");
 ensureColumn("orders", "mpesa_phone", "TEXT");
 
+// Delivery sub-county (e.g. "Westlands" within Malindi county), captured
+// alongside county/location so orders carry a precise Kenyan address.
+ensureColumn("orders", "sub_county", "TEXT");
+
+// County/sub-county for customer saved addresses and seller business
+// locations, using the same 47-county Kenya dataset as checkout.
+ensureColumn("customers", "county", "TEXT");
+ensureColumn("customers", "sub_county", "TEXT");
+ensureColumn("sellers", "county", "TEXT");
+ensureColumn("sellers", "sub_county", "TEXT");
+
 const DEFAULT_CATEGORIES = [
     ["Phones & Tablets","phones-tablets","Mobile phones, tablets and accessories"],
     ["Computers & Laptops","computers-laptops","Laptops, desktops, monitors and computer accessories"],
@@ -426,7 +437,9 @@ function publicSeller(seller) {
         email: seller.email,
         phone: seller.phone,
         whatsapp: seller.whatsapp || seller.phone || "",
-        status: seller.status || "approved"
+        status: seller.status || "approved",
+        county: seller.county || "",
+        subCounty: seller.sub_county || ""
     };
 }
 
@@ -436,7 +449,9 @@ function publicCustomer(customer) {
         name: customer.name,
         email: customer.email,
         phone: customer.phone,
-        hasGoogle: Boolean(customer.google_id)
+        hasGoogle: Boolean(customer.google_id),
+        county: customer.county || "",
+        subCounty: customer.sub_county || ""
     };
 }
 
@@ -505,6 +520,7 @@ function publicOrder(order) {
         customerEmail: order.customer_email,
         customerPhone: order.customer_phone,
         county: order.county,
+        subCounty: order.sub_county,
         location: order.location,
         address: order.address,
         instructions: order.instructions,
@@ -876,6 +892,31 @@ app.get("/api/customers/me", requireCustomer, function (request, response) {
     response.json({ customer: publicCustomer(request.customer) });
 });
 
+app.put("/api/customers/me", requireCustomer, function (request, response) {
+
+    const body = request.body || {};
+    const name = String(body.name || request.customer.name || "").trim();
+    const phone = String(body.phone || "").trim();
+    const county = String(body.county || "").trim();
+    const subCounty = String(body.subCounty || "").trim();
+
+    if (!name) {
+        return response.status(400).json({ message: "Name is required." });
+    }
+
+    if (county && !subCounty) {
+        return response.status(400).json({ message: "Select your sub-county." });
+    }
+
+    db.prepare(
+        "UPDATE customers SET name = ?, phone = ?, county = ?, sub_county = ? WHERE id = ?"
+    ).run(name, phone, county, subCounty, request.customer.id);
+
+    const updated = db.prepare("SELECT * FROM customers WHERE id = ?").get(request.customer.id);
+
+    response.json({ customer: publicCustomer(updated) });
+});
+
 app.post("/api/customers/logout", requireCustomer, function (request, response) {
     db.prepare("UPDATE customers SET token = NULL WHERE id = ?").run(request.customer.id);
     logLogin("customer", request.customer, "logout");
@@ -895,9 +936,15 @@ app.post("/api/sellers/register", async function (request, response) {
     const phone = String(body.phone || "").trim();
     const whatsapp = String(body.whatsapp || "").trim();
     const password = String(body.password || "");
+    const county = String(body.county || "").trim();
+    const subCounty = String(body.subCounty || "").trim();
 
     if (!businessName || !email || !password) {
         return response.status(400).json({ message: "Business name, email and password are required." });
+    }
+
+    if (!county || !subCounty) {
+        return response.status(400).json({ message: "Select your business county and sub-county." });
     }
 
     if (!phone) {
@@ -927,10 +974,10 @@ app.post("/api/sellers/register", async function (request, response) {
 
     const result = db
         .prepare(
-            `INSERT INTO sellers (business_name, email, phone, whatsapp, password_hash, token, token_expires, status, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'approved', ?)`
+            `INSERT INTO sellers (business_name, email, phone, whatsapp, county, sub_county, password_hash, token, token_expires, status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?)`
         )
-        .run(businessName, email, phone, whatsapp, passwordHash, token, Date.now() + 7 * 24 * 60 * 60 * 1000, Date.now());
+        .run(businessName, email, phone, whatsapp, county, subCounty, passwordHash, token, Date.now() + 7 * 24 * 60 * 60 * 1000, Date.now());
 
     const seller = db.prepare("SELECT * FROM sellers WHERE id = ?").get(result.lastInsertRowid);
 
@@ -2145,9 +2192,9 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
             const result = db.prepare(
                 `INSERT INTO orders
                     (order_number, customer_id, customer_name, customer_email, customer_phone,
-                     county, location, address, instructions, subtotal, delivery_fee, total,
+                     county, sub_county, location, address, instructions, subtotal, delivery_fee, total,
                      payment_method, payment_status, status, reservation_expires, created_at, updated_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'mpesa', 'pending', 'pending', ?, ?, ?)`
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'mpesa', 'pending', 'pending', ?, ?, ?)`
             ).run(
                 orderNumber,
                 customer ? customer.id : null,
@@ -2155,6 +2202,7 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
                 String(customerInfo.email || (customer && customer.email) || "").trim(),
                 String(customerInfo.phone || payload.mpesaPhone || "").trim(),
                 String(delivery.county || "").trim(),
+                String(delivery.subCounty || "").trim(),
                 String(delivery.location || "").trim(),
                 String(delivery.address || "").trim(),
                 String(delivery.instructions || "").trim(),

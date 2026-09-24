@@ -40,6 +40,8 @@
         .summary-total { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); color: var(--text); font-size: 19px; font-weight: 700; }
         .checkout-form { display: grid; gap: 14px; }
         .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .field-section-title { grid-column: 1 / -1; font-size: 14px; font-weight: 700; color: var(--text); margin: 4px 0 -4px; padding-top: 6px; border-top: 1px solid var(--border); }
+        .field-section-title:first-child { border-top: none; padding-top: 0; margin-top: 0; }
         .field { display: grid; gap: 6px; }
         .field.full { grid-column: 1 / -1; }
         .field label, .payment-heading { color: var(--text); font-size: 13px; font-weight: 700; }
@@ -116,9 +118,68 @@
                         <div class="field"><label for="customerName">Full name</label><input id="customerName" name="name" type="text" autocomplete="name" required></div>
                         <div class="field"><label for="customerPhone">Phone number</label><input id="customerPhone" name="phone" type="tel" autocomplete="tel" required></div>
                         <div class="field full"><label for="customerEmail">Email address</label><input id="customerEmail" name="email" type="email" autocomplete="email" required></div>
-                        <div class="field"><label for="deliveryCounty">County</label><input id="deliveryCounty" name="county" type="text" required></div>
-                        <div class="field"><label for="deliveryLocation">Town or city</label><input id="deliveryLocation" name="location" type="text" required></div>
-                        <div class="field full"><label for="deliveryAddress">Delivery address</label><input id="deliveryAddress" name="address" type="text" autocomplete="street-address" required></div>
+                        <div class="field-section-title">Delivery Location</div>
+                        <div class="field">
+                            <label for="deliveryCounty">County</label>
+                            <select id="deliveryCounty" name="county" required>
+                                <option value="" disabled selected>Select county</option>
+                                <option value="Baringo">Baringo</option>
+                                <option value="Bomet">Bomet</option>
+                                <option value="Bungoma">Bungoma</option>
+                                <option value="Busia">Busia</option>
+                                <option value="Elgeyo-Marakwet">Elgeyo-Marakwet</option>
+                                <option value="Embu">Embu</option>
+                                <option value="Garissa">Garissa</option>
+                                <option value="Homa Bay">Homa Bay</option>
+                                <option value="Isiolo">Isiolo</option>
+                                <option value="Kajiado">Kajiado</option>
+                                <option value="Kakamega">Kakamega</option>
+                                <option value="Kericho">Kericho</option>
+                                <option value="Kiambu">Kiambu</option>
+                                <option value="Kilifi">Kilifi</option>
+                                <option value="Kirinyaga">Kirinyaga</option>
+                                <option value="Kisii">Kisii</option>
+                                <option value="Kisumu">Kisumu</option>
+                                <option value="Kitui">Kitui</option>
+                                <option value="Kwale">Kwale</option>
+                                <option value="Laikipia">Laikipia</option>
+                                <option value="Lamu">Lamu</option>
+                                <option value="Machakos">Machakos</option>
+                                <option value="Makueni">Makueni</option>
+                                <option value="Malindi">Malindi</option>
+                                <option value="Mandera">Mandera</option>
+                                <option value="Marsabit">Marsabit</option>
+                                <option value="Meru">Meru</option>
+                                <option value="Migori">Migori</option>
+                                <option value="Mombasa">Mombasa</option>
+                                <option value="Murang'a">Murang'a</option>
+                                <option value="Nakuru">Nakuru</option>
+                                <option value="Nandi">Nandi</option>
+                                <option value="Narok">Narok</option>
+                                <option value="Nyamira">Nyamira</option>
+                                <option value="Nyandarua">Nyandarua</option>
+                                <option value="Nyeri">Nyeri</option>
+                                <option value="Samburu">Samburu</option>
+                                <option value="Siaya">Siaya</option>
+                                <option value="Taita-Taveta">Taita-Taveta</option>
+                                <option value="Tana River">Tana River</option>
+                                <option value="Tharaka-Nithi">Tharaka-Nithi</option>
+                                <option value="Trans Nzoia">Trans Nzoia</option>
+                                <option value="Turkana">Turkana</option>
+                                <option value="Uasin Gishu">Uasin Gishu</option>
+                                <option value="Vihiga">Vihiga</option>
+                                <option value="Wajir">Wajir</option>
+                                <option value="West Pokot">West Pokot</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="deliverySubCounty">Sub-county</label>
+                            <select id="deliverySubCounty" name="subCounty" required disabled>
+                                <option value="" disabled selected>Select county first</option>
+                            </select>
+                        </div>
+                        <div class="field full"><label for="deliveryLocation">Town, estate or area</label><input id="deliveryLocation" name="location" type="text" placeholder="e.g. Buruburu, Nyali, Milimani" required></div>
+                        <div class="field full"><label for="deliveryAddress">Delivery address</label><input id="deliveryAddress" name="address" type="text" autocomplete="street-address" placeholder="Building, street, house/plot number" required></div>
                         <div class="field full"><label for="deliveryInstructions">Additional delivery instructions</label><textarea id="deliveryInstructions" name="instructions" placeholder="Optional instructions for the delivery partner"></textarea></div>
                     </div>
 
@@ -152,6 +213,7 @@
             </section>
         </div>
     </main>
+    <script src="js/kenya-locations.js"></script>
     <script>
 (function () {
   "use strict";
@@ -367,6 +429,67 @@
   const placeOrderButton = form ? form.querySelector(".place-order") : null;
   const formMessage = document.getElementById("checkoutMessage");
 
+  /* =====================================================
+     County / Sub-county cascading dropdowns
+     Populated from the full 47-county Kenya dataset in
+     js/kenya-locations.js so every order captures an exact
+     county + sub-county at checkout.
+     ===================================================== */
+  (function setupCountyDropdowns() {
+    const countySelect = document.getElementById("deliveryCounty");
+    const subCountySelect = document.getElementById("deliverySubCounty");
+    const counties = (typeof window !== "undefined" && window.KENYA_COUNTIES) || {};
+
+    if (!countySelect || !subCountySelect) return;
+
+    // County options are already hardcoded in the HTML so the full list of
+    // 47 counties always shows immediately, even if this script (or the
+    // kenya-locations.js data file) fails to load for any reason.
+
+    if (!Object.keys(counties).length) {
+      // Sub-county data didn't load — don't block checkout on it.
+      subCountySelect.required = false;
+      subCountySelect.querySelector("option").textContent = "Not available";
+      return;
+    }
+
+    function populateSubCounties(countyName) {
+      subCountySelect.innerHTML = "";
+      const subCounties = counties[countyName] || [];
+
+      if (!countyName || !subCounties.length) {
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        placeholder.textContent = "Select county first";
+        subCountySelect.appendChild(placeholder);
+        subCountySelect.disabled = true;
+        return;
+      }
+
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.disabled = true;
+      placeholder.selected = true;
+      placeholder.textContent = "Select sub-county";
+      subCountySelect.appendChild(placeholder);
+
+      subCounties.forEach(function (subCountyName) {
+        const opt = document.createElement("option");
+        opt.value = subCountyName;
+        opt.textContent = subCountyName;
+        subCountySelect.appendChild(opt);
+      });
+
+      subCountySelect.disabled = false;
+    }
+
+    countySelect.addEventListener("change", function () {
+      populateSubCounties(countySelect.value);
+    });
+  })();
+
   const POLL_INTERVAL_MS = 3000;
   const MAX_POLL_ATTEMPTS = 40; // ~2 minutes of polling
 
@@ -406,7 +529,7 @@
     if (orderNumberEl) orderNumberEl.textContent = orderNumber;
     if (customerEl) customerEl.textContent = snapshot.name;
     if (deliveryEl) {
-      deliveryEl.textContent = [snapshot.county, snapshot.location, snapshot.address]
+      deliveryEl.textContent = [snapshot.address, snapshot.location, snapshot.subCounty, snapshot.county]
         .filter(Boolean).join(", ");
     }
     if (totalEl) totalEl.textContent = money(snapshot.total);
@@ -501,6 +624,7 @@
     const snapshot = {
       name: data.get("name") || "",
       county: data.get("county") || "",
+      subCounty: data.get("subCounty") || "",
       location: data.get("location") || "",
       address: data.get("address") || "",
       items: cart.map(function (item) { return Object.assign({}, item); }),
@@ -518,6 +642,7 @@
       },
       delivery: {
         county: data.get("county") || "",
+        subCounty: data.get("subCounty") || "",
         location: data.get("location") || "",
         address: data.get("address") || "",
         instructions: data.get("instructions") || ""
