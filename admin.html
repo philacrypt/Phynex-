@@ -465,7 +465,13 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
 
     // Build FormData directly from the form so every text field (especially
     // product name and price) is submitted correctly together with the images.
+    // The file inputs are named "imageFile"/"galleryFiles" in the form (so
+    // they don't collide while editing), but the server only recognises
+    // "image"/"gallery" — so those raw file fields must be stripped out
+    // here, or multer rejects the upload with "Unexpected field".
     const fd=new FormData(f);
+    fd.delete('imageFile');
+    fd.delete('galleryFiles');
     fd.delete('image');
     fd.delete('gallery');
     if(mainFile) fd.append('image',mainFile);
