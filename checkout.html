@@ -56,7 +56,7 @@
         .mpesa-fields { display: grid; gap: 6px; padding: 4px 0 0 28px; }
         .mpesa-fields label { color: var(--text); font-size: 13px; font-weight: 700; }
         .mpesa-fields input { width: 100%; border: 1.5px solid var(--border); border-radius: 7px; padding: 12px; font: inherit; }
-        .payment-note, .checkout-notice { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+        .payment-note, .checkout-notice { display: none !important; }
         .mpesa-button { width: 100%; border: 1.5px solid var(--blue); border-radius: 7px; padding: 12px; background: #fff; color: var(--blue); font-weight: 700; cursor: pointer; font-family: inherit; }
         .mpesa-button:hover { background: #eef3ff; }
         .mpesa-button:disabled, .place-order:disabled { cursor: wait; opacity: .65; }
@@ -185,12 +185,12 @@
                         </label>
                         <div class="mpesa-fields"><label for="mpesaPhone">M-PESA phone number</label><input id="mpesaPhone" name="mpesaPhone" type="tel" placeholder="07XXXXXXXX" required></div>
                         <button class="mpesa-button" id="payWithMpesa" type="button">Pay with M-PESA</button>
-                        <p class="payment-note">Clicking pay sends a real STK Push request to the number above through the PHYNEX backend. You'll get a prompt on your phone to enter your M-PESA PIN.</p>
+                        <p class="payment-note" hidden>Clicking pay sends a real STK Push request to the number above through the PHYNEX backend. You'll get a prompt on your phone to enter your M-PESA PIN.</p>
                     </div>
 
                     <button class="place-order" type="submit">Place Order</button>
                     <p id="checkoutMessage" class="order-message" role="status"></p>
-                    <p class="checkout-notice">Your order is created and reserved as soon as you submit. Stock is only deducted, and the order marked paid, once M-PESA confirms your payment.</p>
+                    <p class="checkout-notice" hidden>Your order is created and reserved as soon as you submit. Stock is only deducted, and the order marked paid, once M-PESA confirms your payment.</p>
                 </form>
                 <section id="orderConfirmation" hidden aria-live="polite">
                     <h2>Order Confirmed</h2>
@@ -498,7 +498,13 @@
         if (data.status === "failed") {
           stopPolling();
           setBusy(false, "Pay with M-PESA");
-          setMessage(data.message || "The M-PESA payment failed or was cancelled. Please try again.", true);
+          var paymentMessage = String(data.message || "");
+          var wasCancelled = /cancelled|canceled|request cancelled|request canceled/i.test(paymentMessage);
+          if (wasCancelled) {
+            setMessage("", false);
+          } else {
+            setMessage(paymentMessage || "The M-PESA payment could not be completed. Please try again.", true);
+          }
           return;
         }
 
