@@ -193,6 +193,13 @@ ensureColumn("customers", "reset_token_expires", "INTEGER");
 ensureColumn("customers", "token_expires", "INTEGER");
 ensureColumn("sellers", "token_expires", "INTEGER");
 ensureColumn("products", "deleted_at", "INTEGER");
+ensureColumn("activity_log", "actor_type", "TEXT DEFAULT 'system'");
+ensureColumn("activity_log", "actor_id", "INTEGER");
+ensureColumn("activity_log", "actor_name", "TEXT");
+ensureColumn("activity_log", "actor_email", "TEXT");
+ensureColumn("activity_log", "source", "TEXT DEFAULT 'server'");
+ensureColumn("activity_log", "request_path", "TEXT");
+ensureColumn("activity_log", "details", "TEXT");
 ensureColumn("orders", "updated_at", "INTEGER");
 ensureColumn("orders", "reservation_expires", "INTEGER");
 ensureColumn("products", "reserved_stock", "INTEGER DEFAULT 0");
@@ -337,15 +344,36 @@ function generateOrderNumber() {
     return "PHX-" + crypto.randomBytes(4).toString("hex").toUpperCase();
 }
 
-function logActivity(action, description) {
+function logActivity(action, description, request, details) {
     try {
+        const actor = request && (request.customer || request.seller);
+        const actorType = actor
+            ? (request.customer ? "customer" : "seller")
+            : (request && request.__adminActivity ? "admin" : "system");
+
         db.prepare(
-            "INSERT INTO activity_log (action, description, created_at) VALUES (?, ?, ?)"
-        ).run(action, description || "", Date.now());
+            `INSERT INTO activity_log
+                (action, description, created_at, actor_type, actor_id, actor_name, actor_email, source, request_path, details)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).run(
+            String(action || "activity"),
+            String(description || ""),
+            Date.now(),
+            actorType,
+            actor ? actor.id : null,
+            actor ? (actor.business_name || actor.name || "") : (actorType === "admin" ? "PHYNEX Admin" : ""),
+            actor ? (actor.email || "") : "",
+            request ? "server" : "system",
+            request ? String(request.originalUrl || request.url || "") : "",
+            details == null ? "" : JSON.stringify(details)
+        );
     } catch (error) {
-        // Activity logging must never break the request that triggered it.
         console.error("Activity log failed:", error.message);
     }
+}
+
+function logMarketActivity(request, action, description, details) {
+    logActivity(action, description, request, details);
 }
 
 // Records every login/logout so the admin can see who has been
@@ -594,6 +622,7 @@ function requireAdmin(request, response, next) {
         return response.status(401).json({ message: "Admin login required." });
     }
 
+    request.__adminActivity = true;
     next();
 }
 
@@ -1213,7 +1242,7 @@ app.post("/api/products", requireSeller, function (request, response, next) {
 
     const product = db.prepare("SELECT * FROM products WHERE id = ?").get(result.lastInsertRowid);
 
-    logActivity("product_submitted", request.seller.business_name + " submitted \"" + name + "\" for review.");
+    logActivity("product_submitted", request.seller.business_name + " submitted \"" + name + "\" for review.", request, { productId: product.id });
 
     response.json({ product: publicProduct(product) });
 });
@@ -1238,6 +1267,36 @@ app.delete("/api/seller/products/:id", requireSeller, function (request, respons
     }
 
     db.prepare("DELETE FROM products WHERE id = ?").run(product.id);
+
+    logActivity("seller_product_deleted", request.seller.business_name + " deleted \"" + product.name + "\".", request, { productId: product.id });
+
+    response.json({ ok: true });
+});
+
+/* =========================
+   MARKET — ACTIVITY TRACKING
+   Stores marketplace actions permanently in SQLite until an admin
+   explicitly deletes them.
+========================= */
+
+app.post("/api/market/activity", function (request, response) {
+    const body = request.body || {};
+    const action = String(body.action || "").trim().slice(0, 80);
+    const description = String(body.description || "").trim().slice(0, 500);
+
+    if (!action) {
+        return response.status(400).json({ message: "Activity action is required." });
+    }
+
+    const customer = optionalCustomer(request);
+    if (customer) request.customer = customer;
+
+    logMarketActivity(
+        request,
+        action,
+        description || ("Market activity: " + action),
+        body.details && typeof body.details === "object" ? body.details : null
+    );
 
     response.json({ ok: true });
 });
@@ -1264,6 +1323,13 @@ app.get("/api/products", function (request, response) {
              ORDER BY products.created_at DESC`
         ).all();
 
+    logMarketActivity(
+        request,
+        "market_products_loaded",
+        "Marketplace product list was viewed.",
+        { sponsoredOnly: sponsoredOnly, resultCount: rows.length }
+    );
+
     response.json({ products: rows.map(publicProduct) });
 });
 
@@ -1286,6 +1352,13 @@ app.get("/api/products/:id", function (request, response) {
     if (!product) {
         return response.status(404).json({ message: "Product not found." });
     }
+
+    logMarketActivity(
+        request,
+        "product_viewed",
+        "Viewed product \"" + product.name + "\".",
+        { productId: product.id, category: product.category || "" }
+    );
 
     response.json({ product: publicProduct(product) });
 });
@@ -1396,7 +1469,7 @@ app.post("/api/admin/products/:id/approve", requireAdmin, function (request, res
     }
 
     const product = db.prepare("SELECT * FROM products WHERE id = ?").get(request.params.id);
-    logActivity("product_approved", "Approved \"" + (product ? product.name : request.params.id) + "\".");
+    logActivity("product_approved", "Approved \"" + (product ? product.name : request.params.id) + "\".", request, { productId: Number(request.params.id) });
 
     response.json({ ok: true });
 });
@@ -1414,7 +1487,7 @@ app.post("/api/admin/products/:id/reject", requireAdmin, function (request, resp
     }
 
     const product = db.prepare("SELECT * FROM products WHERE id = ?").get(request.params.id);
-    logActivity("product_rejected", "Rejected \"" + (product ? product.name : request.params.id) + "\" (" + (reason || "no reason given") + ").");
+    logActivity("product_rejected", "Rejected \"" + (product ? product.name : request.params.id) + "\" (" + (reason || "no reason given") + ").", request, { productId: Number(request.params.id), reason: reason || "" });
 
     response.json({ ok: true });
 });
@@ -1432,7 +1505,7 @@ app.post("/api/admin/products/:id/sponsor", requireAdmin, function (request, res
     }
 
     const product = db.prepare("SELECT * FROM products WHERE id = ?").get(request.params.id);
-    logActivity(sponsored ? "product_sponsored" : "product_unsponsored", (sponsored ? "Sponsored " : "Unsponsored ") + "\"" + (product ? product.name : request.params.id) + "\".");
+    logActivity(sponsored ? "product_sponsored" : "product_unsponsored", (sponsored ? "Sponsored " : "Unsponsored ") + "\"" + (product ? product.name : request.params.id) + "\".", request, { productId: Number(request.params.id), sponsored: Boolean(sponsored) });
 
     response.json({ ok: true });
 });
@@ -1452,7 +1525,7 @@ app.post("/api/admin/products/:id/stock", requireAdmin, function (request, respo
     }
 
     const product = db.prepare("SELECT * FROM products WHERE id = ?").get(request.params.id);
-    logActivity("stock_updated", "Set stock for \"" + (product ? product.name : request.params.id) + "\" to " + stock + ".");
+    logActivity("stock_updated", "Set stock for \"" + (product ? product.name : request.params.id) + "\" to " + stock + ".", request, { productId: Number(request.params.id), stock: stock });
 
     response.json({ ok: true });
 });
@@ -1464,7 +1537,7 @@ app.delete("/api/admin/products/:id", requireAdmin, function (request, response)
     db.prepare("DELETE FROM products WHERE id = ?").run(request.params.id);
 
     if (product) {
-        logActivity("product_deleted", "Deleted \"" + product.name + "\".");
+        logActivity("product_deleted", "Deleted \"" + product.name + "\".", request, { productId: product.id });
     }
 
     response.json({ ok: true });
@@ -1543,7 +1616,7 @@ app.post("/api/admin/products", requireAdmin, handleAdminUpload, function (reque
 
     const product = db.prepare("SELECT * FROM products WHERE id = ?").get(result.lastInsertRowid);
 
-    logActivity("product_created", "Admin added \"" + name + "\" directly.");
+    logActivity("product_created", "Admin added \"" + name + "\" directly.", request, { productId: product.id });
 
     response.json({ message: "Product created.", product: publicProduct(product) });
 });
@@ -1624,7 +1697,7 @@ app.put("/api/admin/products/:id", requireAdmin, handleAdminUpload, function (re
 
     const product = db.prepare("SELECT * FROM products WHERE id = ?").get(request.params.id);
 
-    logActivity("product_edited", "Admin edited \"" + name + "\".");
+    logActivity("product_edited", "Admin edited \"" + name + "\".", request, { productId: product.id });
 
     response.json({ message: "Product updated.", product: publicProduct(product) });
 });
@@ -1708,7 +1781,7 @@ app.post("/api/admin/orders/:id/status", requireAdmin, function (request, respon
     }
 
     const order = db.prepare("SELECT * FROM orders WHERE id = ?").get(request.params.id);
-    logActivity("order_status_updated", "Order " + order.order_number + " marked as " + status + ".");
+    logActivity("order_status_updated", "Order " + order.order_number + " marked as " + status + ".", request, { orderId: order.id, status: status });
 
     response.json({ ok: true });
 });
@@ -1983,17 +2056,41 @@ app.put("/api/admin/settings", requireAdmin, function (request, response) {
 
 app.get("/api/admin/activity", requireAdmin, function (request, response) {
 
-    const rows = db.prepare("SELECT * FROM activity_log ORDER BY created_at DESC LIMIT 50").all();
+    const limit = Math.min(1000, Math.max(1, Number(request.query.limit) || 500));
+    const rows = db.prepare("SELECT * FROM activity_log ORDER BY created_at DESC LIMIT ?").all(limit);
 
     response.json({
         activity: rows.map(function (row) {
             return {
+                id: row.id,
                 action: row.action,
                 description: row.description,
+                actorType: row.actor_type || "system",
+                actorId: row.actor_id || null,
+                actorName: row.actor_name || "",
+                actorEmail: row.actor_email || "",
+                source: row.source || "server",
+                requestPath: row.request_path || "",
+                details: row.details || "",
                 createdAt: new Date(row.created_at).toLocaleString("en-KE")
             };
         })
     });
+});
+
+app.delete("/api/admin/activity/:id", requireAdmin, function (request, response) {
+    const result = db.prepare("DELETE FROM activity_log WHERE id = ?").run(request.params.id);
+
+    if (result.changes === 0) {
+        return response.status(404).json({ message: "Activity record not found." });
+    }
+
+    response.json({ ok: true });
+});
+
+app.delete("/api/admin/activity", requireAdmin, function (request, response) {
+    db.prepare("DELETE FROM activity_log").run();
+    response.json({ ok: true });
 });
 
 /* =========================
@@ -2298,7 +2395,7 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
             createdAt: Date.now()
         });
 
-        logActivity("order_created", "Order " + orderNumber + " created (awaiting payment).");
+        logActivity("order_created", "Order " + orderNumber + " created (awaiting payment).", request, { orderNumber: orderNumber, itemCount: requestedItems.length });
 
         return response.json({
             checkoutRequestId: result.CheckoutRequestID,
@@ -2503,7 +2600,7 @@ app.post("/api/contact", async function (request, response) {
         "INSERT INTO messages (name, email, message, source, is_read, created_at) VALUES (?, ?, ?, 'contact', 0, ?)"
     ).run(name, email, message, Date.now());
 
-    logActivity("message_received", "New contact message from " + name + " <" + email + ">.");
+    logActivity("message_received", "New contact message from " + name + " <" + email + ">.", request, { email: email });
 
     if (contactMailConfigured()) {
         try {

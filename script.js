@@ -13,6 +13,44 @@
     const DELIVERY_FEE = 300; // must match DELIVERY_FEE in server.js
 
     /* =====================================================
+       PERMANENT MARKET ACTIVITY
+       Sends important marketplace actions to the backend.
+       Tracking is fire-and-forget so it never interrupts shopping.
+       ===================================================== */
+
+    function trackMarketActivity(action, description, details) {
+        try {
+            const token = localStorage.getItem(CUSTOMER_TOKEN_KEY) || "";
+            const headers = { "Content-Type": "application/json" };
+
+            if (token) {
+                headers.Authorization = "Bearer " + token;
+            }
+
+            fetch("/api/market/activity", {
+                method: "POST",
+                headers: headers,
+                body: JSON.stringify({
+                    action: action,
+                    description: description || "",
+                    details: details && typeof details === "object" ? details : {}
+                }),
+                keepalive: true
+            }).catch(function () {});
+        } catch (error) {
+            // Tracking must never break the marketplace.
+        }
+    }
+
+    function trackMarketVisit() {
+        trackMarketActivity(
+            "market_visited",
+            "Customer opened the PHYNEX marketplace.",
+            { page: window.location.pathname || "/" }
+        );
+    }
+
+    /* =====================================================
        BASIC HELPERS
        ===================================================== */
 
@@ -117,6 +155,11 @@
 
             container.querySelectorAll('.category').forEach(function (card) {
                 function openCategory() {
+                    trackMarketActivity(
+                        "category_viewed",
+                        "Opened category: " + card.dataset.category + ".",
+                        { category: card.dataset.category }
+                    );
                     window.location.href = 'category.html?category=' + encodeURIComponent(card.dataset.category);
                 }
                 card.addEventListener('click', openCategory);
@@ -147,6 +190,12 @@
             const response = await fetch('/api/products');
             const data = await response.json();
             const products = Array.isArray(data.products) ? data.products : [];
+
+            trackMarketActivity(
+                "market_products_loaded_client",
+                "Storefront loaded " + products.length + " approved product(s).",
+                { resultCount: products.length }
+            );
 
             if (newGrid) {
                 newGrid.innerHTML = '';
@@ -224,6 +273,11 @@
        ===================================================== */
 
     function goToCheckout() {
+        trackMarketActivity(
+            "checkout_opened",
+            "Opened checkout.",
+            { itemCount: getCart().length }
+        );
         window.location.href = 'checkout.html';
     }
 
@@ -612,6 +666,12 @@
 
         saveCart(cart);
 
+        trackMarketActivity(
+            "cart_item_added",
+            "Added \"" + product.name + "\" to cart.",
+            { productId: product.id, quantity: quantity, price: Number(product.price) || 0 }
+        );
+
         showToast(
             quantity +
             ' × ' +
@@ -674,6 +734,12 @@
             JSON.stringify([item])
         );
 
+        trackMarketActivity(
+            "buy_now_clicked",
+            "Selected Buy Now for \"" + product.name + "\".",
+            { productId: product.id, price: Number(product.price) || 0 }
+        );
+
         goToCheckout();
     };
 
@@ -686,6 +752,14 @@
     function openProductPopup(product) {
 
         currentProduct = product;
+
+        if (product && product.id) {
+            trackMarketActivity(
+                "product_popup_opened",
+                "Opened product details for \"" + product.name + "\".",
+                { productId: product.id, category: product.category || "" }
+            );
+        }
 
         const image =
             document.getElementById(
@@ -947,6 +1021,12 @@
     }
 
     function filterCategory(category) {
+
+        trackMarketActivity(
+            "market_search",
+            "Searched the marketplace for \"" + input.value.trim() + "\".",
+            { query: input.value.trim() }
+        );
 
         let found = 0;
 
@@ -1638,7 +1718,9 @@
 
             updateCartCount();
 
-            loadMarketplaceProducts();
+            trackMarketVisit();
+
+        loadMarketplaceProducts();
 
             renderCheckoutPage();
 

@@ -84,7 +84,7 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
     </div>
     <nav class="side-nav" id="sideNav">
       <button class="nav-item active" data-section="overview"><i>⌂</i> Overview</button>
-      <button class="nav-item" data-section="products"><i>▣</i> Products</button>
+      <button class="nav-item" data-section="products"><i>▣</i> Market Manager</button>
       <button class="nav-item" data-section="orders"><i>▤</i> Orders <b id="ordersBadge"></b></button>
       <button class="nav-item" data-section="transactions"><i>$</i> Transactions</button>
       <button class="nav-item" data-section="messages"><i>✉</i> Messages <b id="messagesBadge"></b></button>
@@ -125,8 +125,8 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
 
     <section class="section" id="section-products">
       <div class="page-head">
-        <div><h1>Products</h1><p>Approve listings, edit store products, feature items and manage stock.</p></div>
-        <button class="primary small" id="addProductBtn">+ Add product</button>
+        <div><h1>Market Manager</h1><p>Everything approved here is stored in the marketplace and appears on the public PHYNEX market.</p></div>
+        <button class="primary small" id="addProductBtn">+ Publish to market</button>
       </div>
       <div class="toolbar">
         <input id="productSearch" placeholder="Search products, sellers or categories…">
@@ -216,8 +216,17 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
     </section>
 
     <section class="section" id="section-activity">
-      <div class="page-head"><div><h1>Activity log</h1><p>Administrative actions and important store events.</p></div></div>
-      <div id="activityList" class="activity-list"></div>
+      <div class="page-head">
+        <div><h1>Market Activity</h1><p>Customer, seller and admin activity is stored permanently until you delete it.</p></div>
+        <div class="top-actions">
+          <button class="secondary small" id="refreshActivity">Refresh</button>
+          <button class="danger small" id="deleteAllActivity">Delete all activity</button>
+        </div>
+      </div>
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-head"><h2>Permanent activity history</h2><span class="muted" id="activityCount">—</span></div>
+        <div id="activityList" class="activity-list"></div>
+      </div>
     </section>
 
     <section class="section" id="section-loginlog">
@@ -620,7 +629,55 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
     } catch(x){ toast(x.message,'error'); }
   };
 
-  async function loadActivity(){try{const d=await api('/api/admin/activity');activity=d.activity||[];$('activityList').innerHTML=activity.length?activity.map(a=>`<div class="activity-row"><span class="activity-dot"></span><div><strong>${esc(a.action||'Activity')}</strong><p>${esc(a.description||'')}</p><small>${esc(a.createdAt||a.time||'')}</small></div></div>`).join(''):empty('No activity yet.');}catch(e){$('activityList').innerHTML=empty(e.message||'Activity API not available.');}}
+  async function loadActivity(){
+    const el=$('activityList');
+    el.innerHTML=empty('Loading activity…');
+    try{
+      const d=await api('/api/admin/activity?limit=1000');
+      activity=d.activity||[];
+      $('activityCount').textContent=activity.length+' record'+(activity.length===1?'':'s');
+      el.innerHTML=activity.length?activity.map(a=>`
+        <div class="activity-row">
+          <span class="activity-dot"></span>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+              <strong>${esc(a.action||'Activity')}</strong>
+              <button class="danger-outline" data-activity-delete="${esc(a.id)}">Delete</button>
+            </div>
+            <p>${esc(a.description||'')}</p>
+            <small>
+              ${esc(a.createdAt||'')}
+              · ${esc(a.actorType||'system')}
+              ${a.actorName?' · '+esc(a.actorName):''}
+              ${a.actorEmail?' · '+esc(a.actorEmail):''}
+            </small>
+          </div>
+        </div>`).join(''):empty('No activity yet.');
+    }catch(e){
+      $('activityList').innerHTML=empty(e.message||'Activity API not available.');
+    }
+  }
+
+  $('activityList').onclick=async function(e){
+    const btn=e.target.closest('[data-activity-delete]');
+    if(!btn)return;
+    if(!confirm('Permanently delete this activity record?'))return;
+    try{
+      await api('/api/admin/activity/'+encodeURIComponent(btn.dataset.activityDelete),{method:'DELETE'});
+      toast('Activity deleted permanently');
+      loadActivity();
+    }catch(x){toast(x.message||'Could not delete activity.','error');}
+  };
+
+  $('refreshActivity').onclick=loadActivity;
+  $('deleteAllActivity').onclick=async function(){
+    if(!confirm('Permanently delete ALL activity records? This cannot be undone.'))return;
+    try{
+      await api('/api/admin/activity',{method:'DELETE'});
+      toast('All activity deleted permanently');
+      loadActivity();
+    }catch(x){toast(x.message||'Could not delete activity.','error');}
+  };
 
   async function loadLoginLog(){
     const el=$('loginLogList');
