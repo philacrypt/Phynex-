@@ -2170,16 +2170,17 @@ function darajaBaseUrl() {
 }
 
 function timestamp() {
-    const date = new Date();
+    // Daraja expects East Africa Time (Nairobi), not the server's local time
+    // (Render runs in UTC).
+    const parts = new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Africa/Nairobi",
+        hourCycle: "h23",
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit"
+    }).formatToParts(new Date());
+    const get = function (type) { return parts.find(function (p) { return p.type === type; }).value; };
 
-    return [
-        date.getFullYear(),
-        String(date.getMonth() + 1).padStart(2, "0"),
-        String(date.getDate()).padStart(2, "0"),
-        String(date.getHours()).padStart(2, "0"),
-        String(date.getMinutes()).padStart(2, "0"),
-        String(date.getSeconds()).padStart(2, "0")
-    ].join("");
+    return get("year") + get("month") + get("day") + get("hour") + get("minute") + get("second");
 }
 
 async function getAccessToken() {
@@ -2217,10 +2218,10 @@ function releaseExpiredReservations() {
     const release = db.prepare(
         "UPDATE products SET reserved_stock = MAX(0, reserved_stock - ?) WHERE id = ?"
     );
-    const items = db.prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?").all;
+    const getItems = db.prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?");
     const tx = db.transaction(function () {
         for (const order of expired) {
-            const rows = items(order.id);
+            const rows = getItems.all(order.id);
             for (const item of rows) {
                 if (item.product_id) release.run(item.quantity, item.product_id);
             }
@@ -2237,7 +2238,11 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
         return response.status(503).json({ message: "M-PESA is not configured yet. Add your Daraja credentials to .env." });
     }
 
-    releaseExpiredReservations();
+    try {
+        releaseExpiredReservations();
+    } catch (cleanupError) {
+        console.error("releaseExpiredReservations failed:", cleanupError);
+    }
 
     const payload = request.body || {};
     const customer = optionalCustomer(request);
@@ -2347,6 +2352,7 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
 
         const accessToken = await getAccessToken();
         const requestTimestamp = timestamp();
+        console.log("STK push -> " + darajaBaseUrl() + " shortcode " + process.env.MPESA_SHORTCODE + " amount " + total);
         const password = Buffer.from(
             process.env.MPESA_SHORTCODE + process.env.MPESA_PASSKEY + requestTimestamp
         ).toString("base64");
@@ -2360,10 +2366,10 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
                     BusinessShortCode: process.env.MPESA_SHORTCODE,
                     Password: password,
                     Timestamp: requestTimestamp,
-                    TransactionType: "CustomerPayBillOnline",
+                    TransactionType: process.env.MPESA_TRANSACTION_TYPE || "CustomerPayBillOnline",
                     Amount: total,
                     PartyA: phone,
-                    PartyB: process.env.MPESA_SHORTCODE,
+                    PartyB: process.env.MPESA_PARTYB || process.env.MPESA_SHORTCODE,
                     PhoneNumber: phone,
                     CallBackURL: process.env.MPESA_CALLBACK_URL,
                     AccountReference: "PHYNEX",
@@ -2375,6 +2381,7 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
         const result = await darajaResponse.json();
 
         if (!darajaResponse.ok || !result.CheckoutRequestID) {
+            console.error("STK push rejected by Daraja (" + darajaResponse.status + "):", JSON.stringify(result));
             db.prepare("UPDATE orders SET payment_status = 'failed', status = 'cancelled', reservation_expires = NULL, updated_at = ? WHERE id = ?")
                 .run(Date.now(), orderId);
             const items = db.prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?").all(orderId);
@@ -2404,6 +2411,7 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
         });
 
     } catch (error) {
+        console.error("STK push failed:", error);
         if (orderId) {
             const items = db.prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?").all(orderId);
             const release = db.prepare("UPDATE products SET reserved_stock = MAX(0, reserved_stock - ?) WHERE id = ?");
