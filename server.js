@@ -2551,7 +2551,7 @@ app.get("/api/mpesa/status/:checkoutRequestId", function (request, response) {
 ========================= */
 
 function contactMailConfigured() {
-    return Boolean(process.env.EMAIL_PASSWORD);
+    return Boolean(process.env.EMAIL_PASSWORD || process.env.SMTP_PASS);
 }
 
 const mailTransporter = contactMailConfigured()
@@ -2559,7 +2559,10 @@ const mailTransporter = contactMailConfigured()
         host: process.env.EMAIL_HOST || "smtp.gmail.com",
         port: Number(process.env.EMAIL_PORT) || 587,
         secure: Number(process.env.EMAIL_PORT) === 465,
-        auth: { user: process.env.EMAIL_USER || "phynex70@gmail.com", pass: process.env.EMAIL_PASSWORD }
+        auth: {
+            user: process.env.EMAIL_USER || "phynex70@gmail.com",
+            pass: process.env.EMAIL_PASSWORD || process.env.SMTP_PASS
+        }
     })
     : null;
 
