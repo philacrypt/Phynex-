@@ -222,6 +222,8 @@
                             });
                             var data = await res.json();
                             if (!res.ok) { showError(data.message || 'Google sign-in failed.'); return; }
+                            localStorage.setItem('phynexCustomerToken', data.token);
+                            localStorage.setItem('phynexCustomerName', data.customer.name || '');
                             window.location.href = redirect || 'account.html';
                         } catch (error) {
                             showError('Network error. Please try again.');
@@ -284,13 +286,9 @@
                     return;
                 }
 
-                showSuccess(
-                    data.phoneVerificationRequired
-                        ? 'Verification email sent. We also sent a phone OTP. Verify your email, then log in to complete phone verification.'
-                        : 'Verification email sent. Check your inbox and click the verification link before logging in.'
-                );
-                document.getElementById('registerForm').reset();
-                btn.textContent = 'Verification email sent';
+                localStorage.setItem('phynexCustomerToken', data.token);
+                localStorage.setItem('phynexCustomerName', data.customer.name || '');
+                window.location.href = redirect || 'account.html';
             } catch (error) {
                 showError('Network error. Please try again.');
                 btn.disabled = false;

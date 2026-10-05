@@ -834,6 +834,10 @@ app.post("/api/customers/google", async function (request, response) {
 
 app.post("/api/customers/forgot-password", async function (request, response) {
 
+    if (!mailTransporter) {
+        return response.status(503).json({ message: "Password reset email is not configured yet. Please contact PHYNEX support." });
+    }
+
     const email = String((request.body || {}).email || "").trim().toLowerCase();
 
     if (!email) {
@@ -856,13 +860,15 @@ app.post("/api/customers/forgot-password", async function (request, response) {
     db.prepare("UPDATE customers SET reset_token = ?, reset_token_expires = ? WHERE id = ?")
         .run(resetToken, expires, customer.id);
 
-    const resetUrl = (process.env.APP_URL || "").replace(/\/$/, "") +
-        "/customer-reset-password.html?token=" + resetToken;
+    const redirect = String((request.body || {}).redirect || "");
+    const redirectQuery = redirect === "checkout.html" ? "&redirect=checkout.html" : "";
+    const resetUrl = (process.env.APP_URL || "https://phynex.onrender.com").replace(/\/$/, "") +
+        "/customer-reset-password.html?token=" + resetToken + redirectQuery;
 
     if (mailTransporter) {
         try {
             await mailTransporter.sendMail({
-                from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+                from: process.env.EMAIL_FROM || process.env.EMAIL_USER || "PHYNEX <phynex70@gmail.com>",
                 to: customer.email,
                 subject: "Reset your PHYNEX password",
                 text: "Reset your password here: " + resetUrl + "\n\nThis link expires in 1 hour. If you didn't request this, ignore this email.",
@@ -874,8 +880,6 @@ app.post("/api/customers/forgot-password", async function (request, response) {
             // Don't leak email-sending failures to the client — log it server-side instead.
             console.error("Password reset email failed:", error.message);
         }
-    } else {
-        console.log("PHYNEX password reset link for " + customer.email + ": " + resetUrl);
     }
 
     response.json(genericReply);
@@ -2232,7 +2236,11 @@ function releaseExpiredReservations() {
     tx();
 }
 
-app.post("/api/mpesa/stkpush", async function (request, response) {
+app.post("/api/mpesa/stkpush", requireCustomer, async function (request, response) {
+
+    if (!request.customer) {
+        return response.status(401).json({ message: "Please log in to continue." });
+    }
 
     if (!mpesaConfigured()) {
         return response.status(503).json({ message: "M-PESA is not configured yet. Add your Daraja credentials to .env." });
@@ -2245,7 +2253,7 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
     }
 
     const payload = request.body || {};
-    const customer = optionalCustomer(request);
+    const customer = request.customer;
     const customerInfo = payload.customer || {};
     const delivery = payload.delivery || {};
     const requestedItems = Array.isArray(payload.items) ? payload.items : [];
@@ -2315,9 +2323,9 @@ app.post("/api/mpesa/stkpush", async function (request, response) {
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'mpesa', 'pending', 'pending', ?, ?, ?)`
             ).run(
                 orderNumber,
-                customer ? customer.id : null,
-                String(customerInfo.name || (customer && customer.name) || "").trim(),
-                String(customerInfo.email || (customer && customer.email) || "").trim(),
+                customer.id,
+                String(customer.name || "").trim(),
+                String(customer.email || "").trim(),
                 String(customerInfo.phone || payload.mpesaPhone || "").trim(),
                 deliveryCounty,
                 null,
@@ -2543,7 +2551,7 @@ app.get("/api/mpesa/status/:checkoutRequestId", function (request, response) {
 ========================= */
 
 function contactMailConfigured() {
-    return Boolean(process.env.EMAIL_USER && process.env.EMAIL_PASSWORD);
+    return Boolean(process.env.EMAIL_PASSWORD);
 }
 
 const mailTransporter = contactMailConfigured()
@@ -2551,7 +2559,7 @@ const mailTransporter = contactMailConfigured()
         host: process.env.EMAIL_HOST || "smtp.gmail.com",
         port: Number(process.env.EMAIL_PORT) || 587,
         secure: Number(process.env.EMAIL_PORT) === 465,
-        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASSWORD }
+        auth: { user: process.env.EMAIL_USER || "phynex70@gmail.com", pass: process.env.EMAIL_PASSWORD }
     })
     : null;
 
@@ -2613,7 +2621,7 @@ app.post("/api/contact", async function (request, response) {
     if (contactMailConfigured()) {
         try {
             await mailTransporter.sendMail({
-                from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+                from: process.env.EMAIL_FROM || process.env.EMAIL_USER || "PHYNEX <phynex70@gmail.com>",
                 to: process.env.CONTACT_TO || process.env.EMAIL_USER,
                 replyTo: email,
                 subject: "New PHYNEX contact form message from " + name,

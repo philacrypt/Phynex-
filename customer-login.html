@@ -173,7 +173,7 @@
 
             <form id="loginForm">
 
-                <label for="identifier">Email or Kenyan phone</label>
+                <label for="identifier">Email address</label>
                 <input type="text" id="identifier" autocomplete="username" required>
 
                 <div class="label-row">
@@ -202,6 +202,8 @@
 
         document.getElementById('registerLink').href =
             'customer-register.html' + (redirect ? '?redirect=' + encodeURIComponent(redirect) : '');
+        document.querySelector('.label-row a[href="customer-forgot-password.html"]').href =
+            'customer-forgot-password.html' + (redirect ? '?redirect=' + encodeURIComponent(redirect) : '');
 
         function showMessage(text, success) {
             var msg = document.getElementById('formMsg');
@@ -231,6 +233,8 @@
                                 showMessage(data.message || 'Google sign-in failed.', false);
                                 return;
                             }
+                            localStorage.setItem('phynexCustomerToken', data.token);
+                            localStorage.setItem('phynexCustomerName', data.customer.name || '');
                             window.location.href = redirect || 'account.html';
                         } catch (error) {
                             showMessage('Network error. Please try again.', false);
@@ -284,7 +288,7 @@
                     credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        identifier: document.getElementById('identifier').value.trim(),
+                        email: document.getElementById('identifier').value.trim(),
                         password: document.getElementById('password').value
                     })
                 });
@@ -305,6 +309,7 @@
                 }
 
                 localStorage.setItem('phynexCustomerName', data.customer.name);
+                localStorage.setItem('phynexCustomerToken', data.token);
                 window.location.href = redirect || 'account.html';
 
             } catch (error) {

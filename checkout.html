@@ -424,6 +424,8 @@
 
   const POLL_INTERVAL_MS = 3000;
   const MAX_POLL_ATTEMPTS = 40; // ~2 minutes of polling
+  const CUSTOMER_TOKEN_KEY = "phynexCustomerToken";
+  const customerToken = localStorage.getItem(CUSTOMER_TOKEN_KEY) || "";
 
   let submitting = false;
   let pollTimer = null;
@@ -432,6 +434,35 @@
     if (!formMessage) return;
     formMessage.textContent = text || "";
     formMessage.style.color = isError ? "#d9363e" : "";
+  }
+
+  async function requireSignedInCustomer() {
+    if (!customerToken) {
+      window.location.replace("customer-login.html?redirect=" + encodeURIComponent("checkout.html"));
+      return false;
+    }
+
+    try {
+      const response = await fetch("/api/customers/me", {
+        headers: { Authorization: "Bearer " + customerToken }
+      });
+      if (!response.ok) throw new Error("Session expired");
+      const data = await response.json();
+      const customer = data.customer || {};
+      [
+        ["customerName", customer.name],
+        ["customerEmail", customer.email],
+        ["customerPhone", customer.phone]
+      ].forEach(function (entry) {
+        const input = document.getElementById(entry[0]);
+        if (input && entry[1] && !input.value) input.value = entry[1];
+      });
+      return true;
+    } catch (error) {
+      localStorage.removeItem(CUSTOMER_TOKEN_KEY);
+      window.location.replace("customer-login.html?redirect=" + encodeURIComponent("checkout.html"));
+      return false;
+    }
   }
 
   function setBusy(busy, label) {
@@ -591,7 +622,10 @@
 
     fetch("/api/mpesa/stkpush", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + customerToken
+      },
       body: JSON.stringify(payload)
     })
       .then(function (res) {
@@ -623,6 +657,7 @@
   if (mpesaButton) mpesaButton.addEventListener("click", submitOrder);
 
   renderCart();
+  requireSignedInCustomer();
 })();
 </script>
 

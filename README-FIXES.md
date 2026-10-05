@@ -190,4 +190,12 @@ local demo."
 5. Deploy.
 6. Keep your existing M-PESA, email, Google and admin environment variables. Do not commit `.env`.
 
+## Customer checkout authentication and email
+- Customer checkout requires a valid customer session; the payment API rejects requests without a valid bearer token.
+- Google sign-in requires `GOOGLE_CLIENT_ID` in Render. Create a Google OAuth client of type Web application and add `https://phynex.onrender.com` as an authorized JavaScript origin.
+- Password-reset mail uses `EMAIL_HOST=smtp.gmail.com`, `EMAIL_PORT=587`, `EMAIL_USER=phynex70@gmail.com`, `EMAIL_FROM=PHYNEX <phynex70@gmail.com>`, and `EMAIL_PASSWORD` set to a Google App Password for that account.
+- Set `APP_URL=https://phynex.onrender.com` so password reset links use the live domain.
+- Enter the OAuth client ID and Gmail App Password privately in Render Environment settings; never commit either secret or use the normal Gmail password.
+- Save the Render environment values and redeploy. Google sign-in and email reset cannot send until their required credentials are configured.
+
 The delivered archive intentionally excludes the existing `.env` file because it can contain secrets.
