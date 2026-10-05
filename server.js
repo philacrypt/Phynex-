@@ -1870,6 +1870,31 @@ app.get("/api/admin/customers", requireAdmin, function (request, response) {
     });
 });
 
+app.delete("/api/admin/customers/:id", requireAdmin, function (request, response) {
+    const customerId = Number(request.params.id);
+    if (!Number.isInteger(customerId) || customerId < 1) {
+        return response.status(400).json({ message: "Invalid customer ID." });
+    }
+
+    const customer = db.prepare("SELECT id, name, email FROM customers WHERE id = ?").get(customerId);
+    if (!customer) return response.status(404).json({ message: "Customer not found." });
+
+    const anonymizeCustomer = db.transaction(function () {
+        db.prepare(`UPDATE orders
+                    SET customer_id = NULL, customer_name = 'Deleted customer', customer_email = '', customer_phone = ''
+                    WHERE customer_id = ?`).run(customerId);
+        db.prepare(`UPDATE login_log SET name = 'Deleted customer', email = ''
+                    WHERE user_type = 'customer' AND user_id = ?`).run(customerId);
+        db.prepare(`UPDATE activity_log SET actor_name = 'Deleted customer', actor_email = '', details = ''
+                    WHERE actor_type = 'customer' AND actor_id = ?`).run(customerId);
+        db.prepare("DELETE FROM customers WHERE id = ?").run(customerId);
+    });
+
+    anonymizeCustomer();
+    logActivity("customer_deleted", "Customer account deleted and personal details anonymized.", request, { customerId: customerId });
+    response.json({ ok: true });
+});
+
 /* =========================
    ADMIN — CATEGORIES
 ========================= */

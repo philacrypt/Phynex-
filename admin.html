@@ -581,7 +581,7 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
 
   async function loadSellers(){const el=$('sellersList');try{const q=new URLSearchParams();if($('sellerStatus').value)q.set('status',$('sellerStatus').value);const d=await api('/api/admin/sellers'+(q.toString()?'?'+q:''));sellers=d.sellers||[];el.innerHTML=genericPeople(sellers,'seller');}catch(e){el.innerHTML=empty(e.message||'Seller API not available.');}}
   async function loadCustomers(){const el=$('customersList');try{const d=await api('/api/admin/customers');customers=d.customers||[];el.innerHTML=genericPeople(customers,'customer');}catch(e){el.innerHTML=empty(e.message||'Customer API not available.');}}
-  function genericPeople(list,type){return list.length?`<table><thead><tr><th>Name</th><th>Email / Phone</th>${type==='seller'?'<th>WhatsApp</th>':''}<th>Status</th><th>Orders</th><th>Action</th></tr></thead><tbody>${list.map(x=>`<tr><td><strong>${esc(x.name||x.fullName||'—')}</strong>${x.loggedIn?' <span class="pill approved" style="font-size:10px;">online</span>':''}</td><td>${esc(x.email||'—')}<small>${esc(x.phone||'')}</small></td>${type==='seller'?`<td>${esc(x.whatsapp||'—')}</td>`:''}<td><span class="pill ${esc(x.status||'approved')}">${esc(x.status||'approved')}</span></td><td>${esc(x.orderCount??0)}</td><td><button data-person="${esc(x.id)}" data-person-type="${type}">${type==='seller'?'Manage':'View'}</button></td></tr>`).join('')}</tbody></table>`:empty('No records found.');}
+  function genericPeople(list,type){return list.length?`<table><thead><tr><th>Name</th><th>Email / Phone</th>${type==='seller'?'<th>WhatsApp</th>':''}<th>Status</th><th>Orders</th><th>Action</th></tr></thead><tbody>${list.map(x=>`<tr><td><strong>${esc(x.name||x.fullName||'—')}</strong>${x.loggedIn?' <span class="pill approved" style="font-size:10px;">online</span>':''}</td><td>${esc(x.email||'—')}<small>${esc(x.phone||'')}</small></td>${type==='seller'?`<td>${esc(x.whatsapp||'—')}</td>`:''}<td><span class="pill ${esc(x.status||'approved')}">${esc(x.status||'approved')}</span></td><td>${esc(x.orderCount??0)}</td><td><button data-person="${esc(x.id)}" data-person-type="${type}">${type==='seller'?'Manage':'View'}</button>${type==='customer'?` <button class="danger-outline" data-customer-delete="${esc(x.id)}">Delete</button>`:''}</td></tr>`).join('')}</tbody></table>`:empty('No records found.');}
 
   // Sellers: "Manage" prompts for a new status (pending/approved/suspended).
   // Customers: "View" just shows their details — customers aren't suspendable here.
@@ -596,6 +596,13 @@ label{display:block;font-size:13px;font-weight:700;margin:15px 0 6px}input,selec
     catch(x){ toast(x.message,'error'); }
   };
   $('customersList').onclick=e=>{
+    const deleteBtn=e.target.closest('[data-customer-delete]');
+    if(deleteBtn){
+      const id=deleteBtn.dataset.customerDelete, customer=customers.find(x=>String(x.id)===String(id));
+      if(!customer || !confirm(`Delete ${customer.name || customer.email}'s account? Their order and payment history will remain, but personal details on those records will be anonymized.`))return;
+      api(`/api/admin/customers/${id}`,{method:'DELETE'}).then(()=>{toast('Customer deleted; order history retained anonymously');loadCustomers();}).catch(error=>toast(error.message,'error'));
+      return;
+    }
     const btn=e.target.closest('[data-person]'); if(!btn || btn.dataset.personType!=='customer') return;
     const id=btn.dataset.person, c=customers.find(x=>String(x.id)===String(id)); if(!c) return;
     alert(JSON.stringify(c,null,2));

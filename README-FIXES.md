@@ -198,4 +198,9 @@ local demo."
 - Enter the OAuth client ID and Gmail App Password privately in Render Environment settings; never commit either secret or use the normal Gmail password.
 - Save the Render environment values and redeploy. Google sign-in and email reset cannot send until their required credentials are configured.
 
+## Admin data retention and customer removal
+- Admin dashboard includes customers, sellers, orders, payment transactions, activity history and login history.
+- Customer deletion is admin-only. The account is removed and personal fields on linked orders, login history and activity are anonymized; order totals, payment receipts and transaction history remain for audit.
+- The current Render Free web service does not support Persistent Disks. For data to survive service restarts/redeploys, upgrade to a disk-capable instance, attach a disk mounted at `/data`, and set `PHYNEX_DATA_DIR=/data` before relying on permanent retention.
+
 The delivered archive intentionally excludes the existing `.env` file because it can contain secrets.
