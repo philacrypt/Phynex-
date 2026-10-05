@@ -17,7 +17,7 @@ h1{margin:5px 0 6px;font-size:28px;color:#fff} .sub{color:rgba(255,255,255,.82);
 .category-hero{position:relative;isolation:isolate;overflow:hidden;width:111.111%;min-height:360px;margin-left:-5.555%;margin-bottom:28px;padding:48px 5%;display:flex;align-items:center;background:radial-gradient(ellipse at 76% 58%,rgba(11,139,240,.68),transparent 42%),linear-gradient(112deg,#071a49 4%,#073b87 54%,#0875e1 100%);color:#fff}
 .category-hero:before{content:'';position:absolute;inset:0;z-index:-1;background:radial-gradient(circle at 15% 20%,rgba(255,255,255,.14),transparent 2px),linear-gradient(135deg,transparent 0 48%,rgba(255,255,255,.05) 48.1% 48.3%,transparent 48.4%);background-size:34px 34px,100% 100%;mask-image:linear-gradient(90deg,#000,transparent 75%)}
 .hero-copy{position:relative;z-index:3;width:min(48%,560px)}.hero-copy h1{font-size:clamp(32px,4vw,52px);line-height:1.08;margin:0 0 12px}.hero-copy p{color:rgba(255,255,255,.82);margin:0;max-width:510px;line-height:1.65;font-size:15px}
-.hero-scene{position:absolute;inset:0;perspective:1000px;transform-style:preserve-3d;pointer-events:none}
+.hero-scene{position:absolute;inset:0;overflow:hidden;perspective:1000px;transform-style:flat;pointer-events:none}
 .scene-product{position:absolute;display:grid;place-items:center;width:190px;height:190px;border:1px solid rgba(255,255,255,.72);border-radius:50%;overflow:hidden;background:radial-gradient(circle at 30% 24%,#fff 0,#f5faff 42%,rgba(180,222,255,.88) 100%);box-shadow:inset -12px -16px 28px rgba(7,26,73,.2),0 24px 38px rgba(0,13,47,.36),0 0 30px rgba(105,203,255,.32);transform-style:preserve-3d;animation:product-float 7s ease-in-out infinite}
 .scene-product img{width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply}
 .scene-phone{right:37%;top:76px;width:160px;height:160px;transform:rotateY(-18deg) rotateZ(-12deg) translateZ(45px)}
@@ -35,20 +35,20 @@ h1{margin:5px 0 6px;font-size:28px;color:#fff} .sub{color:rgba(255,255,255,.82);
 .count{font-size:12px;font-weight:700;color:#0875e1}
 .empty{background:#fff;border-radius:12px;padding:35px;text-align:center;color:#687083;grid-column:1/-1}
 @media(max-width:900px){.grid{grid-template-columns:repeat(3,1fr)}.scene-phone{right:39%}.scene-console{right:17%}.scene-laptop{right:-3%}}
-@media(max-width:650px){.container{padding:0 12px 90px}.grid{grid-template-columns:repeat(2,1fr);gap:10px}.brand{width:205px;height:56px}.category-hero{width:calc(100% + 24px);margin-left:-12px;min-height:420px;margin-bottom:22px;padding:32px 20px;align-items:flex-start}.hero-copy{width:100%;max-width:400px}.hero-copy h1{font-size:32px}.hero-copy p{font-size:14px;max-width:350px}.scene-product{width:125px;height:125px}.scene-phone{right:57%;top:auto;bottom:38px;width:116px;height:116px}.scene-console{right:27%;top:auto;bottom:68px;width:148px;height:148px}.scene-laptop{right:-7%;top:auto;bottom:22px;width:124px;height:124px}.scene-audio{right:63%;bottom:-55px;width:102px;height:102px}.scene-apparel{right:8%;bottom:-52px;width:105px;height:105px}}
-@media(max-width:380px){.brand{width:178px;height:50px}.top{gap:8px}.btn{padding:9px 10px}}
+@media(max-width:650px){.container{padding:0 12px 90px}.grid{grid-template-columns:repeat(2,1fr);gap:10px}.brand{width:155px;height:54px}.top{gap:8px}.actions{gap:6px}.category-hero{width:calc(100% + 24px);margin-left:-12px;min-height:420px;margin-bottom:22px;padding:32px 20px;align-items:flex-start}.hero-copy{width:100%;max-width:400px}.hero-copy h1{font-size:32px}.hero-copy p{font-size:14px;max-width:350px}.scene-product{width:112px;height:112px}.scene-phone{right:58%;top:auto;bottom:34px;width:104px;height:104px}.scene-console{right:27%;top:auto;bottom:58px;width:130px;height:130px}.scene-laptop{right:0;top:auto;bottom:18px;width:108px;height:108px}.scene-audio{right:63%;bottom:-42px;width:90px;height:90px}.scene-apparel{right:8%;bottom:-42px;width:92px;height:92px}}
+@media(max-width:380px){.brand{width:128px;height:48px}.top{gap:6px}.actions{gap:5px}.btn{padding:8px 8px;font-size:12px}}
 @media(prefers-reduced-motion:reduce){.scene-product{animation:none}}
 </style>
 </head>
 <body>
-<header class="header"><div class="top"><a class="brand" href="index.html" aria-label="PHYNEX home"><img src="1.jpeg" alt="PHYNEX - Shop Smart. Live Better."></a><div class="actions"><a class="btn" href="cart.html"><i class="fa-solid fa-cart-shopping"></i> Cart</a><a class="btn" href="index.html">Home</a></div></div></header>
+<header class="header"><div class="top"><a class="brand" href="index.html" aria-label="PHYNEX home"><img src="images/1.jpeg" alt="PHYNEX - Shop Smart. Live Better."></a><div class="actions"><a class="btn" href="cart.html"><i class="fa-solid fa-cart-shopping"></i> Cart</a><a class="btn" href="index.html">Home</a></div></div></header>
 <main class="container">
 <section class="category-hero" aria-labelledby="categoryHeading"><div class="hero-scene" aria-hidden="true">
-<span class="scene-product scene-phone"><img src="pic 11.jpeg" alt=""></span>
-<span class="scene-product scene-console"><img src="8.jpeg" alt=""></span>
-<span class="scene-product scene-laptop"><img src="20.jpeg" alt=""></span>
-<span class="scene-product scene-audio"><img src="2.jpeg" alt=""></span>
-<span class="scene-product scene-apparel"><img src="19.jpeg" alt=""></span>
+<span class="scene-product scene-phone"><img src="images/pic 11.jpeg" alt=""></span>
+<span class="scene-product scene-console"><img src="images/8.jpeg" alt=""></span>
+<span class="scene-product scene-laptop"><img src="images/20.jpeg" alt=""></span>
+<span class="scene-product scene-audio"><img src="images/2.jpeg" alt=""></span>
+<span class="scene-product scene-apparel"><img src="images/19.jpeg" alt=""></span>
 </div><div class="hero-copy"><h1 id="categoryHeading">Explore PHYNEX categories</h1><p>Shop electronics, fashion, home and more. Discover real finds, all in their place.</p></div></section>
 <a class="back" href="index.html"><i class="fa-solid fa-arrow-left"></i> Back to PHYNEX</a>
 <p class="sub" id="sub" style="color:#687083">Loading categories…</p>
